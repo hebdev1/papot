@@ -162,6 +162,12 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["partner_applications"]["Insert"]>
         Relationships: []
       }
+      restaurant_details: {
+        Row: { listing_id: string; cuisine: string; price_band: string; neighborhood: string | null; zones: string[]; services: string[]; features: string[]; capacity: number | null; instant_confirmation: boolean; accepts_groups: boolean }
+        Insert: { listing_id: string; cuisine: string; price_band: string; neighborhood?: string | null; zones?: string[]; services?: string[]; features?: string[]; capacity?: number | null; instant_confirmation?: boolean; accepts_groups?: boolean }
+        Update: Partial<Database["public"]["Tables"]["restaurant_details"]["Insert"]>
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
