@@ -1,0 +1,248 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
+import { useCart } from "../lib/cart";
+import { useAuth } from "../lib/auth";
+
+const STEPS = ["Votre réservation", "Paiement", "Confirmation"];
+
+const METHODS = [
+  { id: "card", label: "Carte bancaire", sub: "Visa, Mastercard" },
+  { id: "moncash", label: "MonCash", sub: "Depuis Haïti" },
+  { id: "natcash", label: "NatCash", sub: "Depuis Haïti" },
+];
+
+const KIND_LABEL: Record<string, string> = {
+  stay: "Hébergement",
+  car: "Voiture",
+  restaurant: "Restaurant",
+};
+
+const input =
+  "w-full p-3.5 rounded-xl border-2 border-[#e2d5c3] focus:border-[#6ad7fb] bg-white text-sm text-[#002089] placeholder:text-[#b0a090] outline-none transition-colors";
+const label = "text-[12.5px] font-semibold text-[#3E2C23]";
+
+/** Canvas 1e — /checkout/:id, multi-service cart with a single payment. */
+export function Checkout() {
+  const navigate = useNavigate();
+  const rate = useUsdHtgRate();
+  const { items, total, clear } = useCart();
+  const { user } = useAuth();
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [phone, setPhone] = useState("");
+  const [method, setMethod] = useState("card");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (items.length === 0) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-24 text-center">
+        <h1 className="font-display text-2xl font-bold text-[#002089]">Votre panier est vide</h1>
+        <p className="text-[#7a6355] mt-2">Ajoutez un hébergement, une voiture ou une table pour continuer.</p>
+        <Link
+          to="/search?kind=stay"
+          className="inline-block mt-5 bg-[#e76f2e] hover:bg-[#d05e20] text-white font-bold px-5 py-3 rounded-xl transition-colors"
+        >
+          Parcourir
+        </Link>
+      </main>
+    );
+  }
+
+  const pay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    const { data, error } = await supabase.rpc("create_booking", {
+      p_payload: {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        payment_method: method,
+        items: items.map(i => ({
+          kind: i.kind,
+          listing_id: i.listing_id,
+          unit_id: i.unit_id ?? null,
+          title: i.title,
+          detail: i.detail,
+          amount: i.amount,
+        })),
+      },
+    });
+
+    setBusy(false);
+    if (error || !data) {
+      console.error("Booking failed:", error);
+      setError("Le paiement n'a pas pu être finalisé. Réessayez.");
+      return;
+    }
+
+    const reference = (data as { reference: string }).reference;
+    clear();
+    navigate(`/booking/${reference}/confirmed`);
+  };
+
+  const byKind = (kind: string) => items.filter(i => i.kind === kind).reduce((s, i) => s + i.amount, 0);
+
+  return (
+    <main className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
+      <div className="flex items-center gap-2 text-sm mb-8">
+        <span className="font-display font-bold text-[#002089]">Paiement sécurisé</span>
+        <span className="flex-1" />
+        {STEPS.map((s, i) => (
+          <span key={s} className="flex items-center gap-2">
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                i === 0 ? "bg-[#002089] text-white" : "bg-[#e2d5c3] text-[#7a6355]"
+              }`}
+            >
+              {i + 1}
+            </span>
+            <span className={i === 0 ? "text-[#002089] font-semibold" : "text-[#7a6355]"}>{s}</span>
+          </span>
+        ))}
+      </div>
+
+      <form onSubmit={pay} className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
+          <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
+            <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Votre voyage</h2>
+            <div className="flex flex-col gap-3">
+              {items.map(i => (
+                <div key={i.kind} className="flex items-start justify-between gap-4 pb-3 border-b border-[#e2d5c3] last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-display font-bold text-[#3E2C23]">{i.title}</p>
+                    <p className="text-xs text-[#7a6355] mt-0.5">{i.detail}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-[#3E2C23] shrink-0">
+                    {i.amount > 0 ? formatUsd(i.amount) : "Sans frais"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
+            <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Coordonnées du voyageur</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <span className={label}>Prénom</span>
+                <input required placeholder="Roselaine" value={firstName} onChange={e => setFirstName(e.target.value)} className={input} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className={label}>Nom</span>
+                <input required placeholder="Duval" value={lastName} onChange={e => setLastName(e.target.value)} className={input} />
+              </div>
+              <div className="flex flex-col gap-1.5 col-span-2">
+                <span className={label}>Courriel</span>
+                <input required type="email" placeholder="r.duval@exemple.com" value={email} onChange={e => setEmail(e.target.value)} className={input} />
+              </div>
+              <div className="flex flex-col gap-1.5 col-span-2">
+                <span className={label}>Téléphone · WhatsApp</span>
+                <div className="flex gap-2">
+                  <span className="flex items-center px-3.5 rounded-xl border-2 border-[#e2d5c3] bg-white text-sm font-semibold text-[#7a6355]">
+                    +509
+                  </span>
+                  <input required placeholder="3712 4408" value={phone} onChange={e => setPhone(e.target.value)} className={input} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
+            <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Moyen de paiement</h2>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {METHODS.map(m => (
+                <button
+                  type="button"
+                  key={m.id}
+                  onClick={() => setMethod(m.id)}
+                  className={`p-4 rounded-xl border-2 text-left transition-colors ${
+                    method === m.id ? "border-[#002089] bg-[#EAF8FF]" : "border-[#e2d5c3] hover:border-[#002089]"
+                  }`}
+                >
+                  <p className="font-semibold text-sm text-[#3E2C23]">{m.label}</p>
+                  <p className="text-xs text-[#7a6355] mt-0.5">{m.sub}</p>
+                </button>
+              ))}
+            </div>
+
+            {method === "card" && (
+              <div className="grid grid-cols-4 gap-3 mt-4">
+                <div className="col-span-4 flex flex-col gap-1.5">
+                  <span className={label}>Numéro de carte</span>
+                  <input disabled placeholder="—— —— —— ——" className={`${input} opacity-60`} />
+                </div>
+                <div className="col-span-2 flex flex-col gap-1.5">
+                  <span className={label}>MM / AA</span>
+                  <input disabled placeholder="MM / AA" className={`${input} opacity-60`} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className={label}>CVC</span>
+                  <input disabled placeholder="123" className={`${input} opacity-60`} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className={label}>Code postal</span>
+                  <input disabled placeholder="HT" className={`${input} opacity-60`} />
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-[#7a6355] mt-4 bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
+              Passerelle de paiement à confirmer — section 6.1 du spec. Aucun débit réel n'est effectué.
+            </p>
+          </section>
+        </div>
+
+        <aside className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-24">
+          <div className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
+            <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Récapitulatif</h2>
+            <div className="flex flex-col gap-2 text-sm">
+              {(["stay", "car", "restaurant"] as const)
+                .filter(k => items.some(i => i.kind === k))
+                .map(k => (
+                  <div key={k} className="flex items-center justify-between">
+                    <span className="text-[#7a6355]">{KIND_LABEL[k]}</span>
+                    <span className="text-[#3E2C23] font-medium">{formatUsd(byKind(k))}</span>
+                  </div>
+                ))}
+              <div className="border-t border-[#e2d5c3] pt-2.5 mt-1 flex items-center justify-between">
+                <span className="font-display font-bold text-[#3E2C23]">À payer</span>
+                <span className="font-display font-bold text-xl text-[#3E2C23]">{formatUsd(total)}</span>
+              </div>
+              <p className="text-xs text-[#7a6355]">≈ {formatHtg(total, rate)}</p>
+            </div>
+
+            {error && (
+              <p className="text-[13px] text-[#b3261e] bg-[#fdecea] border border-[#f5c2bd] rounded-xl px-3.5 py-2.5 mt-4">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full mt-4 py-3.5 rounded-xl bg-[#e76f2e] hover:bg-[#d05e20] disabled:opacity-50 text-white font-display font-bold text-[15px] shadow-[0_6px_18px_rgba(231,111,46,.3)] transition-colors"
+            >
+              {busy ? "Traitement…" : `Payer ${formatUsd(total)}`}
+            </button>
+
+            <p className="text-xs text-[#7a6355] mt-3 leading-relaxed">
+              Annulation gratuite jusqu'à 24 h avant l'arrivée pour l'hébergement. Chaque prestataire applique sa
+              propre politique.
+            </p>
+            <p className="text-xs text-[#7a6355] mt-2 leading-relaxed">
+              En payant, vous acceptez les conditions générales de PAPOT.
+            </p>
+          </div>
+        </aside>
+      </form>
+    </main>
+  );
+}
