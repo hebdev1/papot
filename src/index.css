@@ -42,3 +42,15 @@ body {
 ::-webkit-scrollbar-thumb { background: #6ad7fb; border-radius: 4px; }
 
 .font-display { font-family: 'Outfit', system-ui, sans-serif; }
+
+/* One-shot entrance for confirmation marks. Replaces an infinite
+   animate-bounce: a success screen should settle, not keep moving.
+   Eased ease-out-quint so it decelerates like a real object. */
+@keyframes papot-pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .papot-pop { animation: none !important; }
+}

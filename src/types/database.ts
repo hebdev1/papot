@@ -201,12 +201,16 @@ export type Database = {
         Args: { p_reference: string }
         Returns: Json
       }
+      submit_partner_application: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
     }
     Enums: {
       application_status: "new" | "reviewing" | "accepted" | "rejected"
       booking_status: "pending" | "confirmed" | "cancelled"
       listing_kind: "stay" | "restaurant" | "car"
-      partner_type: "guesthouse" | "restaurant" | "car"
+      partner_type: "guesthouse" | "restaurant" | "car" | "hotel"
     }
     CompositeTypes: { [_ in never]: never }
   }

@@ -4,7 +4,7 @@ import { AuthProvider } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
-import { PartnerModal } from "./components/PartnerModal";
+import PartnerOnboardingWizard from "./components/PartnerOnboarding";
 import { Home } from "./routes/Home";
 import { Search } from "./routes/Search";
 import { Login } from "./routes/Login";
@@ -77,7 +77,7 @@ function Shell() {
         </Routes>
       </div>
       <Footer />
-      {partnerOpen && <PartnerModal onClose={() => setPartnerOpen(false)} />}
+      {partnerOpen && <PartnerOnboardingWizard onClose={() => setPartnerOpen(false)} />}
     </div>
   );
 }

@@ -21,12 +21,17 @@ const h2 = "font-display text-xl font-bold text-[#002089] mb-4";
 const cta =
   "w-full py-3.5 rounded-xl bg-[#e76f2e] hover:bg-[#d05e20] text-white font-display font-bold text-[15px] shadow-[0_6px_18px_rgba(231,111,46,.3)] transition-colors";
 
-/** Gallery placeholders — the canvas marks every photo as "à fournir". */
-function Gallery({ labels, more }: { labels: string[]; more?: number }) {
+/** Main tile uses the listing photo when there is one; the rest stay
+    placeholders, since the canvas marks the extra shots as "à fournir". */
+function Gallery({ labels, more, img, alt }: { labels: string[]; more?: number; img?: string; alt?: string }) {
   return (
     <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[300px] mb-7">
-      <div className="col-span-2 row-span-2 bg-[#EAF8FF] rounded-2xl flex items-center justify-center text-sm text-[#00508a]">
-        {labels[0]}
+      <div className="col-span-2 row-span-2 bg-[#EAF8FF] rounded-2xl overflow-hidden flex items-center justify-center text-sm text-[#00508a]">
+        {img ? (
+          <img src={img} alt={alt ?? ""} className="w-full h-full object-cover" />
+        ) : (
+          labels[0]
+        )}
       </div>
       {labels.slice(1, 4).map(l => (
         <div key={l} className="bg-[#EAF8FF] rounded-2xl flex items-center justify-center text-xs text-[#00508a]">
@@ -132,7 +137,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
 
   return (
     <>
-      <Gallery labels={["photo principale", "chambre", "terrasse", "jardin"]} more={a.photos_more as number} />
+      <Gallery labels={["photo principale", "chambre", "terrasse", "jardin"]} more={a.photos_more as number} img={listing.img || undefined} alt={listing.name} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -309,7 +314,7 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
 
   return (
     <>
-      <Gallery labels={["photo — salle", "plat", "terrasse", "bar"]} />
+      <Gallery labels={["photo — salle", "plat", "terrasse", "bar"]} img={listing.img || undefined} alt={listing.name} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -512,7 +517,7 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
 
   return (
     <>
-      <Gallery labels={["photo — véhicule", "intérieur", "coffre", "tableau de bord"]} />
+      <Gallery labels={["photo — véhicule", "intérieur", "coffre", "tableau de bord"]} img={listing.img || undefined} alt={listing.name} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         <div className="flex-1 min-w-0 flex flex-col gap-6">
