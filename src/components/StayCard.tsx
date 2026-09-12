@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Icon } from "./Icon";
+import { FavoriteButton } from "./FavoriteButton";
 import { attrsOf, formatRating, isSoldOut, type ListingRow } from "../lib/listings";
 import { formatHtg, formatUsd } from "../lib/currency";
 
@@ -34,6 +35,7 @@ export function StayCard({
             {listing.badge}
           </div>
         )}
+        <FavoriteButton listingId={listing.id} className="absolute top-3 right-3" />
       </div>
 
       <div className="flex-1 p-5 flex flex-col justify-between gap-3">

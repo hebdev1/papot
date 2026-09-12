@@ -25,67 +25,6 @@ import { bookingIsPast, bookingIsUpcoming, formatRange, useMyBookings } from "..
  * misrepresent what the product can do.
  */
 
-export function PanelTrips() {
-  const { bookings, loading } = useMyBookings();
-  const upcoming = useMemo(() => bookings.filter(bookingIsUpcoming), [bookings]);
-  const past = useMemo(() => bookings.filter(bookingIsPast), [bookings]);
-
-  return (
-    <>
-      <PageHeader
-        title="Mes voyages"
-        subtitle="Vos réservations regroupées par séjour."
-      />
-
-      {!loading && upcoming.length === 0 && past.length === 0 ? (
-        <EmptyState
-          icon={Luggage}
-          title="Aucun voyage pour le moment"
-          body="Vos futures aventures apparaîtront ici."
-          action={{ label: "Explorer les hébergements", to: "/search?kind=stay" }}
-        />
-      ) : (
-        <div className="flex flex-col gap-4">
-          {[...upcoming, ...past].map(b => {
-            const first = b.items[0];
-            const dates = formatRange(
-              b.items.map(i => i.starts_on).filter(Boolean).sort()[0] ?? null,
-              b.items.map(i => i.ends_on ?? i.starts_on).filter(Boolean).sort().reverse()[0] ?? null,
-            );
-            return (
-              <Link
-                key={b.id}
-                to={`/compte/reservations/${b.reference}`}
-                className="flex items-center gap-4 rounded-2xl border border-[#e2d5c3] bg-white p-4 transition-shadow hover:shadow-md"
-              >
-                <div className="h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-[#EAF8FF]">
-                  {first?.img && <img src={first.img} alt="" className="h-full w-full object-cover" />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#7a6355]">
-                    {first?.city ?? "Voyage"}
-                  </p>
-                  <p className="font-display text-lg font-bold leading-tight text-[#3E2C23]">{dates || "Dates à venir"}</p>
-                  <p className="mt-0.5 text-[13px] text-[#7a6355]">
-                    {b.items.length} réservation{b.items.length > 1 ? "s" : ""} · {formatUsd(Number(b.total))}
-                  </p>
-                </div>
-                <StatusBadge status={b.status} />
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      <Note>
-        Le regroupement automatique en itinéraire (chronologie jour par jour) arrive avec la table
-        <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">trips</code>
-        — pour l'instant chaque paiement forme un voyage.
-      </Note>
-    </>
-  );
-}
-
 export function PanelPayments() {
   const { bookings, loading } = useMyBookings();
   const paid = bookings
@@ -143,24 +82,6 @@ export function PanelPayments() {
       <Note>
         Moyens de paiement enregistrés, remboursements et factures PDF nécessitent la passerelle de
         paiement (section 6.1 du spec), encore à confirmer.
-      </Note>
-    </>
-  );
-}
-
-export function PanelFavorites() {
-  return (
-    <>
-      <PageHeader title="Favoris" subtitle="Les lieux que vous avez sauvegardés." />
-      <EmptyState
-        icon={Heart}
-        title="Sauvegardez les lieux que vous aimez"
-        body="Touchez le cœur pendant votre navigation pour les retrouver ici."
-        action={{ label: "Commencer à explorer", to: "/search?kind=stay" }}
-      />
-      <Note>
-        Nécessite une table <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">favorites</code>
-        (client → annonce) et des collections nommées.
       </Note>
     </>
   );

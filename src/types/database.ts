@@ -56,6 +56,18 @@ export type Database = {
         Update: Partial<{ base: string; quote: string; rate: number; updated_at: string }>
         Relationships: []
       }
+      favorite_collections: {
+        Row: { id: string; user_id: string; name: string; created_at: string }
+        Insert: { id?: string; user_id: string; name: string; created_at?: string }
+        Update: Partial<Database["public"]["Tables"]["favorite_collections"]["Insert"]>
+        Relationships: []
+      }
+      favorites: {
+        Row: { user_id: string; listing_id: string; collection_id: string | null; created_at: string }
+        Insert: { user_id: string; listing_id: string; collection_id?: string | null; created_at?: string }
+        Update: Partial<Database["public"]["Tables"]["favorites"]["Insert"]>
+        Relationships: []
+      }
       listing_units: {
         Row: { id: string; listing_id: string; name: string; detail: string; price: number | null; available: boolean; position: number }
         Insert: { id?: string; listing_id: string; name: string; detail: string; price?: number | null; available?: boolean; position?: number }
@@ -206,6 +218,10 @@ export type Database = {
         Returns: Json
       }
       my_bookings: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      my_trips: {
         Args: Record<string, never>
         Returns: Json
       }

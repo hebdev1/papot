@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
+import { FavoritesProvider } from "./lib/favorites";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import PartnerOnboardingWizard from "./components/PartnerOnboarding";
@@ -19,9 +20,11 @@ import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
 import { PanelBookingDetail } from "./routes/panel/PanelBookingDetail";
 import {
-  PanelFavorites, PanelMessages, PanelNotifications, PanelPayments,
-  PanelProfile, PanelReviews, PanelSupport, PanelTrips,
+  PanelMessages, PanelNotifications, PanelPayments,
+  PanelProfile, PanelReviews, PanelSupport,
 } from "./routes/panel/PanelStubs";
+import { PanelTripDetail, PanelTripsPage } from "./routes/panel/PanelTripsPage";
+import { PanelFavoritesPage } from "./routes/panel/PanelFavoritesPage";
 import { useAuth } from "./lib/auth";
 
 /** Routes that render their own full-page layout, without the site chrome. */
@@ -67,10 +70,11 @@ function Shell() {
         <Routes>
           <Route path="/compte" element={<PanelLayout />}>
             <Route index element={<PanelHome />} />
-            <Route path="voyages" element={<PanelTrips />} />
+            <Route path="voyages" element={<PanelTripsPage />} />
+            <Route path="voyages/:id" element={<PanelTripDetail />} />
             <Route path="reservations" element={<PanelBookings />} />
             <Route path="reservations/:reference" element={<PanelBookingDetail />} />
-            <Route path="favoris" element={<PanelFavorites />} />
+            <Route path="favoris" element={<PanelFavoritesPage />} />
             <Route path="messages" element={<PanelMessages />} />
             <Route path="paiements" element={<PanelPayments />} />
             <Route path="avis" element={<PanelReviews />} />
@@ -135,10 +139,12 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Shell />
-        </BrowserRouter>
+        <FavoritesProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <Shell />
+          </BrowserRouter>
+        </FavoritesProvider>
       </CartProvider>
     </AuthProvider>
   );

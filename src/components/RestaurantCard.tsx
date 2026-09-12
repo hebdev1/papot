@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { FavoriteButton } from "./FavoriteButton";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 
 /** Canvas 3a — restaurant card with tonight's slots. */
@@ -9,6 +10,7 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
   return (
     <article className="snap-start shrink-0 w-[268px] bg-white rounded-2xl overflow-hidden border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.08)] transition-all duration-300 flex flex-col">
       <div className="relative h-36 bg-[#EAF8FF] flex items-center justify-center">
+        <FavoriteButton listingId={listing.id} className="absolute top-3 right-3 z-10" />
         {listing.img ? (
           <img src={listing.img} alt={listing.name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
