@@ -12,6 +12,19 @@ import type { PartnerType, WizardState } from "../components/PartnerOnboarding";
 
 const DAY_ORDER = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+/**
+ * The wizard tracks amenities by their French label; the database keys them by
+ * code. Both sides derive the code from the label the same way, so there is no
+ * lookup table to drift out of sync.
+ */
+export const amenitySlug = (label: string) =>
+  label
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
 const CANCELLATION: Record<string, string> = {
   "Gratuite jusqu'à 2h avant": "free_2h",
   "Gratuite jusqu'à 24h avant": "free_24h",
@@ -117,7 +130,7 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
       accountNum: pick(f.accountNum, f.mobileNum),
     },
 
-    amenities: state.amenities,
+    amenities: state.amenities.map(amenitySlug),
 
     rooms: isLodging
       ? state.rooms.map(r => ({

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type React from "react";
 import { supabase } from "../lib/supabase";
 import { buildPayload } from "../lib/partnerPayload";
+import { validateStep } from "../lib/partnerValidation";
+import { PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
 
 /* ─── TYPES ─────────────────────────────────────────── */
 export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant" | null;
@@ -14,6 +16,7 @@ export type WizardState = {
   rooms: RoomItem[];
   vehicles: VehicleItem[];
   autosaveStatus: "saved" | "saving";
+  photos: File[];
 };
 
 type RoomItem = { id: number; name: string; type: string; capacity: string; beds: string; price: string; units: string };
@@ -177,15 +180,59 @@ function AmenityCard({ label, emoji, checked, onToggle }: {
   );
 }
 
-function UploadZone({ label, hint }: { label: string; hint?: string }) {
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const isAcceptedPhoto = (f: File) =>
+  (f.type === "image/jpeg" || f.type === "image/png") && f.size <= MAX_PHOTO_BYTES;
+
+/** Drop zone wired to a real (visually hidden) file input. */
+function UploadZone({
+  label,
+  hint,
+  files,
+  onFiles,
+  multiple = true,
+}: {
+  label: string;
+  hint?: string;
+  files?: File[];
+  onFiles?: (f: File[]) => void;
+  multiple?: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const take = (list: FileList | null) => {
+    const picked = Array.from(list ?? []).filter(isAcceptedPhoto);
+    if (picked.length) onFiles?.(multiple ? picked : picked.slice(0, 1));
+  };
+
   return (
-    <div className="border-2 border-dashed border-[#c8b9a5] hover:border-[#6ad7fb] rounded-xl p-8 text-center cursor-pointer transition-colors group">
+    <div
+      onClick={() => input.current?.click()}
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => {
+        e.preventDefault();
+        take(e.dataTransfer.files);
+      }}
+      className="border-2 border-dashed border-[#c8b9a5] hover:border-[#6ad7fb] rounded-xl p-8 text-center cursor-pointer transition-colors group"
+    >
+      <input
+        ref={input}
+        type="file"
+        hidden
+        multiple={multiple}
+        accept="image/jpeg,image/png"
+        onChange={e => take(e.target.files)}
+      />
       <div className="w-12 h-12 rounded-full bg-[#F5E9D8] flex items-center justify-center mx-auto mb-3 text-[#7a6355] group-hover:text-[#002089] transition-colors">
         <Ico.Upload />
       </div>
       <p className="text-sm font-semibold text-[#3E2C23]">{label}</p>
       <p className="text-xs text-[#7a6355] mt-1">Glissez vos fichiers ici ou <span className="text-[#e76f2e] font-semibold">parcourir</span></p>
       {hint && <p className="text-xs text-[#b0a090] mt-1">{hint}</p>}
+      {files && files.length > 0 && (
+        <p className="text-xs font-semibold text-[#15803d] mt-2">
+          {files.length} fichier{files.length > 1 ? "s" : ""} sélectionné{files.length > 1 ? "s" : ""}
+        </p>
+      )}
     </div>
   );
 }
@@ -851,7 +898,7 @@ function StepScheduleOrOptions({ partnerType, hours, setHours, data, onChange }:
   return null;
 }
 
-function StepPhotos({ partnerType }: { partnerType: PartnerType }) {
+function StepPhotos({ partnerType, photos, onPhotos }: { partnerType: PartnerType; photos: File[]; onPhotos: (f: File[]) => void }) {
   const tips: Record<string, string[]> = {
     hotel: ["Extérieur", "Lobby", "Chambres", "Salles de bain", "Piscine", "Restaurant", "Vues"],
     guesthouse: ["Extérieur", "Chambres", "Salles de bain", "Cuisine", "Salon", "Jardin", "Vues"],
@@ -870,9 +917,9 @@ function StepPhotos({ partnerType }: { partnerType: PartnerType }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-6">
         <div className="space-y-4">
-          <UploadZone label="Télécharger des photos" hint="JPG, PNG · Max 10 Mo par photo · Min. recommandé : 5" />
-          <UploadZone label="Photo de couverture" hint="Cette image apparaît en tête de votre annonce" />
-          <UploadZone label="Logo de l'établissement" hint="PNG transparent recommandé · Carré · 400×400 px min." />
+          <UploadZone files={photos} onFiles={f => onPhotos([...photos, ...f])} label="Télécharger des photos" hint="JPG, PNG · Max 10 Mo par photo · Min. recommandé : 5" />
+          <UploadZone multiple={false} onFiles={f => onPhotos([...photos, ...f])} label="Photo de couverture" hint="Cette image apparaît en tête de votre annonce" />
+          <UploadZone multiple={false} onFiles={f => onPhotos([...photos, ...f])} label="Logo de l'établissement" hint="PNG transparent recommandé · Carré · 400×400 px min." />
           <div className="grid grid-cols-3 gap-3">
             {["#F5E9D8", "#E5D9C8", "#EAF8FF"].map((bg, i) => (
               <div key={i} className="aspect-square rounded-xl border-2 border-[#e2d5c3] flex items-center justify-center" style={{ background: bg }}>
@@ -1163,12 +1210,13 @@ function StepSuccess({ onDashboard, onPreview, onAdd }: { onDashboard: () => voi
 /* ─── WIZARD SHELL ───────────────────────────────────── */
 function WizardShell({
   step, totalSteps, stepName, onExit, onBack, onContinue,
-  continueLabel, canContinue, autosave, isFirstStep, isLastStep, children,
+  continueLabel, canContinue, autosave, isFirstStep, isLastStep, missing = [], children,
 }: {
   step: number; totalSteps: number; stepName: string;
   onExit: () => void; onBack: () => void; onContinue: () => void;
   continueLabel: string; canContinue: boolean;
   autosave: "saved" | "saving"; isFirstStep: boolean; isLastStep: boolean;
+  missing?: string[];
   children: React.ReactNode;
 }) {
   // Welcome sits before the counted range and success past it; neither shows progress.
@@ -1235,10 +1283,17 @@ function WizardShell({
               Enregistrer et quitter
             </button>
           </div>
-          <button onClick={onContinue} disabled={!canContinue}
-            className="flex items-center gap-2 bg-[#e76f2e] hover:bg-[#d05e20] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-2.5 rounded-xl transition-colors shadow-lg shadow-[rgba(231,111,46,0.3)] text-sm">
-            {continueLabel} <Ico.ArrowRight />
-          </button>
+          <div className="flex items-center gap-4 min-w-0">
+            {missing.length > 0 && (
+              <p className="hidden md:block text-xs text-[#b3261e] text-right truncate max-w-md">
+                À compléter : {missing.join(" · ")}
+              </p>
+            )}
+            <button onClick={onContinue} disabled={!canContinue}
+              className="shrink-0 flex items-center gap-2 bg-[#e76f2e] hover:bg-[#d05e20] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-2.5 rounded-xl transition-colors shadow-lg shadow-[rgba(231,111,46,0.3)] text-sm">
+              {continueLabel} <Ico.ArrowRight />
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -1287,6 +1342,7 @@ export default function PartnerOnboardingWizard({
     rooms: [],
     vehicles: [],
     autosaveStatus: "saved",
+    photos: [],
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -1316,6 +1372,10 @@ export default function PartnerOnboardingWizard({
   const countedTotal = steps.length - 2; // welcome and success are not counted
   const isWelcome = current === "welcome";
   const isSuccess = current === "success";
+
+  // Nothing may be skipped: Continue stays locked until the step is complete.
+  const missing = partnerType || current === "type" ? validateStep(current, partnerType, state) : [];
+  const stepComplete = missing.length === 0;
 
   const go = (delta: number) =>
     setState(p => ({ ...p, step: Math.max(0, Math.min(p.step + delta, steps.length - 1)) }));
@@ -1349,8 +1409,21 @@ export default function PartnerOnboardingWizard({
         if (error) console.warn("Partner account creation skipped:", error.message);
       }
 
+      // Upload first so the application row lands with its photo paths.
+      const folder = crypto.randomUUID();
+      const paths: string[] = [];
+      for (const [i, file] of state.photos.entries()) {
+        const ext = file.type === "image/png" ? "png" : "jpg";
+        const path = `${folder}/${i}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from(PARTNER_PHOTOS_BUCKET)
+          .upload(path, file, { contentType: file.type });
+        if (upErr) throw upErr;
+        paths.push(path);
+      }
+
       const { error } = await supabase.rpc("submit_partner_application", {
-        p_payload: buildPayload(partnerType, state),
+        p_payload: { ...buildPayload(partnerType, state), photos: paths },
       });
       if (error) throw error;
 
@@ -1400,7 +1473,14 @@ export default function PartnerOnboardingWizard({
             data={formData} onChange={updateForm}
           />
         );
-      case "photos":       return <StepPhotos partnerType={partnerType} />;
+      case "photos":
+        return (
+          <StepPhotos
+            partnerType={partnerType}
+            photos={state.photos}
+            onPhotos={f => setState(p => ({ ...p, photos: f }))}
+          />
+        );
       case "policies":     return <StepPolicies data={formData} onChange={updateForm} />;
       case "verification": return <StepVerification partnerType={partnerType} />;
       case "payout":       return <StepPayout data={formData} onChange={updateForm} />;
@@ -1424,7 +1504,7 @@ export default function PartnerOnboardingWizard({
             onAdd={() =>
               setState({
                 step: 0, partnerType: null, formData: {}, amenities: [],
-                hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved",
+                hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved", photos: [],
               })
             }
           />
@@ -1443,10 +1523,11 @@ export default function PartnerOnboardingWizard({
       continueLabel={
         current === "submit" ? (submitting ? "Envoi…" : "Soumettre pour révision") : "Continuer"
       }
-      canContinue={(current === "type" ? !!partnerType : true) && !submitting}
+      canContinue={stepComplete && !submitting}
       autosave={submitting ? "saving" : state.autosaveStatus}
       isFirstStep={isWelcome}
       isLastStep={isSuccess}
+      missing={missing}
     >
       {renderStep()}
     </WizardShell>
