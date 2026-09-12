@@ -43,9 +43,9 @@ body {
 
 .font-display { font-family: 'Outfit', system-ui, sans-serif; }
 
-/* One-shot entrance for confirmation marks. Replaces an infinite
-   animate-bounce: a success screen should settle, not keep moving.
-   Eased ease-out-quint so it decelerates like a real object. */
+/* One-shot entrance for confirmation marks. A success screen should settle
+   rather than keep moving, so this runs once and stops. Paired with
+   ease-out-quint at the call site, it decelerates like a real object. */
 @keyframes papot-pop {
   from { transform: scale(0.7); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
