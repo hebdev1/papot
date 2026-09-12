@@ -3,6 +3,30 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
 
+/**
+ * Plain language, never a code (spec §41). The rate-limit case is worth its
+ * own message: it is a project-level email quota, not anything the visitor
+ * did, so telling them to "try again" without a delay would just loop them.
+ */
+function signupMessage(error: { message: string; code?: string }): string {
+  const code = error.code ?? "";
+  const msg = error.message.toLowerCase();
+
+  if (code === "over_email_send_rate_limit" || msg.includes("rate limit")) {
+    return "Nous ne pouvons pas envoyer de courriel de confirmation pour le moment. Réessayez dans une heure.";
+  }
+  if (code === "email_address_invalid" || msg.includes("is invalid")) {
+    return "Cette adresse courriel n'est pas acceptée. Vérifiez l'orthographe ou utilisez une autre adresse.";
+  }
+  if (code === "user_already_exists" || msg.includes("already")) {
+    return "Un compte existe déjà pour cette adresse.";
+  }
+  if (code === "weak_password") {
+    return "Ce mot de passe est trop faible. Ajoutez un chiffre et une majuscule.";
+  }
+  return "La création du compte a échoué. Réessayez.";
+}
+
 const LOCALES = [
   { id: "fr", label: "Français" },
   { id: "ht", label: "Kreyòl" },
@@ -49,11 +73,7 @@ export function Signup() {
 
     setBusy(false);
     if (error) {
-      setError(
-        error.message.toLowerCase().includes("already")
-          ? "Un compte existe déjà pour cette adresse."
-          : "La création du compte a échoué. Réessayez.",
-      );
+      setError(signupMessage(error));
       return;
     }
     navigate(`/verifiez-votre-courriel?email=${encodeURIComponent(email.trim())}`);

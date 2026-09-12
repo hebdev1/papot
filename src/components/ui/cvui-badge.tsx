@@ -1,19 +1,22 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { motion, useReducedMotion } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
 
 /**
  * The badge for the whole site.
  *
- * API is the supplied component's, unchanged. Two adaptations:
+ * API is the supplied component's, unchanged. Adaptations:
  *
- * 1. Palette — the original hardcoded `#11111198` greys, which would read as
- *    foreign against PAPOT's blue/orange/cream. Variants now resolve to the
- *    project's own tokens.
- * 2. `animate` — the entrance animation is lovely on a single badge and
- *    becomes noise when twenty of them blur in at once, so dense lists can
- *    opt out. Reduced-motion preferences are always honoured.
+ * 1. Palette — the original hardcoded `#11111198` greys would read as foreign
+ *    against PAPOT's blue/orange/cream, so variants resolve to project tokens.
+ * 2. Motion is CSS, not framer-motion. The library cost 39 kB gzipped for an
+ *    entrance and a hover tint; keyframes plus a Tailwind hover class give the
+ *    same result for nothing, and animate only composited properties so a list
+ *    of badges never triggers layout. `prefers-reduced-motion` is honoured in
+ *    index.css, and the entrance carries no fill-mode, so a badge stays
+ *    visible even if its animation never runs.
+ * 3. `animate` — the entrance is pleasant on a single badge and becomes noise
+ *    when twenty appear at once, so dense lists opt out.
  */
 type BadgeProps = {
   label: string;
@@ -65,21 +68,21 @@ const VARIANTS = {
   },
 } as const;
 
+/** Hover tint per variant, so a solid badge darkens rather than turning grey. */
+const HOVER = {
+  primary: { solid: "hover:bg-[#001b6e]", outline: "hover:bg-[#EAF8FF]", subtle: "hover:bg-[#d8f0fb]" },
+  secondary: { solid: "hover:bg-[#2e1f18]", outline: "hover:bg-[#F5E9D8]", subtle: "hover:bg-[#eeddc6]" },
+  success: { solid: "hover:bg-[#126c34]", outline: "hover:bg-green-50", subtle: "hover:bg-green-100" },
+  warning: { solid: "hover:bg-amber-600", outline: "hover:bg-amber-50", subtle: "hover:bg-amber-100" },
+  error: { solid: "hover:bg-[#961f19]", outline: "hover:bg-red-50", subtle: "hover:bg-red-100" },
+  info: { solid: "hover:bg-[#d05e20]", outline: "hover:bg-[#FDEBE0]", subtle: "hover:bg-[#fbdcca]" },
+} as const;
+
 const SIZES = {
   small: "text-[11px] px-2 py-1 gap-1.5",
   medium: "text-xs px-2.5 py-1 gap-1.5",
   large: "text-sm px-3.5 py-2 gap-2",
 } as const;
-
-/** Hover tint per variant, so solid badges darken rather than turning grey. */
-const HOVER_TINT: Record<keyof typeof VARIANTS, string> = {
-  primary: "#001b6e",
-  secondary: "#2e1f18",
-  success: "#126c34",
-  warning: "#d97706",
-  error: "#961f19",
-  info: "#d05e20",
-};
 
 export const Badge = ({
   label,
@@ -96,8 +99,7 @@ export const Badge = ({
   animate = true,
   title,
 }: BadgeProps) => {
-  const reduceMotion = useReducedMotion();
-  const motionOn = animate && !reduceMotion;
+  const interactive = !!onClick;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -109,22 +111,8 @@ export const Badge = ({
     onRemove?.();
   };
 
-  const interactive = !!onClick;
-
   return (
-    <motion.div
-      initial={motionOn ? { opacity: 0, scale: 0.95, y: 6 } : false}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: "easeOut" }}
-      whileHover={
-        interactive && !reduceMotion
-          ? {
-              scale: 1.04,
-              backgroundColor: appearance === "solid" ? HOVER_TINT[variant] : undefined,
-              transition: { duration: 0.18, ease: "easeOut" },
-            }
-          : undefined
-      }
+    <div
       onClick={interactive ? handleClick : undefined}
       style={{ maxWidth }}
       title={title}
@@ -141,22 +129,23 @@ export const Badge = ({
           : undefined
       }
       className={cn(
-        "inline-flex items-center rounded-xl font-semibold align-middle shadow-sm",
+        "inline-flex items-center rounded-xl align-middle font-semibold shadow-sm",
         VARIANTS[variant][appearance],
         SIZES[size],
-        interactive &&
-          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6ad7fb] focus-visible:ring-offset-1",
+        animate && "papot-badge-in",
+        interactive && [
+          "cursor-pointer transition-[background-color,transform] duration-200 ease-out",
+          "hover:scale-[1.04]",
+          HOVER[variant][appearance],
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6ad7fb] focus-visible:ring-offset-1",
+        ],
         className,
       )}
     >
       {isLoading ? (
-        <motion.span
-          animate={reduceMotion ? undefined : { rotate: 360 }}
-          transition={{ duration: 1, ease: "linear", repeat: Infinity }}
-          className="flex shrink-0"
-        >
+        <span className="papot-spin flex shrink-0">
           <Loader2 className="h-3.5 w-3.5" aria-hidden />
-        </motion.span>
+        </span>
       ) : (
         icon && <span className="flex shrink-0 items-center">{icon}</span>
       )}
@@ -164,20 +153,19 @@ export const Badge = ({
       <span className="truncate">{label}</span>
 
       {removable && (
-        <motion.button
+        <button
           type="button"
           aria-label={`Retirer ${label}`}
-          whileHover={reduceMotion ? undefined : { scale: 1.12 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          onClick={handleRemove}
           className={cn(
-            "-mr-0.5 ml-0.5 flex shrink-0 items-center justify-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100",
+            "-mr-0.5 ml-0.5 flex shrink-0 items-center justify-center rounded-full p-0.5 opacity-70",
+            "transition-[opacity,transform] duration-150 ease-out hover:scale-110 hover:opacity-100",
             appearance === "solid" ? "hover:bg-white/20" : "hover:bg-black/5",
           )}
-          onClick={handleRemove}
         >
           <X className="h-3 w-3" aria-hidden />
-        </motion.button>
+        </button>
       )}
-    </motion.div>
+    </div>
   );
 };

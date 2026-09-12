@@ -51,6 +51,29 @@ body {
   to   { transform: scale(1);   opacity: 1; }
 }
 
+/* Badge entrance, replacing a framer-motion spring. Animates transform only,
+   so it is composited and a list of badges never triggers layout.
+
+   Transform only, and no fill-mode, so no state of this animation can hide
+   the badge. An entrance that faded in from opacity 0 would leave the badge
+   invisible wherever the animation does not advance — a background tab whose
+   document timeline is frozen, a print render — and a rating or "2 dernieres
+   unites" badge going missing costs far more than the fade is worth.
+   Decoration must never be able to hide content. */
+@keyframes papot-badge-in {
+  from { transform: scale(0.95) translateY(6px); }
+  to   { transform: none; }
+}
+.papot-badge-in {
+  animation: papot-badge-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Spinner for the badge's loading state. */
+@keyframes papot-spin { to { transform: rotate(360deg); } }
+.papot-spin { animation: papot-spin 1s linear infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .papot-pop { animation: none !important; }
+  .papot-pop,
+  .papot-badge-in,
+  .papot-spin { animation: none !important; }
 }
