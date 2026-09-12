@@ -205,6 +205,10 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      my_bookings: {
+        Args: Record<string, never>
+        Returns: Json
+      }
     }
     Enums: {
       application_status: "new" | "reviewing" | "accepted" | "rejected"

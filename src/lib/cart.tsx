@@ -13,6 +13,11 @@ export type CartItem = {
   title: string;
   detail: string;
   amount: number;
+  /** Structured dates, so the customer panel can compute countdowns. */
+  starts_on?: string | null;
+  ends_on?: string | null;
+  start_time?: string | null;
+  party?: number | null;
 };
 
 type CartValue = {

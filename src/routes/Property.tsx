@@ -131,6 +131,9 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
       title: `${listing.name}${selected ? ` · ${selected.name}` : ""}`,
       detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${nights} nuits · 2 adultes`,
       amount: total,
+      starts_on: CHECKIN,
+      ends_on: CHECKOUT,
+      party: 2,
     });
     navigate(`/checkout/${listing.id}`);
   };
@@ -308,6 +311,9 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
       title: listing.name,
       detail: `12 oct., ${slot} · ${party} convives · ${zone.toLowerCase()}`,
       amount: 0, // "Réservation — Gratuite"
+      starts_on: CHECKIN,
+      start_time: slot ? `${slot}:00` : null,
+      party,
     });
     navigate(`/checkout/${listing.id}`);
   };
@@ -511,6 +517,9 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
       title: listing.name,
       detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${pickups[pickupIdx]?.name ?? "retrait"} 09:00`,
       amount: total,
+      starts_on: CHECKIN,
+      ends_on: CHECKOUT,
+      start_time: "09:00:00",
     });
     navigate(`/checkout/${listing.id}`);
   };

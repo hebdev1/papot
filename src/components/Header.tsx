@@ -12,7 +12,7 @@ const NAV = [
 ];
 
 export function Header({ onPartner }: { onPartner?: () => void }) {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
     <header className="bg-[#002089] sticky top-0 z-40 shadow-lg shadow-[rgba(0,32,137,0.3)]">
@@ -50,12 +50,12 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
             </button>
           )}
           {user ? (
-            <button
-              onClick={signOut}
+            <Link
+              to="/compte"
               className="flex items-center gap-2 text-sm text-white font-semibold px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
             >
-              <Icon.Users /> Se déconnecter
-            </button>
+              <Icon.Users /> Mon compte
+            </Link>
           ) : (
             <>
               <Link

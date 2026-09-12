@@ -72,6 +72,11 @@ export function Checkout() {
           title: i.title,
           detail: i.detail,
           amount: i.amount,
+          // Structured dates let the customer panel compute countdowns.
+          starts_on: i.starts_on ?? null,
+          ends_on: i.ends_on ?? null,
+          start_time: i.start_time ?? null,
+          party: i.party ?? null,
         })),
       },
     });

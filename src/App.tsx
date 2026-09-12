@@ -14,6 +14,15 @@ import { CheckEmail } from "./routes/CheckEmail";
 import { Property } from "./routes/Property";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
+import { PanelLayout } from "./components/panel/PanelLayout";
+import { PanelHome } from "./routes/panel/PanelHome";
+import { PanelBookings } from "./routes/panel/PanelBookings";
+import { PanelBookingDetail } from "./routes/panel/PanelBookingDetail";
+import {
+  PanelFavorites, PanelMessages, PanelNotifications, PanelPayments,
+  PanelProfile, PanelReviews, PanelSupport, PanelTrips,
+} from "./routes/panel/PanelStubs";
+import { useAuth } from "./lib/auth";
 
 /** Routes that render their own full-page layout, without the site chrome. */
 const BARE_ROUTES = [
@@ -51,6 +60,32 @@ function Shell() {
 
   const bare = BARE_ROUTES.includes(pathname);
 
+  // The customer panel carries its own sidebar/header and sits behind auth.
+  if (pathname.startsWith("/compte")) {
+    return (
+      <RequireAuth>
+        <Routes>
+          <Route path="/compte" element={<PanelLayout />}>
+            <Route index element={<PanelHome />} />
+            <Route path="voyages" element={<PanelTrips />} />
+            <Route path="reservations" element={<PanelBookings />} />
+            <Route path="reservations/:reference" element={<PanelBookingDetail />} />
+            <Route path="favoris" element={<PanelFavorites />} />
+            <Route path="messages" element={<PanelMessages />} />
+            <Route path="paiements" element={<PanelPayments />} />
+            <Route path="avis" element={<PanelReviews />} />
+            <Route path="notifications" element={<PanelNotifications />} />
+            <Route path="aide" element={<PanelSupport />} />
+            <Route path="profil" element={<PanelProfile />} />
+            <Route path="parametres" element={<PanelProfile />} />
+            <Route path="recherche" element={<Navigate to="/search?kind=stay" replace />} />
+            <Route path="*" element={<Navigate to="/compte" replace />} />
+          </Route>
+        </Routes>
+      </RequireAuth>
+    );
+  }
+
   if (bare) {
     return (
       <Routes>
@@ -80,6 +115,20 @@ function Shell() {
       {partnerOpen && <PartnerOnboardingWizard onClose={() => setPartnerOpen(false)} />}
     </div>
   );
+}
+
+/** Signed-out visitors are sent to login rather than shown an empty panel. */
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-content-center bg-[#FBF7F0] text-sm text-[#7a6355]">
+        Chargement…
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
 export default function App() {
