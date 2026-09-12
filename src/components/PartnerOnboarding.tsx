@@ -3,7 +3,7 @@ import type React from "react";
 import { supabase } from "../lib/supabase";
 import { buildPayload } from "../lib/partnerPayload";
 import { validateStep } from "../lib/partnerValidation";
-import { PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
+import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
 
 /* ─── TYPES ─────────────────────────────────────────── */
 export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant" | null;
@@ -17,6 +17,7 @@ export type WizardState = {
   vehicles: VehicleItem[];
   autosaveStatus: "saved" | "saving";
   photos: File[];
+  documents: Record<string, File>;
 };
 
 type RoomItem = { id: number; name: string; type: string; capacity: string; beds: string; price: string; units: string };
@@ -237,14 +238,18 @@ function UploadZone({
   );
 }
 
-function DocUploadCard({ label, status, required }: {
-  label: string; status: "none" | "uploaded" | "review" | "verified"; required?: boolean;
+const MAX_DOC_BYTES = 10 * 1024 * 1024;
+const isAcceptedDoc = (f: File) =>
+  ["application/pdf", "image/jpeg", "image/png"].includes(f.type) && f.size <= MAX_DOC_BYTES;
+
+function DocUploadCard({ label, required, file, onFile }: {
+  label: string; required?: boolean; file?: File; onFile?: (f: File) => void;
 }) {
+  const input = useRef<HTMLInputElement>(null);
+  const status: "none" | "uploaded" = file ? "uploaded" : "none";
   const statusConfig = {
     none: { label: "Non téléchargé", color: "text-[#b0a090]", bg: "bg-gray-50", dot: "bg-gray-300" },
     uploaded: { label: "Téléchargé", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-400" },
-    review: { label: "En cours d'examen", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-400" },
-    verified: { label: "Vérifié", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-400" },
   }[status];
   return (
     <div className="bg-white border border-[#e2d5c3] rounded-xl p-4 flex items-center justify-between gap-4">
@@ -254,8 +259,21 @@ function DocUploadCard({ label, status, required }: {
           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`}/>
           {statusConfig.label}
         </span>
+        {file && <p className="text-[11px] text-[#7a6355] mt-1 truncate">{file.name}</p>}
       </div>
-      <button className="shrink-0 border-2 border-[#e2d5c3] hover:border-[#6ad7fb] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#7a6355] hover:text-[#002089] transition-colors flex items-center gap-1.5">
+      <button
+        onClick={() => input.current?.click()}
+        className="shrink-0 border-2 border-[#e2d5c3] hover:border-[#6ad7fb] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#7a6355] hover:text-[#002089] transition-colors flex items-center gap-1.5">
+        <input
+          ref={input}
+          type="file"
+          hidden
+          accept="application/pdf,image/jpeg,image/png"
+          onChange={e => {
+            const f = e.target.files?.[0];
+            if (f && isAcceptedDoc(f)) onFile?.(f);
+          }}
+        />
         <Ico.Upload />{status === "none" ? "Télécharger" : "Remplacer"}
       </button>
     </div>
@@ -980,20 +998,46 @@ function StepPolicies({ data, onChange }: { data: Record<string, string>; onChan
   );
 }
 
-function StepVerification({ partnerType }: { partnerType: PartnerType }) {
-  const shared = [
-    { label: "Pièce d'identité / Passeport", required: true },
-    { label: "Registre du commerce / Carte d'identité fiscale", required: true },
-    { label: "Justificatif de domicile", required: false },
-    { label: "NIF / Numéro fiscal", required: true },
-    { label: "Licence commerciale", required: false },
-  ];
-  const specific: Record<string, { label: string; required: boolean }[]> = {
-    hotel: [{ label: "Licence d'hébergement touristique", required: true }],
-    guesthouse: [{ label: "Licence d'hébergement touristique", required: true }],
-    car: [{ label: "Carte grise du véhicule", required: true }, { label: "Attestation d'assurance du véhicule", required: true }, { label: "Contrôle technique", required: false }],
-    restaurant: [{ label: "Autorisation sanitaire", required: true }, { label: "Licence de restauration", required: true }],
-  };
+/** Slug must match partner_document_types.code in the database. */
+export const docSlug = (label: string) =>
+  label.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+       .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+
+const DOCS_SHARED = [
+  { label: "Pièce d'identité / Passeport", required: true },
+  { label: "Registre du commerce / Carte d'identité fiscale", required: true },
+  { label: "Justificatif de domicile", required: false },
+  { label: "NIF / Numéro fiscal", required: true },
+  { label: "Licence commerciale", required: false },
+];
+
+const DOCS_SPECIFIC: Record<string, { label: string; required: boolean }[]> = {
+  hotel: [{ label: "Licence d'hébergement touristique", required: true }],
+  guesthouse: [{ label: "Licence d'hébergement touristique", required: true }],
+  car: [
+    { label: "Carte grise du véhicule", required: true },
+    { label: "Attestation d'assurance du véhicule", required: true },
+    { label: "Contrôle technique", required: false },
+  ],
+  restaurant: [
+    { label: "Autorisation sanitaire", required: true },
+    { label: "Licence de restauration", required: true },
+  ],
+};
+
+/** Every document this vertical can supply, required ones flagged. */
+export const documentsFor = (t: PartnerType) => [
+  ...DOCS_SHARED,
+  ...(DOCS_SPECIFIC[t || "hotel"] ?? []),
+];
+
+function StepVerification({ partnerType, docs, onDoc }: {
+  partnerType: PartnerType;
+  docs: Record<string, File>;
+  onDoc: (code: string, f: File) => void;
+}) {
+  const shared = DOCS_SHARED;
+  const specific = DOCS_SPECIFIC;
   const extra = specific[partnerType || "hotel"] || [];
   return (
     <div>
@@ -1004,12 +1048,12 @@ function StepVerification({ partnerType }: { partnerType: PartnerType }) {
       </div>
       <div className="space-y-3 mb-6">
         <p className="text-xs font-bold text-[#002089] uppercase tracking-widest">Documents communs</p>
-        {shared.map((d, i) => <DocUploadCard key={i} label={d.label} status="none" required={d.required} />)}
+        {shared.map(d => <DocUploadCard key={d.label} label={d.label} required={d.required} file={docs[docSlug(d.label)]} onFile={f => onDoc(docSlug(d.label), f)} />)}
       </div>
       {extra.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-[#002089] uppercase tracking-widest">Documents spécifiques</p>
-          {extra.map((d, i) => <DocUploadCard key={i} label={d.label} status="none" required={d.required} />)}
+          {extra.map(d => <DocUploadCard key={d.label} label={d.label} required={d.required} file={docs[docSlug(d.label)]} onFile={f => onDoc(docSlug(d.label), f)} />)}
         </div>
       )}
     </div>
@@ -1343,6 +1387,7 @@ export default function PartnerOnboardingWizard({
     vehicles: [],
     autosaveStatus: "saved",
     photos: [],
+    documents: {},
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -1422,8 +1467,20 @@ export default function PartnerOnboardingWizard({
         paths.push(path);
       }
 
+      // Verification papers go to their own private bucket.
+      const documents: { type: string; path: string }[] = [];
+      for (const [code, file] of Object.entries(state.documents)) {
+        const ext = file.type === "application/pdf" ? "pdf" : file.type === "image/png" ? "png" : "jpg";
+        const path = `${folder}/${code}.${ext}`;
+        const { error: docErr } = await supabase.storage
+          .from(PARTNER_DOCUMENTS_BUCKET)
+          .upload(path, file, { contentType: file.type });
+        if (docErr) throw docErr;
+        documents.push({ type: code, path });
+      }
+
       const { error } = await supabase.rpc("submit_partner_application", {
-        p_payload: { ...buildPayload(partnerType, state), photos: paths },
+        p_payload: { ...buildPayload(partnerType, state), photos: paths, documents },
       });
       if (error) throw error;
 
@@ -1482,7 +1539,14 @@ export default function PartnerOnboardingWizard({
           />
         );
       case "policies":     return <StepPolicies data={formData} onChange={updateForm} />;
-      case "verification": return <StepVerification partnerType={partnerType} />;
+      case "verification":
+        return (
+          <StepVerification
+            partnerType={partnerType}
+            docs={state.documents}
+            onDoc={(code, f) => setState(p => ({ ...p, documents: { ...p.documents, [code]: f } }))}
+          />
+        );
       case "payout":       return <StepPayout data={formData} onChange={updateForm} />;
       case "review":       return <StepReview partnerType={partnerType} />;
       case "submit":
@@ -1504,7 +1568,7 @@ export default function PartnerOnboardingWizard({
             onAdd={() =>
               setState({
                 step: 0, partnerType: null, formData: {}, amenities: [],
-                hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved", photos: [],
+                hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved", photos: [], documents: {},
               })
             }
           />

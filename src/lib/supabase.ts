@@ -15,3 +15,6 @@ export const supabase = createClient<Database>(url, key, {
 });
 
 export const PARTNER_PHOTOS_BUCKET = "partner-photos";
+
+/** Private: verification papers, never publicly readable. */
+export const PARTNER_DOCUMENTS_BUCKET = "partner-documents";

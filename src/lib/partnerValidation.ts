@@ -1,3 +1,4 @@
+import { documentsFor, docSlug } from "../components/PartnerOnboarding";
 import type { PartnerType, WizardState } from "../components/PartnerOnboarding";
 
 /**
@@ -109,7 +110,17 @@ export function validateStep(
       break;
     }
 
-    // welcome / policies / verification / review / submit collect no data.
+    case "verification": {
+      // The database enforces the same required set; this stops the partner
+      // reaching the end only to be rejected.
+      const missingDocs = documentsFor(partnerType)
+        .filter(d => d.required && !s.documents[docSlug(d.label)])
+        .map(d => d.label);
+      missing.push(...missingDocs);
+      break;
+    }
+
+    // welcome / policies / review / submit collect no data.
     default:
       break;
   }
