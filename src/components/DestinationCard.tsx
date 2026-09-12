@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Badge } from "./ui/cvui-badge";
 import { formatUsd } from "../lib/currency";
 import type { DestinationRow } from "../lib/listings";
 
@@ -28,9 +29,7 @@ export function DestinationCard({ dest }: { dest: DestinationRow }) {
       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,32,137,0.85)] via-[rgba(0,32,137,0.15)] to-transparent" />
 
       {dest.tagline && (
-        <span className="absolute top-3 left-3 bg-[#e76f2e] text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
-          {dest.tagline}
-        </span>
+        <Badge label={dest.tagline} variant="info" size="small" className="absolute top-3 left-3 z-10" />
       )}
 
       <div className="absolute bottom-0 left-0 right-0 p-4">

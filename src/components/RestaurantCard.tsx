@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { FavoriteButton } from "./FavoriteButton";
+import { Badge } from "./ui/cvui-badge";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 
 /** Canvas 3a — restaurant card with tonight's slots. */
@@ -16,13 +17,9 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
         ) : (
           <span className="text-xs text-[#00508a]">photo — à fournir</span>
         )}
-        <span className="absolute top-3 left-3 bg-[#002089] text-white text-xs font-bold px-2 py-1 rounded-lg">
-          {formatRating(listing)}
-        </span>
+        <Badge label={formatRating(listing)} variant="primary" size="small" className="absolute top-3 left-3 z-10" />
         {listing.badge && (
-          <span className="absolute top-3 right-3 bg-[#e76f2e] text-white text-[11px] font-semibold px-2 py-1 rounded-full">
-            {listing.badge}
-          </span>
+          <Badge label={listing.badge} variant="info" size="small" className="absolute bottom-3 right-3 z-10" />
         )}
       </div>
 
@@ -37,9 +34,7 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
 
         <div className="flex flex-wrap gap-1.5">
           {listing.amenities.map(am => (
-            <span key={am} className="text-[11px] text-[#002089] bg-[#EAF8FF] px-2 py-0.5 rounded-full font-medium">
-              {am}
-            </span>
+            <Badge key={am} label={am} variant="primary" appearance="subtle" size="small" animate={false} />
           ))}
         </div>
 

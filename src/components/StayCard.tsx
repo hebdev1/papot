@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Icon } from "./Icon";
 import { FavoriteButton } from "./FavoriteButton";
+import { Badge } from "./ui/cvui-badge";
 import { attrsOf, formatRating, isSoldOut, type ListingRow } from "../lib/listings";
 import { formatHtg, formatUsd } from "../lib/currency";
 
@@ -31,9 +32,7 @@ export function StayCard({
           <span className="text-xs text-[#00508a] text-center px-4">photo — à fournir</span>
         )}
         {listing.badge && (
-          <div className="absolute top-3 left-3 bg-[#002089] text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
-            {listing.badge}
-          </div>
+          <Badge label={listing.badge} variant="primary" size="small" className="absolute top-3 left-3 z-10" />
         )}
         <FavoriteButton listingId={listing.id} className="absolute top-3 right-3" />
       </div>
@@ -60,12 +59,7 @@ export function StayCard({
         {listing.amenities.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {listing.amenities.map(am => (
-              <span
-                key={am}
-                className="text-xs text-[#002089] bg-[#EAF8FF] px-2.5 py-1 rounded-full font-medium"
-              >
-                {am}
-              </span>
+              <Badge key={am} label={am} variant="primary" appearance="subtle" size="small" animate={false} />
             ))}
           </div>
         )}

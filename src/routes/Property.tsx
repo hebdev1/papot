@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
+import { Badge } from "../components/ui/cvui-badge";
 import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
@@ -148,9 +149,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-[#7a6355]">{listing.type}</span>
               {a.verified && (
-                <span className="text-[11px] font-semibold bg-[#EAF8FF] text-[#002089] px-2 py-1 rounded-full">
-                  Vérifié par PAPOT
-                </span>
+                <Badge label="Vérifié par PAPOT" variant="primary" appearance="subtle" size="small" />
               )}
             </div>
             <h1 className="font-display text-3xl font-bold text-[#3E2C23]">{listing.name}</h1>
@@ -451,9 +450,8 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                       <p className="font-semibold text-[#3E2C23] text-sm">
                         {m.name}
                         {m.tag && (
-                          <span className="ml-2 text-[11px] bg-[#EAF8FF] text-[#002089] px-2 py-0.5 rounded-full">
-                            {m.tag}
-                          </span>
+                          <Badge label={m.tag} variant="primary" appearance="subtle" size="small"
+                                 animate={false} className="ml-2" />
                         )}
                       </p>
                       <p className="text-xs text-[#7a6355] mt-0.5">{m.detail}</p>
@@ -532,12 +530,8 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
         <div className="flex-1 min-w-0 flex flex-col gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="text-[11px] font-semibold bg-[#002089] text-white px-2 py-1 rounded-lg">
-                {(a.body as string) ?? listing.type}
-              </span>
-              <span className="text-[11px] font-semibold bg-[#EAF8FF] text-[#002089] px-2 py-1 rounded-full">
-                {a.insurance_badge as string}
-              </span>
+              <Badge label={(a.body as string) ?? listing.type} variant="primary" size="small" />
+              <Badge label={a.insurance_badge as string} variant="success" appearance="subtle" size="small" />
             </div>
             <h1 className="font-display text-3xl font-bold text-[#3E2C23]">{listing.name}</h1>
             <p className="text-sm text-[#7a6355] mt-1">{a.subtitle as string}</p>

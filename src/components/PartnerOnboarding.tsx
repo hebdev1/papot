@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { supabase } from "../lib/supabase";
+import { Badge } from "./ui/cvui-badge";
 import { buildPayload } from "../lib/partnerPayload";
 import { validateStep } from "../lib/partnerValidation";
 import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
@@ -246,18 +247,19 @@ function DocUploadCard({ label, required, file, onFile }: {
   label: string; required?: boolean; file?: File; onFile?: (f: File) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const status: "none" | "uploaded" = file ? "uploaded" : "none";
-  const statusConfig = {
-    none: { label: "Non téléchargé", color: "text-[#b0a090]", bg: "bg-gray-50", dot: "bg-gray-300" },
-    uploaded: { label: "Téléchargé", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-400" },
-  }[status];
+  const uploaded = !!file;
   return (
     <div className="bg-white border border-[#e2d5c3] rounded-xl p-4 flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#3E2C23]">{label}{required && <span className="text-[#e76f2e] ml-1">*</span>}</p>
-        <span className={`inline-flex items-center gap-1.5 text-xs font-medium mt-1 px-2 py-0.5 rounded-full ${statusConfig.bg} ${statusConfig.color}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`}/>
-          {statusConfig.label}
+        <span className="mt-1 block">
+          <Badge
+            label={uploaded ? "Téléchargé" : "Non téléchargé"}
+            variant={uploaded ? "success" : "secondary"}
+            appearance="subtle"
+            size="small"
+            animate={false}
+          />
         </span>
         {file && <p className="text-[11px] text-[#7a6355] mt-1 truncate">{file.name}</p>}
       </div>
@@ -274,7 +276,7 @@ function DocUploadCard({ label, required, file, onFile }: {
             if (f && isAcceptedDoc(f)) onFile?.(f);
           }}
         />
-        <Ico.Upload />{status === "none" ? "Télécharger" : "Remplacer"}
+        <Ico.Upload />{uploaded ? "Remplacer" : "Télécharger"}
       </button>
     </div>
   );
@@ -1119,9 +1121,9 @@ function StepReview({ partnerType }: { partnerType: PartnerType }) {
   ];
   const overall = Math.round(sections.reduce((a, s) => a + s.pct, 0) / sections.length);
   const statusConfig = {
-    complete: { label: "Complet", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
-    partial: { label: "Partiel", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-400" },
-    pending: { label: "En attente", color: "text-[#b0a090]", bg: "bg-gray-50", dot: "bg-gray-300" },
+    complete: { label: "Complet", variant: "success" as const },
+    partial: { label: "Partiel", variant: "warning" as const },
+    pending: { label: "En attente", variant: "secondary" as const },
   };
   return (
     <div>
@@ -1151,9 +1153,7 @@ function StepReview({ partnerType }: { partnerType: PartnerType }) {
             <div key={s.label} className="bg-white border border-[#e2d5c3] rounded-xl p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#3E2C23] truncate">{s.label}</p>
-                <span className={`inline-flex items-center gap-1.5 text-xs font-medium mt-1 px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}/>{cfg.label}
-                </span>
+                <Badge label={cfg.label} variant={cfg.variant} appearance="subtle" size="small" animate={false} />
               </div>
               <button className="shrink-0 text-xs text-[#002089] font-semibold border border-[#e2d5c3] px-2 py-1 rounded-lg hover:border-[#002089] transition-colors">
                 <Ico.Edit />

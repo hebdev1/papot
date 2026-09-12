@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Luggage, MapPin, Plus } from "lucide-react";
 import { PageHeader } from "../../components/panel/PanelLayout";
 import { SERVICE, StatusBadge } from "../../components/panel/Badges";
+import { Badge } from "../../components/ui/cvui-badge";
 import { EmptyState, ErrorState, Skeleton } from "../../components/panel/States";
 import { TripTimeline } from "../../components/panel/TripTimeline";
 import { formatUsd } from "../../lib/currency";
@@ -121,12 +122,8 @@ function TripCard({ trip }: { trip: Trip }) {
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {kinds.map(k => (
-            <span
-              key={k}
-              className="rounded-full bg-[#EAF8FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#002089]"
-            >
-              {SERVICE[k].label}
-            </span>
+            <Badge key={k} label={SERVICE[k].label} variant="primary" appearance="subtle"
+                   size="small" animate={false} />
           ))}
         </div>
       </div>

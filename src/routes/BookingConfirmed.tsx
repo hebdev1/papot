@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatUsd } from "../lib/currency";
+import { StatusBadge } from "../components/panel/Badges";
 
 type Item = { title: string; detail: string; amount: number; kind: string; status: string };
 type Booking = {
@@ -68,13 +69,7 @@ export function BookingConfirmed() {
                 <p className="font-display font-bold text-[#3E2C23]">{i.title}</p>
                 <p className="text-xs text-[#7a6355] mt-0.5">{i.detail}</p>
               </div>
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
-                  i.status === "confirmed" ? "bg-green-100 text-[#15803d]" : "bg-[#F5E9D8] text-[#7a6355]"
-                }`}
-              >
-                {i.status === "confirmed" ? "Confirmé" : "En attente"}
-              </span>
+              <StatusBadge status={i.status === "confirmed" ? "confirmed" : "pending"} />
             </div>
           ))}
         </div>

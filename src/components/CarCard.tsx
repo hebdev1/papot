@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { FavoriteButton } from "./FavoriteButton";
+import { Badge } from "./ui/cvui-badge";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 import type { Tables } from "../types/database";
 import { formatHtg, formatUsd } from "../lib/currency";
@@ -29,15 +30,9 @@ export function CarCard({
         ) : (
           <span className="text-xs text-[#00508a]">photo — à fournir</span>
         )}
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          {a.body && (
-            <span className="bg-[#002089] text-white text-[11px] font-semibold px-2 py-1 rounded-lg">{a.body}</span>
-          )}
-          {listing.badge && (
-            <span className="bg-[#3E2C23] text-white text-[11px] font-semibold px-2 py-1 rounded-lg">
-              {listing.badge}
-            </span>
-          )}
+        <div className="absolute top-3 left-3 z-10 flex gap-1.5">
+          {a.body && <Badge label={a.body} variant="primary" size="small" animate={false} />}
+          {listing.badge && <Badge label={listing.badge} variant="secondary" size="small" animate={false} />}
         </div>
       </div>
 
@@ -56,9 +51,7 @@ export function CarCard({
 
         <div className="flex flex-wrap gap-1.5">
           {specs.map(am => (
-            <span key={am} className="text-[11px] text-[#002089] bg-[#EAF8FF] px-2 py-0.5 rounded-full font-medium">
-              {am}
-            </span>
+            <Badge key={am} label={am} variant="primary" appearance="subtle" size="small" animate={false} />
           ))}
         </div>
 
