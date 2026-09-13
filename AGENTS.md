@@ -73,6 +73,28 @@ The navigation tree in `lib/nav.ts` is filtered twice: by role permissions and
 by business type. A restaurant never sees "Chambres"; a car rental never sees
 "Menu".
 
+### From application to catalogue
+
+`admin_decide_application(..., 'accept')` creates the business, its owner
+membership and — through `build_partner_listings(partner)` — the listings the
+file described, all in one transaction. A hotel or guesthouse becomes one `stay`
+listing plus a `listing_units` row per declared room type; a rental company
+becomes one `car` listing per declared vehicle plus a pickup location at the
+business address; a restaurant becomes one `restaurant` listing plus its
+`restaurant_details`. Everything lands as `draft`, so the partner completes and
+publishes it themselves.
+
+The generator is idempotent: a partner that already owns a listing is left
+untouched, which is what makes `admin_generate_listings(partner)` safe to expose
+as a button for partners approved before this existed.
+
+**It never invents a value the form did not collect.** No `car_details` row is
+written, because that table requires a fuel type and a drivetrain the wizard
+never asks for, and a guessed spec on a card reads as fact to a traveller. Same
+rule for `restaurant_details.price_band`. Photos are carried across as storage
+paths in `attrs.photos`, not as `img`: the `partner-photos` bucket is private,
+so there is no URL a public card could use.
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`

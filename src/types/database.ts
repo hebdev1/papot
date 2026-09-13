@@ -1036,6 +1036,7 @@ export type Database = {
           name: string
           position: number
           price: number | null
+          units: number
         }
         Insert: {
           available?: boolean
@@ -1045,6 +1046,7 @@ export type Database = {
           name: string
           position?: number
           price?: number | null
+          units?: number
         }
         Update: {
           available?: boolean
@@ -1054,6 +1056,7 @@ export type Database = {
           name?: string
           position?: number
           price?: number | null
+          units?: number
         }
         Relationships: [
           {
@@ -3482,6 +3485,7 @@ export type Database = {
           value: number
         }[]
       }
+      admin_generate_listings: { Args: { p_partner: string }; Returns: number }
       admin_geo_performance: {
         Args: never
         Returns: {
@@ -3650,6 +3654,7 @@ export type Database = {
         Returns: undefined
       }
       attach_items_to_trips: { Args: { p_booking: string }; Returns: undefined }
+      build_partner_listings: { Args: { p_partner: string }; Returns: number }
       claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }
       effective_commission: {
@@ -3671,6 +3676,31 @@ export type Database = {
       partner_can: {
         Args: { p_partner: string; perm: string }
         Returns: boolean
+      }
+      partner_customers: {
+        Args: { p_partner: string }
+        Returns: {
+          bookings: number
+          customer_id: string
+          email: string
+          full_name: string
+          last_booking: string
+          status: string
+          total_spend: number
+        }[]
+      }
+      partner_insights: { Args: { p_partner: string }; Returns: Json }
+      partner_listing_performance: {
+        Args: { p_partner: string }
+        Returns: {
+          listing_id: string
+          name: string
+          rating: number
+          reservations: number
+          revenue: number
+          reviews: number
+          status: string
+        }[]
       }
       partner_me: { Args: never; Returns: Json }
       partner_overview: { Args: { p_partner: string }; Returns: Json }
@@ -3700,6 +3730,16 @@ export type Database = {
           bookings: number
           day: string
           revenue: number
+        }[]
+      }
+      partner_search: {
+        Args: { p_partner: string; q: string }
+        Returns: {
+          group_name: string
+          href: string
+          id: string
+          subtitle: string
+          title: string
         }[]
       }
       partner_set_availability: {

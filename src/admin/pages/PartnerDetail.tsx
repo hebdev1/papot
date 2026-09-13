@@ -192,6 +192,27 @@ export function PartnerDetail() {
       },
     });
 
+  /**
+   * Rebuild the catalogue from the approved file. Accepting an application does
+   * this on its own now; the button is for a partner approved before it did, or
+   * for one whose file carried nothing to build. It refuses to touch a partner
+   * that already has annonces, so it cannot damage a live catalogue.
+   */
+  const generateListings = () =>
+    confirm({
+      title: `Générer les annonces de ${row.business_name} ?`,
+      consequence:
+        "Les chambres, véhicules et horaires déclarés dans le dossier deviennent des annonces en brouillon, que le partenaire complète et publie lui-même. Un partenaire qui a déjà des annonces n'est pas touché.",
+      confirmLabel: "Générer les annonces",
+      onConfirm: async () => {
+        const { error } = await adminRpc("admin_generate_listings", { p_partner: row.id });
+        if (error) return adminError(error);
+        listings.reload();
+        reload();
+        return null;
+      },
+    });
+
   return (
     <>
       <PageHeader
@@ -285,9 +306,14 @@ export function PartnerDetail() {
               {listings.loading ? (
                 <Skeleton className="h-20 w-full" />
               ) : listings.rows.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-admin-line-strong px-4 py-6 text-center text-[13px] text-admin-ink-3">
-                  Ce partenaire n'a aucune annonce.
-                </p>
+                <div className="rounded-lg border border-dashed border-admin-line-strong px-4 py-6 text-center">
+                  <p className="text-[13px] text-admin-ink-3">Ce partenaire n'a aucune annonce.</p>
+                  {can("moderate_listings") && (
+                    <Button size="sm" variant="secondary" className="mt-3" onClick={generateListings}>
+                      Générer depuis le dossier
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <ul className="divide-y divide-admin-line">
                   {listings.rows.slice(0, 5).map(l => (

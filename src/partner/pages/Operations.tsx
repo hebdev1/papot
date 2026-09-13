@@ -30,9 +30,12 @@ type Unit = {
   id: string;
   listing_id: string;
   name: string;
-  detail: string | null;
-  price: number;
-  available: number | null;
+  detail: string;
+  price: number | null;
+  /** How many identical rooms of this type exist. */
+  units: number;
+  /** Whether the type is bookable at all — not a count. */
+  available: boolean;
   position: number;
 };
 
@@ -50,7 +53,7 @@ export function Rooms() {
 
   const rooms = useTable<Unit>({
     from: "listing_units",
-    select: "id, listing_id, name, detail, price, available, position",
+    select: "id, listing_id, name, detail, price, units, available, position",
     sort: { col: "position", dir: "asc" },
     pageSize: 200,
     enabled: !!active,
@@ -65,9 +68,13 @@ export function Rooms() {
     const { error } = await table("listing_units").insert({
       listing_id: adding,
       name: name.trim(),
-      detail: detail.trim() || null,
+      // Both columns are NOT NULL: an empty detail is "", never null, and the
+      // number of rooms belongs in `units` — it used to be written to the
+      // boolean `available`, which Postgres accepted for 1 and rejected for
+      // every other count.
+      detail: detail.trim(),
       price: Number(price.replace(",", ".")),
-      available: Number(units) || 1,
+      units: Math.max(1, Number(units) || 1),
     });
     if (error) return setError(friendlyError(error));
     setName("");
@@ -90,7 +97,7 @@ export function Rooms() {
       <div className="mb-5 grid gap-2.5 sm:grid-cols-3">
         <Stat label="Hébergements" value={count(listings.rows.length)} />
         <Stat label="Types de chambre" value={count(total.length)} />
-        <Stat label="Unités totales" value={count(total.reduce((s, r) => s + Number(r.available ?? 0), 0))} />
+        <Stat label="Unités totales" value={count(total.reduce((s, r) => s + Number(r.units ?? 1), 0))} />
       </div>
 
       {listings.loading ? (
@@ -133,7 +140,7 @@ export function Rooms() {
                         <span className="block truncate text-[13.5px] font-medium text-admin-ink">{r.name}</span>
                         {r.detail && <span className="block truncate text-[12px] text-admin-ink-3">{r.detail}</span>}
                       </span>
-                      <span className="text-[12.5px] text-admin-ink-3">{count(r.available ?? 0)} unité(s)</span>
+                      <span className="text-[12.5px] text-admin-ink-3">{count(r.units ?? 1)} unité(s)</span>
                       <span className="font-display text-[15px] font-semibold tabular-nums text-admin-ink">
                         {money(r.price)}
                       </span>
