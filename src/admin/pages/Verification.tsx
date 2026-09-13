@@ -32,6 +32,7 @@ import { adminRpc,useRow, useRpc, useTable } from "../lib/adminData";
 import { ago, day, money, stamp } from "../lib/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
 import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../../lib/supabase";
+import type { Tables } from "../../types/database";
 
 type ApplicationRow = {
   id: string;
@@ -167,6 +168,8 @@ type DocRow = {
   uploaded_at: string;
 };
 
+const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
 type DocType = { code: string; label_fr: string; applies_to: string[]; required: boolean; position: number };
 
 /** Spec §16 — the verification workspace for one application. */
@@ -180,33 +183,13 @@ export function VerificationDetail() {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
-  const { row, loading, error, reload } = useRow<
-    ApplicationRow & {
-      legal_name: string | null;
-      business_email: string | null;
-      business_phone: string | null;
-      website: string | null;
-      short_desc: string | null;
-      full_desc: string | null;
-      year_established: number | null;
-      rooms_count: number | null;
-      fleet_size: number | null;
-      seats_capacity: number | null;
-      max_capacity: number | null;
-      daily_rate: number | null;
-      price_band: string | null;
-      payout_method: string | null;
-      payout_holder: string | null;
-      payout_bank: string | null;
-      payout_account_last4: string | null;
-      payout_mobile_service: string | null;
-      neighborhood: string | null;
-      commune: string | null;
-      landmark: string | null;
-      photos: string[] | null;
-      reviewed_at: string | null;
-    }
-  >("partner_applications", { id: id ?? "" });
+  // The generated row type, rather than a hand-listed subset: the review page
+  // must show every column the wizard writes, and a hand-maintained list is
+  // exactly how fields go missing from a review.
+  const { row, loading, error, reload } = useRow<Tables<"partner_applications">>(
+    "partner_applications",
+    { id: id ?? "" },
+  );
 
   const docs = useTable<DocRow>({
     from: "partner_application_documents",
@@ -215,6 +198,55 @@ export function VerificationDetail() {
     sort: { col: "doc_type", dir: "asc" },
     pageSize: 50,
     enabled: !!id,
+  });
+
+  const rooms = useTable<{
+    id: string; name: string | null; room_type: string | null; beds: string | null;
+    capacity: number | null; units: number | null; price: number | null; position: number;
+  }>({
+    from: "partner_application_rooms",
+    select: "id, name, room_type, beds, capacity, units, price, position",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 100,
+    enabled: !!id,
+  });
+
+  const vehicles = useTable<{
+    id: string; make: string | null; model: string | null; year: number | null;
+    plate: string | null; category: string | null; transmission: string | null;
+    fuel: string | null; seats: number | null; daily_rate: number | null; position: number;
+  }>({
+    from: "partner_application_vehicles",
+    select: "id, make, model, year, plate, category, transmission, fuel, seats, daily_rate, position",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 100,
+    enabled: !!id,
+  });
+
+  const hours = useTable<{ weekday: number; is_open: boolean; opens_at: string | null; closes_at: string | null }>({
+    from: "partner_application_hours",
+    select: "weekday, is_open, opens_at, closes_at",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    sort: { col: "weekday", dir: "asc" },
+    pageSize: 20,
+    enabled: !!id,
+  });
+
+  const appAmenities = useTable<{ amenity_code: string }>({
+    from: "partner_application_amenities",
+    select: "amenity_code",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    pageSize: 200,
+    enabled: !!id,
+  });
+
+  /** The catalogue, so codes render as the labels the applicant actually saw. */
+  const amenityCatalog = useTable<{ code: string; label_fr: string; category: string | null }>({
+    from: "partner_amenities",
+    select: "code, label_fr, category",
+    pageSize: 200,
   });
 
   const docTypes = useTable<DocType>({
@@ -456,39 +488,302 @@ export function VerificationDetail() {
             <FieldGrid>
               <Field label="Nom commercial">{row.business_name}</Field>
               <Field label="Raison sociale">{row.legal_name ?? "—"}</Field>
+              <Field label="Catégorie déclarée">{row.business_subtype ?? "—"}</Field>
+              <Field label="Année de création">{row.year_established ?? "—"}</Field>
+              <Field label="Site web">{row.website ?? "—"}</Field>
+              <Field label="Langue du dossier">
+                {row.locale === "ht" ? "Kreyòl" : row.locale === "en" ? "English" : "Français"}
+              </Field>
+            </FieldGrid>
+          </Card>
+
+          <Card>
+            <CardHeader title="Contact" />
+            <FieldGrid>
               <Field label="Responsable">
                 {[row.first_name, row.last_name].filter(Boolean).join(" ") || "—"}
               </Field>
-              <Field label="Courriel">{row.business_email ?? row.email ?? "—"}</Field>
-              <Field label="Téléphone">{row.business_phone ?? row.phone ?? "—"}</Field>
-              <Field label="Site web">{row.website ?? "—"}</Field>
-              <Field label="Année de création">{row.year_established ?? "—"}</Field>
-              <Field label="Ville">{row.city ?? "—"}</Field>
+              <Field label="Courriel personnel">{row.email ?? "—"}</Field>
+              <Field label="Téléphone personnel">{row.phone ?? "—"}</Field>
+              <Field label="WhatsApp">{row.whatsapp ?? "—"}</Field>
+              <Field label="Courriel de l'entreprise">{row.business_email ?? "—"}</Field>
+              <Field label="Téléphone de l'entreprise">{row.business_phone ?? "—"}</Field>
+            </FieldGrid>
+          </Card>
+
+          <Card>
+            <CardHeader title="Localisation" />
+            <FieldGrid>
+              <Field label="Pays">{row.country ?? "—"}</Field>
               <Field label="Département">{row.department ?? "—"}</Field>
+              <Field label="Ville">{row.city ?? "—"}</Field>
               <Field label="Commune">{row.commune ?? "—"}</Field>
               <Field label="Quartier">{row.neighborhood ?? "—"}</Field>
+              <Field label="Code postal">{row.postal_code ?? "—"}</Field>
               <Field label="Point de repère">{row.landmark ?? "—"}</Field>
             </FieldGrid>
-
-            {row.short_desc && (
+            {row.arrival_notes && (
               <div className="mt-4 border-t border-admin-line pt-4">
-                <Field label="Description">
-                  <span className="font-normal leading-relaxed">{row.short_desc}</span>
+                <Field label="Instructions d'arrivée">
+                  <span className="font-normal leading-relaxed">{row.arrival_notes}</span>
                 </Field>
               </div>
             )}
           </Card>
 
           <Card>
-            <CardHeader title="Capacité et tarifs" />
+            <CardHeader title="Description" />
+            <div className="flex flex-col gap-4">
+              <Field label="Description courte">
+                <span className="font-normal leading-relaxed">{row.short_desc ?? "—"}</span>
+              </Field>
+              <Field label="Description complète">
+                <span className="whitespace-pre-wrap font-normal leading-relaxed">
+                  {row.full_desc ?? "—"}
+                </span>
+              </Field>
+            </div>
+          </Card>
+
+          {/* Every capacity field is shown, including the empty ones: a blank
+              here is itself review-relevant, and hiding it hides the gap. */}
+          <Card>
+            <CardHeader
+              title="Capacité"
+              subtitle="Les champs vides n'ont pas été remplis par le candidat."
+            />
             <FieldGrid cols={4}>
-              {row.rooms_count !== null && <Field label="Chambres">{row.rooms_count}</Field>}
-              {row.max_capacity !== null && <Field label="Capacité">{row.max_capacity}</Field>}
-              {row.fleet_size !== null && <Field label="Véhicules">{row.fleet_size}</Field>}
-              {row.seats_capacity !== null && <Field label="Couverts">{row.seats_capacity}</Field>}
-              {row.daily_rate !== null && <Field label="Tarif journalier">{money(row.daily_rate)}</Field>}
-              {row.price_band && <Field label="Gamme de prix">{row.price_band}</Field>}
+              <Field label="Chambres">{row.rooms_count ?? "—"}</Field>
+              <Field label="Étages">{row.floors ?? "—"}</Field>
+              <Field label="Capacité maximale">{row.max_capacity ?? "—"}</Field>
+              <Field label="Véhicules">{row.fleet_size ?? "—"}</Field>
+              <Field label="Couverts">{row.seats_capacity ?? "—"}</Field>
+              <Field label="Convives min.">{row.min_party ?? "—"}</Field>
+              <Field label="Convives max.">{row.max_party ?? "—"}</Field>
+              <Field label="Durée d'un repas">
+                {row.meal_duration_minutes ? `${row.meal_duration_minutes} min` : "—"}
+              </Field>
             </FieldGrid>
+          </Card>
+
+          {/* Rooms carry the nightly price for a stay. This is where a hotel's
+              tariff actually lives; the application's own rate columns stay null
+              for stays, which is why the page looked as though it had none. */}
+          <Card padded={false}>
+            <div className="border-b border-admin-line px-5 py-4">
+              <h2 className="font-display text-[15px] font-semibold text-admin-ink">
+                Chambres et tarifs
+              </h2>
+              <p className="text-[12.5px] text-admin-ink-3">
+                {rooms.rows.length > 0
+                  ? `${rooms.rows.length} type(s) de chambre déclaré(s).`
+                  : "Aucun type de chambre déclaré."}
+              </p>
+            </div>
+
+            {rooms.loading ? (
+              <div className="p-5">
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : rooms.rows.length === 0 ? (
+              <p className="px-5 py-8 text-center text-[13px] text-admin-ink-3">
+                Ce dossier ne déclare aucune chambre.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-admin-line bg-admin-raised">
+                      {["Nom", "Type", "Lits", "Capacité", "Unités", "Prix / nuit"].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                            i >= 3 ? "text-right" : ""
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-admin-line">
+                    {rooms.rows.map(r => (
+                      <tr key={r.id}>
+                        <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">
+                          {r.name ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-[13px]">{r.room_type ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{r.beds ?? "—"}</td>
+                        <td className="px-5 py-3 text-right text-[13px] tabular-nums">
+                          {r.capacity ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-right text-[13px] tabular-nums">
+                          {r.units ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-right text-[13px] font-semibold tabular-nums">
+                          {r.price !== null ? money(r.price) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {vehicles.rows.length > 0 && (
+            <Card padded={false}>
+              <div className="border-b border-admin-line px-5 py-4">
+                <h2 className="font-display text-[15px] font-semibold text-admin-ink">Véhicules</h2>
+                <p className="text-[12.5px] text-admin-ink-3">
+                  {vehicles.rows.length} véhicule(s) déclaré(s).
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-admin-line bg-admin-raised">
+                      {["Véhicule", "Plaque", "Catégorie", "Boîte", "Carburant", "Places", "Tarif / jour"].map(
+                        (h, i) => (
+                          <th
+                            key={h}
+                            className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                              i >= 5 ? "text-right" : ""
+                            }`}
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-admin-line">
+                    {vehicles.rows.map(v => (
+                      <tr key={v.id}>
+                        <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">
+                          {[v.make, v.model, v.year].filter(Boolean).join(" ") || "—"}
+                        </td>
+                        <td className="px-5 py-3 text-[13px]">{v.plate ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{v.category ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{v.transmission ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{v.fuel ?? "—"}</td>
+                        <td className="px-5 py-3 text-right text-[13px] tabular-nums">
+                          {v.seats ?? "—"}
+                        </td>
+                        <td className="px-5 py-3 text-right text-[13px] font-semibold tabular-nums">
+                          {v.daily_rate !== null ? money(v.daily_rate) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader
+              title="Tarification déclarée"
+              subtitle="Renseignée surtout par les loueurs de voitures."
+            />
+            <FieldGrid cols={4}>
+              <Field label="Tarif journalier">
+                {row.daily_rate !== null ? money(row.daily_rate) : "—"}
+              </Field>
+              <Field label="Tarif hebdomadaire">
+                {row.weekly_rate !== null ? money(row.weekly_rate) : "—"}
+              </Field>
+              <Field label="Tarif mensuel">
+                {row.monthly_rate !== null ? money(row.monthly_rate) : "—"}
+              </Field>
+              <Field label="Caution">{row.deposit !== null ? money(row.deposit) : "—"}</Field>
+              <Field label="Km inclus / jour">{row.included_km_per_day ?? "—"}</Field>
+              <Field label="Prix du km sup.">
+                {row.extra_km_price !== null ? money(row.extra_km_price) : "—"}
+              </Field>
+              <Field label="Gamme de prix">{row.price_band ?? "—"}</Field>
+            </FieldGrid>
+          </Card>
+
+          <Card>
+            <CardHeader title="Règles de réservation" />
+            <FieldGrid>
+              <Field label="Confirmation">
+                {row.confirmation_mode === "automatique"
+                  ? "Automatique"
+                  : row.confirmation_mode === "manuelle"
+                    ? "Manuelle"
+                    : "—"}
+              </Field>
+              <Field label="Politique d'annulation">
+                {row.cancellation_policy === "free_24h"
+                  ? "Gratuite jusqu'à 24 h avant"
+                  : row.cancellation_policy === "free_2h"
+                    ? "Gratuite jusqu'à 2 h avant"
+                    : row.cancellation_policy === "non_refundable"
+                      ? "Non remboursable"
+                      : "—"}
+              </Field>
+              <Field label="Préavis minimum">
+                {row.min_notice_hours ? `${row.min_notice_hours} h` : "—"}
+              </Field>
+            </FieldGrid>
+          </Card>
+
+          <Card>
+            <CardHeader title="Horaires d'ouverture" />
+            {hours.loading ? (
+              <Skeleton className="h-24 w-full" />
+            ) : hours.rows.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-admin-line-strong px-4 py-5 text-center text-[13px] text-admin-ink-3">
+                Ce dossier ne déclare pas d'horaires.
+              </p>
+            ) : (
+              <ul className="flex flex-col">
+                {hours.rows.map(h => (
+                  <li
+                    key={h.weekday}
+                    className="flex items-center justify-between gap-3 border-b border-admin-line py-2 text-[13px] last:border-0"
+                  >
+                    <span className="font-medium text-admin-ink">
+                      {WEEKDAYS[h.weekday] ?? h.weekday}
+                    </span>
+                    <span className={h.is_open ? "tabular-nums text-admin-ink-2" : "text-admin-ink-3"}>
+                      {h.is_open
+                        ? `${(h.opens_at ?? "").slice(0, 5)} – ${(h.closes_at ?? "").slice(0, 5)}`
+                        : "Fermé"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Équipements"
+              subtitle={`${appAmenities.rows.length} équipement(s) déclaré(s).`}
+            />
+            {appAmenities.rows.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-admin-line-strong px-4 py-5 text-center text-[13px] text-admin-ink-3">
+                Aucun équipement déclaré.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {appAmenities.rows.map(a => {
+                  const label = amenityCatalog.rows.find(c => c.code === a.amenity_code)?.label_fr;
+                  return (
+                    <span
+                      key={a.amenity_code}
+                      className="rounded-md border border-admin-line bg-admin-canvas px-2 py-1 text-[12.5px] text-admin-ink"
+                      title={a.amenity_code}
+                    >
+                      {label ?? a.amenity_code.replace(/_/g, " ")}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </Card>
 
           {/* Documents (spec §16) */}
