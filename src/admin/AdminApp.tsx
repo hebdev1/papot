@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Lock, ShieldAlert } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { AdminProvider, useAdmin } from "./lib/adminAuth";
@@ -37,6 +37,7 @@ import { SystemHealth } from "./pages/SystemHealth";
 import { PlatformSettings } from "./pages/PlatformSettings";
 import { Integrations } from "./pages/Integrations";
 import { AdminProfile, AdminHelp } from "./pages/AdminProfile";
+import { AdminLogin } from "./pages/AdminLogin";
 
 /**
  * Admin routing.
@@ -50,13 +51,12 @@ import { AdminProfile, AdminHelp } from "./pages/AdminProfile";
 function Guard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { me, loading } = useAdmin();
-  const location = useLocation();
 
   if (authLoading || loading) return <AdminBooting />;
 
-  if (!user) {
-    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
-  }
+  // Signing in happens here rather than at /login, so the address stays on the
+  // admin URL the operator typed or bookmarked.
+  if (!user) return <AdminLogin />;
 
   if (!me?.is_staff) {
     return (
