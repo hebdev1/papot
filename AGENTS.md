@@ -22,6 +22,38 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and the `@` alias for `src`
 - `.mise.toml` - Toolchain versions for Node.js and pnpm
 
+## Admin console
+
+The staff console lives under `src/admin/` and is mounted at `/admin`, lazily,
+so it stays out of the public bundle. Its structure:
+
+- `lib/adminAuth.tsx` - who the admin is and what they may do (`admin_me()`)
+- `lib/adminData.ts` - `useTable` / `useRow` / `useRpc`, CSV export, and the
+  `adminRpc` / `adminTable` boundary where runtime-built names meet the typed
+  Supabase client
+- `lib/nav.ts` - the single navigation definition used by the sidebar, the
+  mobile menu, the command palette and the route guard
+- `components/` - shell, DataTable, FilterBar, dialogs, charts, status system
+- `pages/` - one file per screen
+
+**Permissions are enforced in the database, never in the browser.** Every admin
+read goes through RLS or a `security_invoker` view that requires `admin_can()`,
+and every sensitive write goes through a `SECURITY DEFINER` RPC that re-checks
+the permission and writes the audit row in the same transaction. Hiding a menu
+item is a courtesy; it is not a control. When adding an admin action, add the
+RPC first.
+
+After any migration, regenerate the client types or the build will fail:
+`src/types/database.ts` is generated, not hand-written.
+
+The schema lives in Supabase and is not yet mirrored into this repository.
+To pull it into `supabase/migrations/` (needs the project's database password):
+
+```
+npx supabase link --project-ref sqkbtygodsomekizhhyj
+npx supabase db pull
+```
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`

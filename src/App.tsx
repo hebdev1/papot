@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
@@ -26,6 +26,10 @@ import {
 import { PanelTripDetail, PanelTripsPage } from "./routes/panel/PanelTripsPage";
 import { PanelFavoritesPage } from "./routes/panel/PanelFavoritesPage";
 import { useAuth } from "./lib/auth";
+// The admin console is a separate bundle. Loading it eagerly would put every
+// admin screen, chart and table into the JavaScript a first-time visitor
+// downloads to look at one listing.
+const AdminApp = lazy(() => import("./admin/AdminApp"));
 
 /** Routes that render their own full-page layout, without the site chrome. */
 const BARE_ROUTES = [
@@ -62,6 +66,25 @@ function Shell() {
   }, [params, setParams]);
 
   const bare = BARE_ROUTES.includes(pathname);
+
+  // The admin console is a separate application: its own shell, its own
+  // navigation, its own guard. It deliberately renders none of the public site
+  // chrome, and lazy-mounting it here keeps it out of every other route.
+  if (pathname.startsWith("/admin")) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-[#F6F7F9]">
+            <span className="grid h-11 w-11 place-content-center rounded-xl bg-[#002089] font-display text-lg font-bold text-white">
+              P
+            </span>
+          </div>
+        }
+      >
+        <AdminApp />
+      </Suspense>
+    );
+  }
 
   // The customer panel carries its own sidebar/header and sits behind auth.
   if (pathname.startsWith("/compte")) {

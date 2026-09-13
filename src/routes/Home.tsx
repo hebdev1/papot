@@ -6,7 +6,7 @@ import { StayCard } from "../components/StayCard";
 import { RestaurantCard } from "../components/RestaurantCard";
 import { CarCard } from "../components/CarCard";
 import { DestinationCard } from "../components/DestinationCard";
-import { PartnerSection } from "../components/PartnerModal";
+import { PartnerSection } from "../components/PartnerSection";
 import { supabase } from "../lib/supabase";
 import { useUsdHtgRate } from "../lib/currency";
 import type { DestinationRow, ListingRow } from "../lib/listings";

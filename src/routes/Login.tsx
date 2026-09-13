@@ -1,11 +1,23 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, ghostBtn, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
 
 /** Canvas 2a — /login */
 export function Login() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+
+  /**
+   * Where to land after signing in. Guarded areas send the page they wanted as
+   * ?next=, so a session that expires mid-task returns to the same screen.
+   * Only same-site paths are honoured: an absolute URL here would turn the
+   * login page into an open redirect.
+   */
+  const next = (() => {
+    const raw = params.get("next");
+    return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+  })();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -19,13 +31,13 @@ export function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) setError("Courriel ou mot de passe incorrect.");
-    else navigate("/");
+    else navigate(next);
   };
 
   const google = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}${next}` },
     });
     if (error) setError("La connexion Google n'est pas disponible pour le moment.");
   };

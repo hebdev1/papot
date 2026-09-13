@@ -21,6 +21,18 @@
   --color-accent:             #e76f2e;
   --color-accent-foreground:  #ffffff;
   --color-border:             #e2d5c3;
+
+  /* Admin console. The public site is warm cream; an operations console is read
+     for hours at a time and needs a calmer, neutral ground, so structure uses a
+     grey scale while the brand keeps the accents (spec section 74). */
+  --color-admin-canvas:      #F6F7F9;
+  --color-admin-surface:     #ffffff;
+  --color-admin-raised:      #FBFCFD;
+  --color-admin-line:        #E7E9EE;
+  --color-admin-line-strong: #D3D8E0;
+  --color-admin-ink:         #1B2431;
+  --color-admin-ink-2:       #5B6675;
+  --color-admin-ink-3:       #8A93A2;
   --color-ring:               #6ad7fb;
 }
 
