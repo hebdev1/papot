@@ -160,7 +160,9 @@ export function Search() {
       return true;
     });
     if (sort === "price") out = [...out].sort((a, b) => a.price - b.price);
-    if (sort === "rating") out = [...out].sort((a, b) => b.rating - a.rating);
+    // Unrated listings sort last rather than to the top via NaN.
+    if (sort === "rating")
+      out = [...out].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
     return out;
   }, [listings, where, kind, maxPrice, types, essentials, cancellation, sort, carDetails, carFilters, restoDetails, restoFilters]);
 

@@ -17,7 +17,15 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
         ) : (
           <span className="text-xs text-[#00508a]">photo — à fournir</span>
         )}
-        <Badge label={formatRating(listing)} variant="primary" size="small" className="absolute top-3 left-3 z-10" />
+        {/* A restaurant nobody has reviewed shows no score rather than a zero. */}
+        {formatRating(listing) && (
+          <Badge
+            label={formatRating(listing)!}
+            variant="primary"
+            size="small"
+            className="absolute top-3 left-3 z-10"
+          />
+        )}
         {listing.badge && (
           <Badge label={listing.badge} variant="info" size="small" className="absolute bottom-3 right-3 z-10" />
         )}

@@ -919,6 +919,114 @@ export type Database = {
           },
         ]
       }
+      listing_availability: {
+        Row: {
+          day: string
+          listing_id: string
+          max_stay: number | null
+          min_stay: number | null
+          note: string | null
+          price_override: number | null
+          quantity: number | null
+          status: Database["public"]["Enums"]["availability_status"]
+          updated_at: string
+        }
+        Insert: {
+          day: string
+          listing_id: string
+          max_stay?: number | null
+          min_stay?: number | null
+          note?: string | null
+          price_override?: number | null
+          quantity?: number | null
+          status?: Database["public"]["Enums"]["availability_status"]
+          updated_at?: string
+        }
+        Update: {
+          day?: string
+          listing_id?: string
+          max_stay?: number | null
+          min_stay?: number | null
+          note?: string | null
+          price_override?: number | null
+          quantity?: number | null
+          status?: Database["public"]["Enums"]["availability_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_availability_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_availability_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_rates: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_on: string | null
+          id: string
+          kind: Database["public"]["Enums"]["rate_kind"]
+          label: string | null
+          listing_id: string
+          min_stay: number | null
+          price: number
+          starts_on: string | null
+          weekdays: number[] | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["rate_kind"]
+          label?: string | null
+          listing_id: string
+          min_stay?: number | null
+          price: number
+          starts_on?: string | null
+          weekdays?: number[] | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["rate_kind"]
+          label?: string | null
+          listing_id?: string
+          min_stay?: number | null
+          price?: number
+          starts_on?: string | null
+          weekdays?: number[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_rates_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_rates_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_units: {
         Row: {
           available: boolean
@@ -976,7 +1084,7 @@ export type Database = {
           currency: string
           free_cancellation: boolean
           id: string
-          img: string
+          img: string | null
           kind: Database["public"]["Enums"]["listing_kind"]
           location: string
           name: string
@@ -985,7 +1093,7 @@ export type Database = {
           position: number
           price: number
           published: boolean
-          rating: number
+          rating: number | null
           rating_scale: number
           review_note: string | null
           reviewed_at: string | null
@@ -1009,7 +1117,7 @@ export type Database = {
           currency?: string
           free_cancellation?: boolean
           id?: string
-          img: string
+          img?: string | null
           kind?: Database["public"]["Enums"]["listing_kind"]
           location: string
           name: string
@@ -1018,7 +1126,7 @@ export type Database = {
           position?: number
           price: number
           published?: boolean
-          rating: number
+          rating?: number | null
           rating_scale?: number
           review_note?: string | null
           reviewed_at?: string | null
@@ -1042,7 +1150,7 @@ export type Database = {
           currency?: string
           free_cancellation?: boolean
           id?: string
-          img?: string
+          img?: string | null
           kind?: Database["public"]["Enums"]["listing_kind"]
           location?: string
           name?: string
@@ -1051,7 +1159,7 @@ export type Database = {
           position?: number
           price?: number
           published?: boolean
-          rating?: number
+          rating?: number | null
           rating_scale?: number
           review_note?: string | null
           reviewed_at?: string | null
@@ -1179,6 +1287,60 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      partner_activity_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_label: string | null
+          at: string
+          detail: Json | null
+          entity_id: string | null
+          entity_label: string | null
+          entity_type: string
+          id: number
+          partner_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_label?: string | null
+          at?: string
+          detail?: Json | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type: string
+          id?: never
+          partner_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_label?: string | null
+          at?: string
+          detail?: Json | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type?: string
+          id?: never
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_activity_log_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_activity_log_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partner_amenities: {
         Row: {
@@ -1597,6 +1759,78 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_discounts: {
+        Row: {
+          active: boolean
+          amount: number | null
+          code: string | null
+          created_at: string
+          eligible_listings: string[] | null
+          ends_on: string | null
+          id: string
+          kind: Database["public"]["Enums"]["discount_kind"]
+          min_nights: number | null
+          min_spend: number | null
+          name: string
+          partner_id: string
+          percent: number | null
+          starts_on: string | null
+          usage_limit: number | null
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          amount?: number | null
+          code?: string | null
+          created_at?: string
+          eligible_listings?: string[] | null
+          ends_on?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["discount_kind"]
+          min_nights?: number | null
+          min_spend?: number | null
+          name: string
+          partner_id: string
+          percent?: number | null
+          starts_on?: string | null
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          amount?: number | null
+          code?: string | null
+          created_at?: string
+          eligible_listings?: string[] | null
+          ends_on?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["discount_kind"]
+          min_nights?: number | null
+          min_spend?: number | null
+          name?: string
+          partner_id?: string
+          percent?: number | null
+          starts_on?: string | null
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_discounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_discounts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_document_types: {
         Row: {
           applies_to: Database["public"]["Enums"]["partner_type"][]
@@ -1620,6 +1854,292 @@ export type Database = {
           required?: boolean
         }
         Relationships: []
+      }
+      partner_fees: {
+        Row: {
+          active: boolean
+          amount: number
+          amount_type: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["fee_kind"]
+          listing_id: string | null
+          name: string
+          partner_id: string
+          per_night: boolean
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          amount_type: string
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["fee_kind"]
+          listing_id?: string | null
+          name: string
+          partner_id: string
+          per_night?: boolean
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          amount_type?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["fee_kind"]
+          listing_id?: string | null
+          name?: string
+          partner_id?: string
+          per_night?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_fees_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_fees_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_fees_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_fees_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_integrations: {
+        Row: {
+          config: Json | null
+          created_at: string
+          id: string
+          kind: string
+          last_synced_at: string | null
+          partner_id: string
+          status: Database["public"]["Enums"]["integration_status"]
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          id?: string
+          kind: string
+          last_synced_at?: string | null
+          partner_id: string
+          status?: Database["public"]["Enums"]["integration_status"]
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          id?: string
+          kind?: string
+          last_synced_at?: string | null
+          partner_id?: string
+          status?: Database["public"]["Enums"]["integration_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_integrations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_integrations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_members: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          invited_by: string | null
+          last_active_at: string | null
+          partner_id: string
+          role: Database["public"]["Enums"]["partner_member_role"]
+          status: Database["public"]["Enums"]["partner_member_status"]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          last_active_at?: string | null
+          partner_id: string
+          role?: Database["public"]["Enums"]["partner_member_role"]
+          status?: Database["public"]["Enums"]["partner_member_status"]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          last_active_at?: string | null
+          partner_id?: string
+          role?: Database["public"]["Enums"]["partner_member_role"]
+          status?: Database["public"]["Enums"]["partner_member_status"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_members_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_members_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_notification_prefs: {
+        Row: {
+          channels: string[]
+          event: string
+          partner_id: string
+        }
+        Insert: {
+          channels?: string[]
+          event: string
+          partner_id: string
+        }
+        Update: {
+          channels?: string[]
+          event?: string
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_notification_prefs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_notification_prefs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_permissions: {
+        Row: {
+          code: string
+          group_name: string
+          label_fr: string
+          position: number
+          sensitive: boolean
+        }
+        Insert: {
+          code: string
+          group_name: string
+          label_fr: string
+          position?: number
+          sensitive?: boolean
+        }
+        Update: {
+          code?: string
+          group_name?: string
+          label_fr?: string
+          position?: number
+          sensitive?: boolean
+        }
+        Relationships: []
+      }
+      partner_quick_replies: {
+        Row: {
+          body: string
+          id: string
+          partner_id: string
+          position: number
+          title: string
+        }
+        Insert: {
+          body: string
+          id?: string
+          partner_id: string
+          position?: number
+          title: string
+        }
+        Update: {
+          body?: string
+          id?: string
+          partner_id?: string
+          position?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_quick_replies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_quick_replies_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_role_permissions: {
+        Row: {
+          permission: string
+          role: Database["public"]["Enums"]["partner_member_role"]
+        }
+        Insert: {
+          permission: string
+          role: Database["public"]["Enums"]["partner_member_role"]
+        }
+        Update: {
+          permission?: string
+          role?: Database["public"]["Enums"]["partner_member_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_role_permissions_permission_fkey"
+            columns: ["permission"]
+            isOneToOne: false
+            referencedRelation: "partner_permissions"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       partners: {
         Row: {
@@ -1849,6 +2369,57 @@ export type Database = {
           },
           {
             foreignKeyName: "payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pickup_locations: {
+        Row: {
+          active: boolean
+          address: string | null
+          delivery_fee: number | null
+          hours: string | null
+          id: string
+          instructions: string | null
+          kind: Database["public"]["Enums"]["pickup_kind"]
+          name: string
+          partner_id: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          delivery_fee?: number | null
+          hours?: string | null
+          id?: string
+          instructions?: string | null
+          kind?: Database["public"]["Enums"]["pickup_kind"]
+          name: string
+          partner_id: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          delivery_fee?: number | null
+          hours?: string | null
+          id?: string
+          instructions?: string | null
+          kind?: Database["public"]["Enums"]["pickup_kind"]
+          name?: string
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_locations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_locations_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
@@ -2211,6 +2782,58 @@ export type Database = {
           },
         ]
       }
+      restaurant_tables: {
+        Row: {
+          area_id: string | null
+          id: string
+          label: string
+          listing_id: string
+          position: number
+          seats: number
+          status: Database["public"]["Enums"]["table_status"]
+        }
+        Insert: {
+          area_id?: string | null
+          id?: string
+          label: string
+          listing_id: string
+          position?: number
+          seats: number
+          status?: Database["public"]["Enums"]["table_status"]
+        }
+        Update: {
+          area_id?: string | null
+          id?: string
+          label?: string
+          listing_id?: string
+          position?: number
+          seats?: number
+          status?: Database["public"]["Enums"]["table_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "seating_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_tables_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_tables_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           body: string | null
@@ -2331,6 +2954,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "admin_permissions"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      seating_areas: {
+        Row: {
+          id: string
+          listing_id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          name: string
+          position?: number
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seating_areas_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seating_areas_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2592,6 +3251,51 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicle_maintenance: {
+        Row: {
+          created_at: string
+          ends_on: string
+          id: string
+          kind: Database["public"]["Enums"]["maintenance_kind"]
+          listing_id: string
+          note: string | null
+          starts_on: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on: string
+          id?: string
+          kind?: Database["public"]["Enums"]["maintenance_kind"]
+          listing_id: string
+          note?: string | null
+          starts_on: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["maintenance_kind"]
+          listing_id?: string
+          note?: string | null
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_maintenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -2880,6 +3584,16 @@ export type Database = {
         Args: { p_id: string; p_percentage: number }
         Returns: undefined
       }
+      admin_set_partner_member: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_partner: string
+          p_role?: Database["public"]["Enums"]["partner_member_role"]
+          p_status?: Database["public"]["Enums"]["partner_member_status"]
+        }
+        Returns: string
+      }
       admin_set_partner_status: {
         Args: {
           p_id: string
@@ -2936,6 +3650,7 @@ export type Database = {
         Returns: undefined
       }
       attach_items_to_trips: { Args: { p_booking: string }; Returns: undefined }
+      claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }
       effective_commission: {
         Args: {
@@ -2945,12 +3660,61 @@ export type Database = {
         Returns: number
       }
       get_booking: { Args: { p_reference: string }; Returns: Json }
+      is_partner_member: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       my_bookings: { Args: never; Returns: Json }
+      my_partner_ids: { Args: never; Returns: string[] }
       my_trips: { Args: never; Returns: Json }
       next_booking_reference: { Args: never; Returns: string }
       parse_int: { Args: { p: Json; p_field: string }; Returns: number }
       parse_num: { Args: { p: Json; p_field: string }; Returns: number }
+      partner_can: {
+        Args: { p_partner: string; perm: string }
+        Returns: boolean
+      }
+      partner_me: { Args: never; Returns: Json }
+      partner_overview: { Args: { p_partner: string }; Returns: Json }
+      partner_rate_change: {
+        Args: {
+          p_apply?: boolean
+          p_end: string
+          p_listings: string[]
+          p_percent: number
+          p_start: string
+        }
+        Returns: {
+          day: string
+          listing_id: string
+          listing_name: string
+          new_price: number
+          old_price: number
+        }[]
+      }
+      partner_reply_review: {
+        Args: { p_reply: string; p_review: string }
+        Returns: undefined
+      }
+      partner_revenue_series: {
+        Args: { p_days?: number; p_partner: string }
+        Returns: {
+          bookings: number
+          day: string
+          revenue: number
+        }[]
+      }
+      partner_set_availability: {
+        Args: {
+          p_end: string
+          p_listings: string[]
+          p_max_stay?: number
+          p_min_stay?: number
+          p_quantity?: number
+          p_start: string
+          p_status: Database["public"]["Enums"]["availability_status"]
+          p_weekdays?: number[]
+        }
+        Returns: number
+      }
       submit_partner_application: { Args: { p_payload: Json }; Returns: Json }
       trip_slack_days: { Args: never; Returns: number }
     }
@@ -2966,6 +3730,12 @@ export type Database = {
         | "analyst"
         | "risk_manager"
       application_status: "new" | "reviewing" | "accepted" | "rejected"
+      availability_status:
+        | "available"
+        | "blocked"
+        | "booked"
+        | "maintenance"
+        | "closed"
       booking_status: "pending" | "confirmed" | "cancelled"
       campaign_status: "draft" | "scheduled" | "sending" | "sent" | "cancelled"
       cancellation_policy: "free_2h" | "free_24h" | "non_refundable"
@@ -2978,6 +3748,14 @@ export type Database = {
       confirmation_mode: "automatique" | "manuelle"
       content_status: "draft" | "published" | "archived"
       customer_status: "active" | "suspended" | "closed"
+      discount_kind:
+        | "early_booking"
+        | "last_minute"
+        | "weekly"
+        | "monthly"
+        | "seasonal"
+        | "promo_code"
+        | "returning"
       dispute_category:
         | "customer_vs_partner"
         | "payment"
@@ -3000,6 +3778,16 @@ export type Database = {
         | "awaiting_evidence"
         | "resolved"
         | "closed"
+      fee_kind:
+        | "cleaning"
+        | "service"
+        | "resort"
+        | "delivery"
+        | "extra_guest"
+        | "deposit"
+        | "tax"
+        | "other"
+      integration_status: "connected" | "disconnected" | "error"
       invoice_status: "draft" | "issued" | "paid" | "void" | "overdue"
       listing_kind: "stay" | "restaurant" | "car"
       listing_status:
@@ -3011,11 +3799,21 @@ export type Database = {
         | "rejected"
         | "suspended"
         | "archived"
+      maintenance_kind: "maintenance" | "inspection" | "cleaning" | "repair"
       partner_document_status:
         | "uploaded"
         | "under_review"
         | "approved"
         | "rejected"
+      partner_member_role:
+        | "owner"
+        | "manager"
+        | "reservations_agent"
+        | "front_desk"
+        | "finance"
+        | "marketing"
+        | "viewer"
+      partner_member_status: "invited" | "active" | "inactive"
       partner_status:
         | "pending"
         | "active"
@@ -3034,6 +3832,7 @@ export type Database = {
         | "chargeback"
       payout_method: "bank" | "card" | "mobile"
       payout_status: "ready" | "processing" | "paid" | "failed" | "held"
+      pickup_kind: "office" | "airport" | "hotel_delivery" | "custom"
       price_band: "$" | "$$" | "$$$" | "$$$$"
       promotion_kind:
         | "percentage"
@@ -3044,6 +3843,13 @@ export type Database = {
         | "destination"
         | "seasonal"
       promotion_status: "draft" | "scheduled" | "active" | "paused" | "expired"
+      rate_kind:
+        | "base"
+        | "weekend"
+        | "weekly"
+        | "monthly"
+        | "seasonal"
+        | "special_date"
       refund_status:
         | "requested"
         | "under_review"
@@ -3060,6 +3866,7 @@ export type Database = {
         | "other"
       review_status: "pending" | "published" | "hidden" | "flagged" | "removed"
       staff_status: "invited" | "active" | "inactive"
+      table_status: "available" | "reserved" | "occupied" | "blocked"
       ticket_priority: "low" | "normal" | "high" | "urgent"
       ticket_status:
         | "new"
@@ -3215,6 +4022,13 @@ export const Constants = {
         "risk_manager",
       ],
       application_status: ["new", "reviewing", "accepted", "rejected"],
+      availability_status: [
+        "available",
+        "blocked",
+        "booked",
+        "maintenance",
+        "closed",
+      ],
       booking_status: ["pending", "confirmed", "cancelled"],
       campaign_status: ["draft", "scheduled", "sending", "sent", "cancelled"],
       cancellation_policy: ["free_2h", "free_24h", "non_refundable"],
@@ -3228,6 +4042,15 @@ export const Constants = {
       confirmation_mode: ["automatique", "manuelle"],
       content_status: ["draft", "published", "archived"],
       customer_status: ["active", "suspended", "closed"],
+      discount_kind: [
+        "early_booking",
+        "last_minute",
+        "weekly",
+        "monthly",
+        "seasonal",
+        "promo_code",
+        "returning",
+      ],
       dispute_category: [
         "customer_vs_partner",
         "payment",
@@ -3253,6 +4076,17 @@ export const Constants = {
         "resolved",
         "closed",
       ],
+      fee_kind: [
+        "cleaning",
+        "service",
+        "resort",
+        "delivery",
+        "extra_guest",
+        "deposit",
+        "tax",
+        "other",
+      ],
+      integration_status: ["connected", "disconnected", "error"],
       invoice_status: ["draft", "issued", "paid", "void", "overdue"],
       listing_kind: ["stay", "restaurant", "car"],
       listing_status: [
@@ -3265,12 +4099,23 @@ export const Constants = {
         "suspended",
         "archived",
       ],
+      maintenance_kind: ["maintenance", "inspection", "cleaning", "repair"],
       partner_document_status: [
         "uploaded",
         "under_review",
         "approved",
         "rejected",
       ],
+      partner_member_role: [
+        "owner",
+        "manager",
+        "reservations_agent",
+        "front_desk",
+        "finance",
+        "marketing",
+        "viewer",
+      ],
+      partner_member_status: ["invited", "active", "inactive"],
       partner_status: [
         "pending",
         "active",
@@ -3291,6 +4136,7 @@ export const Constants = {
       ],
       payout_method: ["bank", "card", "mobile"],
       payout_status: ["ready", "processing", "paid", "failed", "held"],
+      pickup_kind: ["office", "airport", "hotel_delivery", "custom"],
       price_band: ["$", "$$", "$$$", "$$$$"],
       promotion_kind: [
         "percentage",
@@ -3302,6 +4148,14 @@ export const Constants = {
         "seasonal",
       ],
       promotion_status: ["draft", "scheduled", "active", "paused", "expired"],
+      rate_kind: [
+        "base",
+        "weekend",
+        "weekly",
+        "monthly",
+        "seasonal",
+        "special_date",
+      ],
       refund_status: [
         "requested",
         "under_review",
@@ -3320,6 +4174,7 @@ export const Constants = {
       ],
       review_status: ["pending", "published", "hidden", "flagged", "removed"],
       staff_status: ["invited", "active", "inactive"],
+      table_status: ["available", "reserved", "occupied", "blocked"],
       ticket_priority: ["low", "normal", "high", "urgent"],
       ticket_status: [
         "new",

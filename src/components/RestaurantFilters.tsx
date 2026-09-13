@@ -38,7 +38,7 @@ export function restaurantMatches(
 ): boolean {
   const a = attrsOf(listing);
 
-  if (f.minRating !== null && listing.rating < f.minRating) return false;
+  if (f.minRating !== null && (listing.rating ?? 0) < f.minRating) return false;
   // "Complet" in the canvas means no bookable slot tonight.
   if (f.availableTonight && (a.full === true || (a.slots ?? []).length === 0)) return false;
   if (f.cities.length && !f.cities.includes(listing.city)) return false;
