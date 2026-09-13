@@ -409,8 +409,10 @@ export function Reviews() {
               )}
 
               {r.partner_reply ? (
-                <div className="mt-3 rounded-lg border-l-2 border-[#002089] bg-admin-canvas px-3 py-2">
-                  <p className="text-[11.5px] font-semibold text-[#002089]">Votre réponse</p>
+                /* Indented and tinted rather than tagged with an accent stripe:
+                   the nesting already says "reply", and the label says whose. */
+                <div className="ml-5 mt-3 rounded-lg bg-admin-canvas px-3 py-2.5">
+                  <p className="text-[11.5px] font-semibold text-admin-ink-2">Votre réponse</p>
                   <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-admin-ink">
                     {r.partner_reply}
                   </p>
