@@ -77,7 +77,7 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
           ) : (
             <>
               <Link
-                to="/login"
+                to="/connexion"
                 className="text-sm text-[#6ad7fb] hover:text-white px-4 py-2 rounded-lg transition-colors font-medium"
               >
                 Se connecter
@@ -159,7 +159,7 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
             ) : (
               <>
                 <Link
-                  to="/login"
+                  to="/connexion"
                   className="min-h-[48px] flex items-center justify-center rounded-xl border border-white/25 px-4 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
                 >
                   Se connecter

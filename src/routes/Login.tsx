@@ -120,7 +120,14 @@ export function Login() {
         Continuer avec Google
       </button>
 
+      {/* A partner who lands on the traveller form is one click away from their
+          own, rather than stuck wondering why their dashboard is not here. */}
       <span className="text-[13.5px] text-[#7a6355] text-center">
+        Vous gérez un établissement ?{" "}
+        <Link to="/partenaire" className="text-[#e76f2e] font-bold">
+          Espace partenaire
+        </Link>
+        <br />
         Pas encore de compte ?{" "}
         <Link to="/signup" className="text-[#002089] font-bold">
           S'inscrire

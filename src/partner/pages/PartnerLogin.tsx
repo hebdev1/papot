@@ -92,11 +92,15 @@ export function PartnerLogin() {
           </Button>
 
           <p className="mt-4 text-center text-[12px] leading-relaxed text-admin-ink-3">
+            Vous cherchez vos réservations ?{" "}
+            <Link to="/login" className="font-semibold text-[#002089] hover:underline">
+              Espace voyageur
+            </Link>
+            <br />
             Pas encore partenaire ?{" "}
             <Link to="/" className="font-semibold text-[#002089] hover:underline">
               Proposez votre établissement
             </Link>
-            .
           </p>
         </form>
 

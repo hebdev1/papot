@@ -12,6 +12,7 @@ import { Login } from "./routes/Login";
 import { Signup } from "./routes/Signup";
 import { ResetNew, ResetRequest } from "./routes/ResetPassword";
 import { CheckEmail } from "./routes/CheckEmail";
+import { ChooseAccount } from "./routes/ChooseAccount";
 import { Property } from "./routes/Property";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
@@ -34,6 +35,7 @@ const PartnerApp = lazy(() => import("./partner/PartnerApp"));
 
 /** Routes that render their own full-page layout, without the site chrome. */
 const BARE_ROUTES = [
+  "/connexion",
   "/login",
   "/signup",
   "/reset-password",
@@ -136,6 +138,7 @@ function Shell() {
   if (bare) {
     return (
       <Routes>
+        <Route path="/connexion" element={<ChooseAccount />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetRequest />} />
