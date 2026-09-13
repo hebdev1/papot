@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2, X } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 import { Button, inputClass, labelClass } from "./Ui";
 
 /**

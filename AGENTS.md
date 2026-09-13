@@ -54,6 +54,25 @@ npx supabase link --project-ref sqkbtygodsomekizhhyj
 npx supabase db pull
 ```
 
+## Partner dashboard
+
+The business-facing dashboard lives under `src/partner/` and is mounted lazily
+at `/partenaire`. It shares the console design system in `src/console/` with the
+admin: `Ui`, `DataTable`, `Dialog`, `Charts`, `Cards`, `StatusBadge`, `format`
+and the `data` layer (`useTable` / `useRow` / `useRpc`). Anything admin-only —
+audit trail, internal notes, saved views — stays in `src/admin/lib/adminData.ts`.
+
+**A partner is a business, not a person.** `partner_members` links users to a
+business with one of 7 roles over 15 permissions; `partner_can(partner_id, perm)`
+and `my_partner_ids()` are the gates. Every partner-facing table carries an RLS
+policy keyed to the caller's own business, so `useTable("listings")` returns the
+partner's listings for a partner and all of them for an admin, without the page
+knowing the difference.
+
+The navigation tree in `lib/nav.ts` is filtered twice: by role permissions and
+by business type. A restaurant never sees "Chambres"; a car rental never sees
+"Menu".
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`

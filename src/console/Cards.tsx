@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, HelpCircle, Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 import { Sparkline } from "./Charts";
 import { SEVERITY } from "./StatusBadge";
 import { Skeleton } from "./Ui";

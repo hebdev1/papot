@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Lock, Save, ShieldCheck } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { cn } from "../../lib/utils";
-import { Button, Callout, Card, CardHeader, PageHeader, Skeleton } from "../components/Ui";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
+import { Button, Callout, Card, CardHeader, PageHeader, Skeleton } from "../../console/Ui";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
 import { ROLE_LABEL, adminError, useAdmin, type AdminRole } from "../lib/adminAuth";
 import { adminRpc,useTable } from "../lib/adminData";
-import { count } from "../lib/format";
+import { count } from "../../console/format";
 
 type Permission = { code: string; label_fr: string; group_name: string; sensitive: boolean; position: number };
 type RolePermission = { role: string; permission: string };

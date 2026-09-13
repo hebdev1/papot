@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import { BookOpen, LifeBuoy, LogOut, Mail, ShieldCheck } from "lucide-react";
-import { Button, Card, CardHeader, Field, FieldGrid, PageHeader } from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
+import { Button, Card, CardHeader, Field, FieldGrid, PageHeader } from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
 import { useAuth } from "../../lib/auth";
 import { ROLE_LABEL, useAdmin } from "../lib/adminAuth";
 import { useTable } from "../lib/adminData";
-import { avatarTint, initials, stamp } from "../lib/format";
+import { avatarTint, initials, stamp } from "../../console/format";
 
 export function AdminProfile() {
   const { me } = useAdmin();

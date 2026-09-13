@@ -21,15 +21,15 @@ import {
   PageHeader,
   Skeleton,
   Tabs,
-} from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { StatusBadge } from "../components/StatusBadge";
+} from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail, InternalNotes } from "../components/Panels";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
-import { DataTable, type Column } from "../components/DataTable";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
+import { DataTable, type Column } from "../../console/DataTable";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useRow, useRpc, useTable } from "../lib/adminData";
-import { ago, day, money, stamp } from "../lib/format";
+import { ago, day, money, stamp } from "../../console/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
 import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../../lib/supabase";
 import type { Tables } from "../../types/database";

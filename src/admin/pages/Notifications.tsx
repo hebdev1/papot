@@ -8,14 +8,14 @@ import {
   inputClass,
   labelClass,
   selectClass,
-} from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+} from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminTable,useTable } from "../lib/adminData";
-import { count, stamp } from "../lib/format";
+import { count, stamp } from "../../console/format";
 
 type Campaign = {
   id: string;

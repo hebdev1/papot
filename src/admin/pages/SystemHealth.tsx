@@ -1,9 +1,9 @@
 import { Activity, CheckCircle2, RefreshCw } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Button, Callout, Card, CardHeader, PageHeader, Skeleton } from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
+import { Button, Callout, Card, CardHeader, PageHeader, Skeleton } from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
 import { useTable } from "../lib/adminData";
-import { ago } from "../lib/format";
+import { ago } from "../../console/format";
 
 type Service = {
   key: string;

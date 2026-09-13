@@ -10,9 +10,9 @@ import {
   Inbox,
   MoreHorizontal,
 } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn } from "../lib/utils";
 import { Button, EmptyState, ErrorState, SkeletonRows } from "./Ui";
-import type { SortDir } from "../lib/adminData";
+
 
 /**
  * One table for the whole console (spec §59).
@@ -24,6 +24,9 @@ import type { SortDir } from "../lib/adminData";
  * Row actions live behind a single ••• menu: fifteen buttons per row is the
  * pattern §59 explicitly rules out.
  */
+
+/** Sort direction, shared by every console table and its data layer. */
+export type SortDir = "asc" | "desc";
 
 export type Column<T> = {
   id: string;

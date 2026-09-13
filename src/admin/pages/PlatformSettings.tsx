@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { cn } from "../../lib/utils";
-import { Button, Callout, Card, CardHeader, PageHeader, Skeleton, inputClass, labelClass } from "../components/Ui";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
+import { Button, Callout, Card, CardHeader, PageHeader, Skeleton, inputClass, labelClass } from "../../console/Ui";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useTable } from "../lib/adminData";
-import { stamp } from "../lib/format";
+import { stamp } from "../../console/format";
 
 type Setting = {
   key: string;

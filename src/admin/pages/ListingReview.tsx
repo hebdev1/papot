@@ -13,13 +13,13 @@ import {
   FieldGrid,
   PageHeader,
   Skeleton,
-} from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
+} from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail, InternalNotes } from "../components/Panels";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useRow } from "../lib/adminData";
-import { count, money, stamp } from "../lib/format";
+import { count, money, stamp } from "../../console/format";
 import { KIND_LABEL, type ListingRow } from "./Listings";
 
 /**

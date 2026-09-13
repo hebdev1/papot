@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { Shield, ShieldAlert } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Button, Callout, Card, CardHeader, PageHeader } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+import { Button, Callout, Card, CardHeader, PageHeader } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { SeverityBadge } from "../components/StatusBadge";
+import { SeverityBadge } from "../../console/StatusBadge";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminTable,useTable, type Filter } from "../lib/adminData";
-import { ago, count, stamp } from "../lib/format";
+import { ago, count, stamp } from "../../console/format";
 
 type SecurityEvent = {
   id: number;

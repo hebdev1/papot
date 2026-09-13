@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Button, Callout, PageHeader, inputClass, labelClass, selectClass } from "../components/Ui";
-import { DataTable, type Column } from "../components/DataTable";
+import { Button, Callout, PageHeader, inputClass, labelClass, selectClass } from "../../console/Ui";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminTable,searchAcross, useDebounced, useTable, type Filter } from "../lib/adminData";
-import { count, stamp } from "../lib/format";
+import { count, stamp } from "../../console/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
 
 type Block = {

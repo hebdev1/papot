@@ -30,6 +30,7 @@ import { useAuth } from "./lib/auth";
 // admin screen, chart and table into the JavaScript a first-time visitor
 // downloads to look at one listing.
 const AdminApp = lazy(() => import("./admin/AdminApp"));
+const PartnerApp = lazy(() => import("./partner/PartnerApp"));
 
 /** Routes that render their own full-page layout, without the site chrome. */
 const BARE_ROUTES = [
@@ -70,6 +71,25 @@ function Shell() {
   // The admin console is a separate application: its own shell, its own
   // navigation, its own guard. It deliberately renders none of the public site
   // chrome, and lazy-mounting it here keeps it out of every other route.
+  // The partner dashboard is its own application and its own bundle, for the
+  // same reason as the admin console: a traveller browsing listings should not
+  // download a business operations centre.
+  if (pathname.startsWith("/partenaire")) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-[#F6F7F9]">
+            <span className="grid h-11 w-11 place-content-center rounded-xl bg-[#002089] font-display text-lg font-bold text-white">
+              P
+            </span>
+          </div>
+        }
+      >
+        <PartnerApp />
+      </Suspense>
+    );
+  }
+
   if (pathname.startsWith("/admin")) {
     return (
       <Suspense

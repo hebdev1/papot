@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { Button, inputClass, labelClass } from "../../console/Ui";
 
 /**
- * Sign-in for the console, rendered in place at /admin.
+ * Sign-in for the partner dashboard, rendered in place at /partenaire.
  *
- * Redirecting to the public /login worked, but it moved the address bar to
- * /login?next=%2Fadmin and handed staff the customer's sign-in page, complete
- * with "S'inscrire" and "Continuer avec Google" — neither of which applies to
- * an internal console. Staying on /admin keeps the URL people bookmark, and
- * once the session lands the provider re-reads admin_me() and the console
- * appears without a navigation.
+ * Staying on the URL matters more here than for the admin: a partner bookmarks
+ * this page and opens it every morning. Redirecting to the public /login would
+ * replace that address and hand them the traveller's sign-in page.
  *
- * Nothing here grants access. It only obtains a session; whether that session
- * belongs to staff is decided by the database.
+ * Nothing here grants access. It obtains a session; whether that session
+ * belongs to a partner is decided by partner_me() and RLS.
  */
-export function AdminLogin() {
+export function PartnerLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,11 +31,7 @@ export function AdminLogin() {
     });
 
     setBusy(false);
-    if (error) {
-      // Deliberately not saying which of the two was wrong.
-      setError("Courriel ou mot de passe incorrect.");
-    }
-    // On success the auth listener updates the session and the guard re-runs.
+    if (error) setError("Courriel ou mot de passe incorrect.");
   };
 
   return (
@@ -49,10 +42,10 @@ export function AdminLogin() {
             P
           </span>
           <h1 className="font-display text-[22px] font-semibold tracking-tight text-admin-ink">
-            Console d'administration
+            Espace partenaire
           </h1>
           <p className="mt-1 text-[13.5px] text-admin-ink-2">
-            Réservée au personnel de PAPOT.
+            Gérez vos annonces, vos réservations et vos revenus.
           </p>
         </div>
 
@@ -61,11 +54,9 @@ export function AdminLogin() {
           className="rounded-xl border border-admin-line bg-admin-surface p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
         >
           <div className="mb-4">
-            <label className={labelClass} htmlFor="admin-email">
-              Courriel
-            </label>
+            <label className={labelClass} htmlFor="p-email">Courriel</label>
             <input
-              id="admin-email"
+              id="p-email"
               type="email"
               required
               autoComplete="email"
@@ -77,11 +68,9 @@ export function AdminLogin() {
           </div>
 
           <div className="mb-5">
-            <label className={labelClass} htmlFor="admin-password">
-              Mot de passe
-            </label>
+            <label className={labelClass} htmlFor="p-password">Mot de passe</label>
             <input
-              id="admin-password"
+              id="p-password"
               type="password"
               required
               autoComplete="current-password"
@@ -92,22 +81,22 @@ export function AdminLogin() {
           </div>
 
           {error && (
-            <p
-              role="alert"
-              className="mb-4 rounded-lg bg-[#fdf3f2] px-3 py-2 text-[13px] font-medium text-[#b3261e]"
-            >
+            <p role="alert" className="mb-4 rounded-lg bg-[#fdf3f2] px-3 py-2 text-[13px] font-medium text-[#b3261e]">
               {error}
             </p>
           )}
 
           <Button variant="primary" size="lg" type="submit" className="w-full" disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 papot-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
+            {busy ? <Loader2 className="h-4 w-4 papot-spin" aria-hidden /> : <LogIn className="h-4 w-4" aria-hidden />}
             Se connecter
           </Button>
 
           <p className="mt-4 text-center text-[12px] leading-relaxed text-admin-ink-3">
-            Les accès sont attribués par un administrateur. Il n'y a pas
-            d'inscription à cette console.
+            Pas encore partenaire ?{" "}
+            <Link to="/" className="font-semibold text-[#002089] hover:underline">
+              Proposez votre établissement
+            </Link>
+            .
           </p>
         </form>
 

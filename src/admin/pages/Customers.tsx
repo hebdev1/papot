@@ -2,15 +2,15 @@ import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Users } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { PageHeader } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+import { PageHeader } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,exportCsv, searchAcross, useDebounced, useRpc, useTable, type Filter } from "../lib/adminData";
-import { ago, avatarTint, count, day, initials, money } from "../lib/format";
+import { ago, avatarTint, count, day, initials, money } from "../../console/format";
 
 export type CustomerRow = {
   id: string;

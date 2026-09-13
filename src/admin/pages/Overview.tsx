@@ -11,13 +11,13 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { Button, Card, CardHeader, PageHeader } from "../components/Ui";
-import { HealthCard, MetricCard } from "../components/Cards";
+import { Button, Card, CardHeader, PageHeader } from "../../console/Ui";
+import { HealthCard, MetricCard } from "../../console/Cards";
 import { ActivityFeed, type FeedEvent } from "../components/Panels";
-import { BarList, Donut, GeoMap, LineChart } from "../components/Charts";
+import { BarList, Donut, GeoMap, LineChart } from "../../console/Charts";
 import { useRpc } from "../lib/adminData";
 import { useAdmin } from "../lib/adminAuth";
-import { change, count, dayShort, money, moneyShort } from "../lib/format";
+import { change, count, dayShort, money, moneyShort } from "../../console/format";
 import type { BadgeCounts } from "../lib/nav";
 
 type Overview = {

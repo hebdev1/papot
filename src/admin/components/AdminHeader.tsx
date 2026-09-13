@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth";
 import { ROLE_LABEL, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useDebounced } from "../lib/adminData";
-import { avatarTint, initials } from "../lib/format";
+import { avatarTint, initials } from "../../console/format";
 import type { BadgeCounts } from "../lib/nav";
 
 type SearchHit = { group_name: string; id: string; title: string; subtitle: string | null; href: string };

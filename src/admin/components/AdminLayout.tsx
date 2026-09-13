@@ -24,7 +24,7 @@ import {
   type BadgeCounts,
   type NavItem,
 } from "../lib/nav";
-import { avatarTint, initials } from "../lib/format";
+import { avatarTint, initials } from "../../console/format";
 import { AdminHeader } from "./AdminHeader";
 import { CommandPalette } from "./CommandPalette";
 

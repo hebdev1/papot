@@ -1,8 +1,8 @@
 import { CheckCircle2, ExternalLink, Plug, XCircle } from "lucide-react";
-import { Callout, Card, CardHeader, PageHeader } from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
+import { Callout, Card, CardHeader, PageHeader } from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
 import { useTable } from "../lib/adminData";
-import { ago } from "../lib/format";
+import { ago } from "../../console/format";
 
 type Service = { key: string; label_fr: string; status: string; detail_fr: string | null; checked_at: string };
 

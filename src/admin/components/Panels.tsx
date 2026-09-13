@@ -14,9 +14,9 @@ import {
   StickyNote,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Button, Card, CardHeader, EmptyState, Skeleton, inputClass } from "./Ui";
-import { SEVERITY } from "./StatusBadge";
-import { ago, avatarTint, initials, stamp } from "../lib/format";
+import { Button, Card, CardHeader, EmptyState, Skeleton, inputClass } from "../../console/Ui";
+import { SEVERITY } from "../../console/StatusBadge";
+import { ago, avatarTint, initials, stamp } from "../../console/format";
 import { useAuditTrail, useInternalNotes, type AuditEntry } from "../lib/adminData";
 
 /** Live operations feed (spec §6). */

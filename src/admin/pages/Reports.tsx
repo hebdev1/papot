@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Download, FileBarChart, Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Button, Callout, Card, CardHeader, PageHeader, inputClass, labelClass } from "../components/Ui";
+import { Button, Callout, Card, CardHeader, PageHeader, inputClass, labelClass } from "../../console/Ui";
 import { adminTable,exportCsv } from "../lib/adminData";
 import { adminError } from "../lib/adminAuth";
 

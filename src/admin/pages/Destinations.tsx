@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { MapPin, Plus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Button, PageHeader, inputClass, labelClass } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
+import { Button, PageHeader, inputClass, labelClass } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminTable,useRpc, useTable } from "../lib/adminData";
-import { count, money } from "../lib/format";
+import { count, money } from "../../console/format";
 
 type Destination = {
   id: string;

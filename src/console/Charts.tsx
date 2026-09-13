@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
-import { cn } from "../../lib/utils";
-import { count, money } from "../lib/format";
+import { cn } from "../lib/utils";
+import { count, money } from "./format";
 
 /**
  * Charts are hand-rolled SVG rather than a charting library.

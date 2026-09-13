@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { KeyRound, UserPlus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Button, Callout, PageHeader, inputClass, labelClass, selectClass } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+import { Button, Callout, PageHeader, inputClass, labelClass, selectClass } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { ROLE_LABEL, adminError, useAdmin, type AdminRole } from "../lib/adminAuth";
 import { adminRpc,useTable } from "../lib/adminData";
-import { ago, avatarTint, count, initials, stamp } from "../lib/format";
+import { ago, avatarTint, count, initials, stamp } from "../../console/format";
 
 type StaffRow = {
   user_id: string;

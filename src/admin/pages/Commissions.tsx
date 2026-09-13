@@ -11,12 +11,12 @@ import {
   inputClass,
   labelClass,
   selectClass,
-} from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
+} from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminTable,useTable } from "../lib/adminData";
-import { day, money, percent } from "../lib/format";
+import { day, money, percent } from "../../console/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
 import { KIND_LABEL } from "./Listings";
 

@@ -11,13 +11,13 @@ import {
   FieldGrid,
   PageHeader,
   Skeleton,
-} from "../components/Ui";
-import { StatusBadge } from "../components/StatusBadge";
+} from "../../console/Ui";
+import { StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail, InternalNotes } from "../components/Panels";
-import { ConfirmDialog, useConfirm } from "../components/Dialog";
+import { ConfirmDialog, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useRow, useTable } from "../lib/adminData";
-import { money, percent, range, stamp } from "../lib/format";
+import { money, percent, range, stamp } from "../../console/format";
 import { KIND_LABEL } from "./Listings";
 import type { ReservationRow } from "./Reservations";
 

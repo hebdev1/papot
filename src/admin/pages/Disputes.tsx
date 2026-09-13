@@ -13,16 +13,16 @@ import {
   Skeleton,
   inputClass,
   labelClass,
-} from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+} from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { Modal } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+import { Modal } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail, InternalNotes } from "../components/Panels";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,searchAcross, useDebounced, useRow, useTable, type Filter } from "../lib/adminData";
-import { money, stamp } from "../lib/format";
+import { money, stamp } from "../../console/format";
 
 type DisputeRow = {
   id: string;

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { Card, CardHeader, PageHeader } from "../components/Ui";
-import { MetricCard } from "../components/Cards";
-import { BarList, Donut, LineChart } from "../components/Charts";
+import { Card, CardHeader, PageHeader } from "../../console/Ui";
+import { MetricCard } from "../../console/Cards";
+import { BarList, Donut, LineChart } from "../../console/Charts";
 import { useRpc } from "../lib/adminData";
-import { count, dayShort, money, moneyShort, percent } from "../lib/format";
+import { count, dayShort, money, moneyShort, percent } from "../../console/format";
 
 type FinanceStats = {
   gbv: number;

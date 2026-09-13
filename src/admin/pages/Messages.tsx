@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { MessageSquare, ShieldAlert } from "lucide-react";
-import { Callout, Card, CardHeader, PageHeader } from "../components/Ui";
-import { DataTable, type Column } from "../components/DataTable";
+import { Callout, Card, CardHeader, PageHeader } from "../../console/Ui";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { Drawer } from "../components/Dialog";
-import { Stat } from "../components/Cards";
+import { Drawer } from "../../console/Dialog";
+import { Stat } from "../../console/Cards";
 import { useAdmin } from "../lib/adminAuth";
 import { useTable, type Filter } from "../lib/adminData";
-import { ago, avatarTint, count, initials, stamp } from "../lib/format";
+import { ago, avatarTint, count, initials, stamp } from "../../console/format";
 
 type Conversation = {
   id: string;

@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { ScrollText } from "lucide-react";
-import { Callout, PageHeader } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+import { Callout, PageHeader } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { Drawer } from "../components/Dialog";
-import { SeverityBadge } from "../components/StatusBadge";
+import { Drawer } from "../../console/Dialog";
+import { SeverityBadge } from "../../console/StatusBadge";
 import { actionLabel, diffFields } from "../components/Panels";
 import { exportCsv, searchAcross, useDebounced, useTable, type AuditEntry, type Filter } from "../lib/adminData";
-import { avatarTint, count, initials, stamp } from "../lib/format";
+import { avatarTint, count, initials, stamp } from "../../console/format";
 
 /** Spec §48. */
 export function AuditLogs() {

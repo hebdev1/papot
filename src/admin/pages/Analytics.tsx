@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { Button, Callout, Card, CardHeader, PageHeader, Tabs } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { BarList, Donut, Funnel, LineChart } from "../components/Charts";
+import { Button, Callout, Card, CardHeader, PageHeader, Tabs } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { BarList, Donut, Funnel, LineChart } from "../../console/Charts";
 import { useRpc } from "../lib/adminData";
-import { count, dayShort, money, moneyShort, percent } from "../lib/format";
+import { count, dayShort, money, moneyShort, percent } from "../../console/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
 
 type SeriesRow = { day: string; gbv: number; revenue: number; refunds: number; payouts: number };

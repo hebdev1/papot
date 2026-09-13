@@ -3,7 +3,7 @@ import { Lock, ShieldAlert } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { AdminProvider, useAdmin } from "./lib/adminAuth";
 import { AdminBooting, AdminLayout } from "./components/AdminLayout";
-import { Button, Card, PageHeader } from "./components/Ui";
+import { Button, Card, PageHeader } from "../console/Ui";
 
 import { Overview } from "./pages/Overview";
 import { Customers } from "./pages/Customers";

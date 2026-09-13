@@ -15,15 +15,15 @@ import {
   Tabs,
   inputClass,
   selectClass,
-} from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+} from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { PriorityBadge, StatusBadge } from "../components/StatusBadge";
+import { PriorityBadge, StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail } from "../components/Panels";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,searchAcross, useDebounced, useRow, useRpc, useTable, type Filter } from "../lib/adminData";
-import { ago, avatarTint, count, initials, money, stamp } from "../lib/format";
+import { ago, avatarTint, count, initials, money, stamp } from "../../console/format";
 
 type TicketRow = {
   id: string;

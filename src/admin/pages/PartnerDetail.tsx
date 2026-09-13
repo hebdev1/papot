@@ -14,14 +14,14 @@ import {
   Tabs,
   inputClass,
   labelClass,
-} from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { StatusBadge } from "../components/StatusBadge";
+} from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { StatusBadge } from "../../console/StatusBadge";
 import { AuditTrail, InternalNotes } from "../components/Panels";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useRow, useTable } from "../lib/adminData";
-import { ago, count, day, money, percent, range } from "../lib/format";
+import { ago, count, day, money, percent, range } from "../../console/format";
 import { PARTNER_TYPE_LABEL, type PartnerRow } from "./Partners";
 import { SimpleList } from "./CustomerDetail";
 

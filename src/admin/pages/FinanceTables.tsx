@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { Button, PageHeader } from "../components/Ui";
-import { Stat } from "../components/Cards";
-import { DataTable, type Column } from "../components/DataTable";
+import { Button, PageHeader } from "../../console/Ui";
+import { Stat } from "../../console/Cards";
+import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
-import { ConfirmDialog, Modal, useConfirm } from "../components/Dialog";
-import { StatusBadge } from "../components/StatusBadge";
+import { ConfirmDialog, Modal, useConfirm } from "../../console/Dialog";
+import { StatusBadge } from "../../console/StatusBadge";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,exportCsv, searchAcross, useDebounced, useRpc, useTable, type Filter } from "../lib/adminData";
-import { count, day, money, range, stamp } from "../lib/format";
-import { inputClass, labelClass } from "../components/Ui";
+import { count, day, money, range, stamp } from "../../console/format";
+import { inputClass, labelClass } from "../../console/Ui";
 
 /** Shared URL-backed filter state for the finance tables. */
 function useFilterState(keys: string[]) {

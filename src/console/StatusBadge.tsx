@@ -15,7 +15,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import { Badge } from "../../components/ui/cvui-badge";
+import { Badge } from "../components/ui/cvui-badge";
 
 /**
  * The status system (spec §61). One table maps every status string the platform
