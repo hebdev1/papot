@@ -43,8 +43,10 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("mb-4 flex items-start justify-between gap-4", className)}>
-      <div className="min-w-0">
+    // flex-wrap so a wide action (a range picker, a set of toggles) drops onto
+    // its own line on a narrow screen instead of pushing the card off-viewport.
+    <header className={cn("mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2", className)}>
+      <div className="min-w-[min(100%,12rem)] flex-1">
         <h2 className="font-display text-[15px] font-semibold leading-tight text-admin-ink">{title}</h2>
         {subtitle && <p className="mt-0.5 text-[13px] text-admin-ink-3">{subtitle}</p>}
       </div>

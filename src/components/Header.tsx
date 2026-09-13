@@ -1,4 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import { useAuth } from "../lib/auth";
 
@@ -13,6 +14,20 @@ const NAV = [
 
 export function Header({ onPartner }: { onPartner?: () => void }) {
   const { user } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname, search } = useLocation();
+
+  // Close the sheet after navigating, or it stays over the new page.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname, search]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   return (
     <header className="bg-[#002089] sticky top-0 z-40 shadow-lg shadow-[rgba(0,32,137,0.3)]">
@@ -40,7 +55,10 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Desktop actions. Below md these overflowed a 375px screen, and the
+            nav above was hidden with nothing to replace it, so a phone could
+            not reach Hébergements, Voitures, Restaurants or Vols at all. */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {onPartner && (
             <button
               onClick={onPartner}
@@ -73,7 +91,90 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
             </>
           )}
         </div>
+
+        {/* Mobile: one 44px target that opens everything. */}
+        <button
+          onClick={() => setMenuOpen(o => !o)}
+          aria-expanded={menuOpen}
+          aria-controls="menu-mobile"
+          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          className="md:hidden shrink-0 w-11 h-11 -mr-2 flex flex-col items-center justify-center gap-[5px] rounded-lg text-white transition-colors hover:bg-white/10"
+        >
+          <span
+            className={`block h-[2px] w-5 rounded-full bg-current transition-transform duration-200 ${
+              menuOpen ? "translate-y-[7px] rotate-45" : ""
+            }`}
+          />
+          <span
+            className={`block h-[2px] w-5 rounded-full bg-current transition-opacity duration-200 ${
+              menuOpen ? "opacity-0" : ""
+            }`}
+          />
+          <span
+            className={`block h-[2px] w-5 rounded-full bg-current transition-transform duration-200 ${
+              menuOpen ? "-translate-y-[7px] -rotate-45" : ""
+            }`}
+          />
+        </button>
       </div>
+
+      {menuOpen && (
+        <div id="menu-mobile" className="md:hidden border-t border-white/15 bg-[#002089] px-4 pb-4 pt-2">
+          <nav className="flex flex-col">
+            {NAV.map(n => (
+              <NavLink
+                key={n.label}
+                to={n.to}
+                className={({ isActive }) =>
+                  `min-h-[48px] flex items-center rounded-lg px-3 text-[15px] font-medium transition-colors ${
+                    isActive ? "text-white bg-white/10" : "text-[#6ad7fb] hover:bg-white/10"
+                  }`
+                }
+              >
+                {n.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="mt-2 flex flex-col gap-2 border-t border-white/15 pt-3">
+            {onPartner && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onPartner();
+                }}
+                className="min-h-[48px] rounded-xl border border-white/25 px-4 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Devenir partenaire
+              </button>
+            )}
+
+            {user ? (
+              <Link
+                to="/compte"
+                className="min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-[15px] font-semibold text-white"
+              >
+                <Icon.Users /> Mon compte
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="min-h-[48px] flex items-center justify-center rounded-xl border border-white/25 px-4 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Se connecter
+                </Link>
+                <Link
+                  to="/signup"
+                  className="min-h-[48px] flex items-center justify-center rounded-xl bg-[#e76f2e] px-4 text-[15px] font-bold text-white shadow-md transition-colors hover:bg-[#d05e20]"
+                >
+                  S'inscrire
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

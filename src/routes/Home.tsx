@@ -124,12 +124,14 @@ export function Home({ onPartner }: { onPartner: () => void }) {
           </div>
 
           <div className="bg-white rounded-2xl shadow-2xl shadow-[rgba(0,0,0,0.25)] p-2.5 max-w-5xl mx-auto">
-            <div className="flex items-center gap-1 px-1.5 pt-1 pb-2.5 border-b border-[#e2d5c3]">
+            {/* Four tabs do not fit across 375px. They scroll rather than wrap,
+                so the row keeps its height and every service stays reachable. */}
+            <div className="flex items-center gap-1 px-1.5 pt-1 pb-2.5 border-b border-[#e2d5c3] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                  className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     activeTab === t.id
                       ? "bg-[#F5E9D8] text-[#002089]"
                       : "text-[#7a6355] hover:text-[#002089] hover:bg-[#F5E9D8]/60"
