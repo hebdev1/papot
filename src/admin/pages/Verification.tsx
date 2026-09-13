@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -31,7 +31,7 @@ import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,useRow, useRpc, useTable } from "../lib/adminData";
 import { ago, day, money, stamp } from "../lib/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
-import { PARTNER_DOCUMENTS_BUCKET } from "../../lib/supabase";
+import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../../lib/supabase";
 
 type ApplicationRow = {
   id: string;
@@ -176,6 +176,9 @@ export function VerificationDetail() {
   const navigate = useNavigate();
   const { confirm, dialogProps } = useConfirm();
   const [preview, setPreview] = useState<{ url: string; label: string } | null>(null);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const { row, loading, error, reload } = useRow<
     ApplicationRow & {
@@ -221,6 +224,38 @@ export function VerificationDetail() {
     pageSize: 50,
   });
 
+  /**
+   * Application photos are stored as bucket paths ("<id>/0.jpg"), not URLs, and
+   * the bucket is private. Rendering the raw value gave broken images on every
+   * card. They are signed here, in one call for the whole set.
+   */
+  useEffect(() => {
+    const paths = row?.photos;
+    if (!paths || paths.length === 0) {
+      setPhotoUrls([]);
+      return;
+    }
+
+    let cancelled = false;
+    void supabase.storage
+      .from(PARTNER_PHOTOS_BUCKET)
+      .createSignedUrls(paths, 3600)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          setPhotoError(error?.message ?? "Les photos n'ont pas pu être chargées.");
+          setPhotoUrls([]);
+          return;
+        }
+        setPhotoError(null);
+        setPhotoUrls(data.map(d => d.signedUrl).filter((u): u is string => !!u));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [row?.photos]);
+
   /** Required documents for this partner type, joined to what was uploaded. */
   const checklist = useMemo(() => {
     if (!row) return [];
@@ -240,10 +275,20 @@ export function VerificationDetail() {
   const openDoc = async (doc: DocRow, label: string) => {
     // Verification papers live in a private bucket; a short-lived signed URL is
     // the only way to view one, and it expires rather than leaking.
+    setDocError(null);
     const { data, error } = await supabase.storage
       .from(PARTNER_DOCUMENTS_BUCKET)
       .createSignedUrl(doc.storage_path, 300);
-    if (error || !data) return;
+
+    // Swallowing this made the button look broken: nothing opened and nothing
+    // explained why. A failure here is almost always an access rule, which is
+    // worth saying out loud.
+    if (error || !data) {
+      setDocError(
+        `Impossible d'ouvrir « ${label} ». ${error?.message ?? "Fichier introuvable dans le stockage."}`,
+      );
+      return;
+    }
     setPreview({ url: data.signedUrl, label });
   };
 
@@ -512,6 +557,12 @@ export function VerificationDetail() {
               </ul>
             )}
 
+            {docError && (
+              <div className="mt-3">
+                <Callout tone="warning">{docError}</Callout>
+              </div>
+            )}
+
             {rejectedDocs.length > 0 && (
               <div className="mt-3">
                 <Callout tone="warning">
@@ -548,17 +599,35 @@ export function VerificationDetail() {
           {row.photos && row.photos.length > 0 && (
             <Card>
               <CardHeader title="Photos" subtitle={`${row.photos.length} image(s) fournie(s).`} />
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {row.photos.map((p, i) => (
-                  <img
-                    key={i}
-                    src={p}
-                    alt={`Photo ${i + 1} de ${row.business_name}`}
-                    loading="lazy"
-                    className="aspect-[4/3] w-full rounded-lg border border-admin-line object-cover"
-                  />
-                ))}
-              </div>
+
+              {photoError ? (
+                <Callout tone="warning">{photoError}</Callout>
+              ) : photoUrls.length === 0 ? (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {row.photos.map((_, i) => (
+                    <Skeleton key={i} className="aspect-[4/3] w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {photoUrls.map((url, i) => (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group block overflow-hidden rounded-lg border border-admin-line"
+                    >
+                      <img
+                        src={url}
+                        alt={`Photo ${i + 1} de ${row.business_name}`}
+                        loading="lazy"
+                        className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </Card>
           )}
         </div>
