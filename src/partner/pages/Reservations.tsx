@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CheckCircle2, ClipboardCheck, Inbox, LogIn, LogOut, Mail, XCircle } from "lucide-react";
-import { Button, Card, CardHeader, EmptyState, Field, FieldGrid, PageHeader, Skeleton, Tabs } from "../../console/Ui";
+import { cn } from "../../lib/utils";
+import { supabase } from "../../lib/supabase";
+import { Button, Card, CardHeader, EmptyState, Field, FieldGrid, PageHeader, Skeleton, Tabs, labelClass, selectClass } from "../../console/Ui";
 import { Stat } from "../../console/Cards";
 import { DataTable, type Column } from "../../console/DataTable";
 import { StatusBadge } from "../../console/StatusBadge";
@@ -157,7 +159,85 @@ type Item = {
   ends_on: string | null;
   start_time: string | null;
   party: number | null;
+  table_id: string | null;
+  listing_id: string | null;
+  restaurant_tables: { label: string } | null;
 };
+
+/**
+ * The table a party actually holds, and a way to move them. The move goes
+ * through `reassign_reservation_table`, which re-runs the overlap check — a
+ * plain update here would let two parties share one table.
+ */
+function TableAssignment({ item, onMoved }: { item: Item; onMoved: () => void }) {
+  const { can } = usePartner();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const tables = useTable<{ id: string; label: string; min_guests: number; max_guests: number }>({
+    from: "restaurant_tables",
+    select: "id, label, min_guests, max_guests",
+    filters: [
+      { col: "listing_id", op: "eq", value: item.listing_id ?? "" },
+      { col: "active", op: "eq", value: true },
+    ],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 200,
+    enabled: !!item.listing_id && can("manage_reservations"),
+  });
+
+  const move = async (tableId: string) => {
+    if (!tableId || tableId === item.table_id) return;
+    setBusy(true);
+    setError(null);
+    const { error: err } = await supabase.rpc("reassign_reservation_table", {
+      p_item: item.id,
+      p_table: tableId,
+    });
+    setBusy(false);
+    if (err) return setError(friendlyError(err));
+    onMoved();
+  };
+
+  const label = item.restaurant_tables?.label ?? null;
+
+  if (!can("manage_reservations")) {
+    return <Field label="Table">{label ?? "Non attribuée"}</Field>;
+  }
+
+  return (
+    <div className="sm:col-span-3">
+      <label className={labelClass} htmlFor={`tbl-${item.id}`}>
+        Table
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          id={`tbl-${item.id}`}
+          value={item.table_id ?? ""}
+          onChange={e => move(e.target.value)}
+          disabled={busy}
+          className={cn(selectClass, "max-w-xs")}
+        >
+          <option value="" disabled>
+            Non attribuée
+          </option>
+          {tables.rows.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.label} · {t.min_guests}–{t.max_guests} conv.
+            </option>
+          ))}
+        </select>
+        {busy && <span className="text-[12px] text-admin-ink-3">Déplacement…</span>}
+      </div>
+      {error && <p className="mt-1.5 text-[12.5px] font-medium text-[#b3261e]">{error}</p>}
+      {!label && !error && (
+        <p className="mt-1.5 text-[11.5px] text-admin-ink-3">
+          Cette réservation a été prise avant l'attribution automatique des tables.
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** Spec §18–§21: the detail adapts its wording and actions to the service. */
 export function ReservationDetail() {
@@ -171,7 +251,8 @@ export function ReservationDetail() {
 
   const items = useTable<Item>({
     from: "booking_items",
-    select: "id, title, detail, kind, amount, status, starts_on, ends_on, start_time, party",
+    select:
+      "id, title, detail, kind, amount, status, starts_on, ends_on, start_time, party, table_id, listing_id, restaurant_tables(label)",
     filters: [{ col: "booking_id", op: "eq", value: row?.id ?? "" }],
     sort: { col: "position", dir: "asc" },
     pageSize: 20,
@@ -311,6 +392,7 @@ export function ReservationDetail() {
                           <Field label="Date">{range(i.starts_on, null)}</Field>
                           <Field label="Heure">{i.start_time?.slice(0, 5) ?? "—"}</Field>
                           <Field label="Couverts">{i.party ?? "—"}</Field>
+                          <TableAssignment item={i} onMoved={items.reload} />
                         </>
                       )}
                     </dl>
