@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BedDouble, Car, MapPin, Plus, Trash2, UtensilsCrossed, Wrench } from "lucide-react";
+import { Accessibility, BedDouble, Link2, Car, MapPin, Plus, Trash2, UtensilsCrossed, Wrench } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button, Callout, Card, CardHeader, EmptyState, PageHeader, Skeleton, inputClass, labelClass, selectClass } from "../../console/Ui";
 import { Stat } from "../../console/Cards";
@@ -543,67 +543,358 @@ export function PickupLocations() {
 }
 
 /** Spec §80–§81. */
+type CategoryRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  position: number;
+  active: boolean;
+};
+
+type DishRow = {
+  id: string;
+  category_id: string;
+  name: string;
+  detail: string | null;
+  description: string | null;
+  price: number | null;
+  discount_price: number | null;
+  prep_minutes: number | null;
+  available: boolean;
+  sold_out: boolean;
+  dietary: string[];
+  allergens: string[];
+  popular: boolean;
+  chef_special: boolean;
+  image_url: string | null;
+  available_weekdays: number[];
+  available_from: string | null;
+  available_until: string | null;
+  position: number;
+};
+
+const DIETARY = [
+  "Végétarien", "Végétalien", "Sans gluten", "Sans lactose", "Halal",
+  "Casher", "Pauvre en sel", "Keto", "Épicé", "Bio",
+];
+
+/** The nine labelled allergens, plus the catch-all the specification asks for. */
+const ALLERGENS = [
+  "Lait", "Œufs", "Poisson", "Crustacés", "Fruits à coque",
+  "Arachides", "Blé", "Soja", "Sésame", "Autre",
+];
+
+const DAY_SHORT = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+type DishDraft = {
+  name: string;
+  category_id: string;
+  detail: string;
+  description: string;
+  price: string;
+  discount_price: string;
+  prep_minutes: string;
+  image_url: string;
+  dietary: string[];
+  allergens: string[];
+  available_weekdays: number[];
+  available_from: string;
+  available_until: string;
+  available: boolean;
+  sold_out: boolean;
+  popular: boolean;
+  chef_special: boolean;
+  prep_notes: string;
+};
+
+const emptyDish = (categoryId: string): DishDraft => ({
+  name: "",
+  category_id: categoryId,
+  detail: "",
+  description: "",
+  price: "",
+  discount_price: "",
+  prep_minutes: "",
+  image_url: "",
+  dietary: [],
+  allergens: [],
+  available_weekdays: [],
+  available_from: "",
+  available_until: "",
+  available: true,
+  sold_out: false,
+  popular: false,
+  chef_special: false,
+  prep_notes: "",
+});
+
+const dishDraftOf = (d: DishRow, notes: string): DishDraft => ({
+  name: d.name,
+  category_id: d.category_id,
+  detail: d.detail ?? "",
+  description: d.description ?? "",
+  price: d.price == null ? "" : String(d.price),
+  discount_price: d.discount_price == null ? "" : String(d.discount_price),
+  prep_minutes: d.prep_minutes == null ? "" : String(d.prep_minutes),
+  image_url: d.image_url ?? "",
+  dietary: d.dietary,
+  allergens: d.allergens,
+  available_weekdays: d.available_weekdays,
+  available_from: d.available_from?.slice(0, 5) ?? "",
+  available_until: d.available_until?.slice(0, 5) ?? "",
+  available: d.available,
+  sold_out: d.sold_out,
+  popular: d.popular,
+  chef_special: d.chef_special,
+  prep_notes: notes,
+});
+
+/** Multi-select chips, the same control the signup wizard uses for cuisines. */
+function Chips({
+  options, selected, onToggle, idPrefix,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  idPrefix: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(o => {
+        const on = selected.includes(o);
+        return (
+          <button
+            key={idPrefix + o}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(o)}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[12.5px] transition-colors",
+              on
+                ? "border-[#002089] bg-[#002089] text-white"
+                : "border-admin-line text-admin-ink hover:border-[#002089]",
+            )}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Menu() {
-  const { active, can } = usePartner();
+  const { can } = usePartner();
   const { confirm, dialogProps } = useConfirm();
   const listings = useMyListings("restaurant");
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("Plats");
-  const [price, setPrice] = useState("");
-  const [detail, setDetail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
   const restaurant = listings.rows[0];
+  const editable = can("manage_listings");
 
-  const items = useTable<{
-    id: string;
-    category: string;
-    name: string;
-    detail: string | null;
-    price: number;
-    position: number;
-  }>({
-    from: "menu_items",
-    select: "id, category, name, detail, price, position",
+  const [dishOpen, setDishOpen] = useState<DishRow | "new" | null>(null);
+  const [dish, setDish] = useState<DishDraft>(() => emptyDish(""));
+  const [catOpen, setCatOpen] = useState<CategoryRow | "new" | null>(null);
+  const [cat, setCat] = useState({ name: "", description: "", position: "0", active: true });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const categories = useTable<CategoryRow>({
+    from: "menu_categories",
+    select: "id, name, description, position, active",
     filters: [{ col: "listing_id", op: "eq", value: restaurant?.id ?? "" }],
     sort: { col: "position", dir: "asc" },
-    pageSize: 200,
+    pageSize: 50,
     enabled: !!restaurant,
   });
 
-  const categories = [...new Set(items.rows.map(i => i.category))];
+  const dishes = useTable<DishRow>({
+    from: "menu_items",
+    select:
+      "id, category_id, name, detail, description, price, discount_price, prep_minutes, available, sold_out, dietary, allergens, popular, chef_special, image_url, available_weekdays, available_from, available_until, position",
+    filters: [{ col: "listing_id", op: "eq", value: restaurant?.id ?? "" }],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 300,
+    enabled: !!restaurant,
+  });
 
-  const add = async () => {
-    if (!restaurant) return;
-    if (!name.trim() || !price.trim()) return setError("Nom et prix sont obligatoires.");
-    const { error } = await table("menu_items").insert({
-      listing_id: restaurant.id,
-      category: category.trim(),
-      name: name.trim(),
-      detail: detail.trim() || null,
-      price: Number(price.replace(",", ".")),
-    });
-    if (error) return setError(friendlyError(error));
-    setName("");
-    setDetail("");
-    setPrice("");
-    setAdding(false);
-    setError(null);
-    items.reload();
+  const num = (v: string) => {
+    const t = v.trim().replace(",", ".");
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
   };
+
+  const openDish = async (d: DishRow | "new") => {
+    setError(null);
+    if (d === "new") {
+      setDish(emptyDish(categories.rows[0]?.id ?? ""));
+    } else {
+      // The recipe lives in its own table, out of reach of the public menu.
+      const { data } = await table("menu_item_notes")
+        .select("prep_notes")
+        .eq("item_id", d.id)
+        .maybeSingle();
+      setDish(dishDraftOf(d, (data as { prep_notes: string | null } | null)?.prep_notes ?? ""));
+    }
+    setDishOpen(d);
+  };
+
+  const setD = <K extends keyof DishDraft>(k: K, v: DishDraft[K]) =>
+    setDish(d => ({ ...d, [k]: v }));
+
+  const toggleIn = (list: string[], v: string) =>
+    list.includes(v) ? list.filter(x => x !== v) : [...list, v];
+
+  const saveDish = async () => {
+    if (!restaurant) return;
+    if (!dish.name.trim()) return setError("Donnez un nom au plat.");
+    if (!dish.category_id) return setError("Créez d'abord une catégorie.");
+    if (!!dish.available_from !== !!dish.available_until)
+      return setError("Renseignez l'heure de début et l'heure de fin, ou aucune des deux.");
+
+    setBusy(true);
+    const payload = {
+      listing_id: restaurant.id,
+      category_id: dish.category_id,
+      name: dish.name.trim(),
+      detail: dish.detail.trim() || null,
+      description: dish.description.trim() || null,
+      price: num(dish.price),
+      discount_price: num(dish.discount_price),
+      prep_minutes: num(dish.prep_minutes),
+      image_url: dish.image_url.trim() || null,
+      dietary: dish.dietary,
+      allergens: dish.allergens,
+      available_weekdays: dish.available_weekdays,
+      available_from: dish.available_from || null,
+      available_until: dish.available_until || null,
+      available: dish.available,
+      sold_out: dish.sold_out,
+      popular: dish.popular,
+      chef_special: dish.chef_special,
+    };
+
+    let id = dishOpen === "new" ? null : (dishOpen as DishRow).id;
+    if (dishOpen === "new") {
+      const { data, error: err } = await table("menu_items").insert(payload).select("id").single();
+      if (err) { setBusy(false); return setError(friendlyError(err)); }
+      id = (data as { id: string }).id;
+    } else {
+      const { error: err } = await table("menu_items").update(payload).eq("id", id);
+      if (err) { setBusy(false); return setError(friendlyError(err)); }
+    }
+
+    const notes = dish.prep_notes.trim();
+    if (notes) {
+      await table("menu_item_notes").upsert({ item_id: id, prep_notes: notes });
+    } else {
+      await table("menu_item_notes").delete().eq("item_id", id);
+    }
+
+    setBusy(false);
+    setDishOpen(null);
+    setError(null);
+    dishes.reload();
+  };
+
+  const toggleSoldOut = async (d: DishRow) => {
+    const { error: err } = await table("menu_items")
+      .update({ sold_out: !d.sold_out })
+      .eq("id", d.id);
+    if (err) return setError(friendlyError(err));
+    dishes.reload();
+  };
+
+  const removeDish = (d: DishRow) =>
+    confirm({
+      title: `Retirer « ${d.name} » du menu ?`,
+      consequence: "Le plat ne sera plus affiché. Pour le masquer temporairement, décochez plutôt « Au menu ».",
+      confirmLabel: "Retirer",
+      danger: true,
+      onConfirm: async () => {
+        const { error: err } = await table("menu_items").delete().eq("id", d.id);
+        if (err) return friendlyError(err);
+        setDishOpen(null);
+        dishes.reload();
+        return null;
+      },
+    });
+
+  const openCat = (c: CategoryRow | "new") => {
+    setError(null);
+    setCat(
+      c === "new"
+        ? { name: "", description: "", position: String(categories.rows.length), active: true }
+        : { name: c.name, description: c.description ?? "", position: String(c.position), active: c.active },
+    );
+    setCatOpen(c);
+  };
+
+  const saveCat = async () => {
+    if (!restaurant) return;
+    if (!cat.name.trim()) return setError("Donnez un nom à la catégorie.");
+    const payload = {
+      listing_id: restaurant.id,
+      name: cat.name.trim(),
+      description: cat.description.trim() || null,
+      position: Number(cat.position) || 0,
+      active: cat.active,
+    };
+    const { error: err } =
+      catOpen === "new"
+        ? await table("menu_categories").insert(payload)
+        : await table("menu_categories").update(payload).eq("id", (catOpen as CategoryRow).id);
+    if (err) return setError(friendlyError(err));
+    setCatOpen(null);
+    setError(null);
+    categories.reload();
+  };
+
+  const removeCat = (c: CategoryRow) => {
+    const inside = dishes.rows.filter(d => d.category_id === c.id).length;
+    if (inside > 0) {
+      setError(
+        `« ${c.name} » contient ${inside} plat(s). Déplacez-les dans une autre catégorie avant de la supprimer.`,
+      );
+      return;
+    }
+    confirm({
+      title: `Supprimer la catégorie « ${c.name} » ?`,
+      consequence: "Elle disparaîtra du menu public.",
+      confirmLabel: "Supprimer",
+      danger: true,
+      onConfirm: async () => {
+        const { error: err } = await table("menu_categories").delete().eq("id", c.id);
+        if (err) return friendlyError(err);
+        setCatOpen(null);
+        categories.reload();
+        return null;
+      },
+    });
+  };
+
+  const shown = dishes.rows.filter(d => d.available);
 
   return (
     <>
       <PageHeader
         title="Menu"
-        subtitle="Ce que vous servez, par catégorie."
+        subtitle="Vos sections et vos plats. Ce qui n'est pas « au menu » n'apparaît nulle part."
         actions={
-          can("manage_listings") && restaurant ? (
-            <Button variant="primary" onClick={() => setAdding(true)}>
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              Ajouter un article
-            </Button>
+          editable && restaurant ? (
+            <>
+              <Button variant="secondary" onClick={() => openCat("new")}>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                Catégorie
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => openDish("new")}
+                disabled={categories.rows.length === 0}
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                Plat
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -614,97 +905,280 @@ export function Menu() {
           title="Aucun restaurant"
           body="Créez d'abord votre fiche restaurant, puis composez le menu."
         />
-      ) : items.loading ? (
+      ) : categories.loading || dishes.loading ? (
         <Skeleton className="h-40 w-full rounded-xl" />
-      ) : items.rows.length === 0 ? (
+      ) : categories.rows.length === 0 ? (
         <EmptyState
           icon={UtensilsCrossed}
-          title="Votre menu est vide"
-          body="Ajoutez vos plats pour que les voyageurs sachent ce qu'ils viennent manger."
+          title="Commencez par une catégorie"
+          body="Entrées, Plats, Desserts… Les plats se rangent dedans."
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          {categories.map(c => (
-            <Card key={c} padded={false}>
-              <div className="border-b border-admin-line px-5 py-3.5">
-                <h2 className="font-display text-[15px] font-semibold text-admin-ink">{c}</h2>
-                <p className="text-[12.5px] text-admin-ink-3">
-                  {count(items.rows.filter(i => i.category === c).length)} article(s)
-                </p>
-              </div>
-              <ul className="divide-y divide-admin-line">
-                {items.rows
-                  .filter(i => i.category === c)
-                  .map(i => (
-                    <li key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium text-admin-ink">{i.name}</span>
-                        {i.detail && <span className="block truncate text-[12px] text-admin-ink-3">{i.detail}</span>}
-                      </span>
-                      <span className="font-display text-[15px] font-semibold tabular-nums text-admin-ink">
-                        {money(i.price)}
-                      </span>
-                      {can("manage_listings") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          aria-label="Supprimer"
-                          onClick={() =>
-                            confirm({
-                              title: `Retirer « ${i.name} » du menu ?`,
-                              consequence: "L'article ne sera plus affiché aux clients.",
-                              confirmLabel: "Retirer",
-                              danger: true,
-                              onConfirm: async () => {
-                                const { error } = await table("menu_items").delete().eq("id", i.id);
-                                if (error) return friendlyError(error);
-                                items.reload();
-                                return null;
-                              },
-                            })
-                          }
-                        >
+        <>
+          <div className="mb-5 grid gap-2.5 sm:grid-cols-4">
+            <Stat label="Catégories" value={count(categories.rows.length)} />
+            <Stat label="Plats" value={count(dishes.rows.length)} />
+            <Stat label="Au menu" value={count(shown.length)} />
+            <Stat label="Épuisés" value={count(shown.filter(d => d.sold_out).length)} />
+          </div>
+
+          {error && (
+            <p className="mb-4 text-[13px] font-medium text-[#b3261e]">{error}</p>
+          )}
+
+          <div className="flex flex-col gap-4">
+            {categories.rows.map(c => {
+              const inside = dishes.rows.filter(d => d.category_id === c.id);
+              return (
+                <Card key={c.id} padded={false}>
+                  <div className="flex flex-wrap items-center gap-3 border-b border-admin-line px-5 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-display text-[15px] font-semibold text-admin-ink">
+                        {c.name}
+                        {!c.active && (
+                          <span className="ml-2 text-[11.5px] font-normal text-admin-ink-3">masquée</span>
+                        )}
+                      </h2>
+                      <p className="text-[12.5px] text-admin-ink-3">
+                        {c.description || `${count(inside.length)} plat(s)`}
+                      </p>
+                    </div>
+                    {editable && (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => openCat(c)}>Modifier</Button>
+                        <Button size="sm" variant="ghost" aria-label={`Supprimer ${c.name}`} onClick={() => removeCat(c)}>
                           <Trash2 className="h-3.5 w-3.5 text-[#b3261e]" aria-hidden />
                         </Button>
-                      )}
-                    </li>
-                  ))}
-              </ul>
-            </Card>
-          ))}
-        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {inside.length === 0 ? (
+                    <p className="px-5 py-4 text-[13px] text-admin-ink-3">Aucun plat dans cette catégorie.</p>
+                  ) : (
+                    <ul className="divide-y divide-admin-line">
+                      {inside.map(d => (
+                        <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[13.5px] font-medium text-admin-ink">
+                              {d.name}
+                              {!d.available && (
+                                <span className="ml-2 text-[11.5px] font-normal text-admin-ink-3">hors menu</span>
+                              )}
+                              {d.chef_special && (
+                                <span className="ml-2 text-[11.5px] font-normal text-[#002089]">suggestion</span>
+                              )}
+                            </span>
+                            {d.detail && (
+                              <span className="block truncate text-[12px] text-admin-ink-3">{d.detail}</span>
+                            )}
+                            {d.dietary.length > 0 && (
+                              <span className="block truncate text-[11.5px] text-admin-ink-3">
+                                {d.dietary.join(" · ")}
+                              </span>
+                            )}
+                          </span>
+
+                          <span className="font-display text-[15px] font-semibold tabular-nums text-admin-ink">
+                            {d.discount_price != null
+                              ? money(d.discount_price)
+                              : d.price != null
+                                ? money(d.price)
+                                : "—"}
+                          </span>
+
+                          {editable && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant={d.sold_out ? "primary" : "secondary"}
+                                onClick={() => toggleSoldOut(d)}
+                              >
+                                {d.sold_out ? "Épuisé" : "Disponible"}
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => openDish(d)}>
+                                Modifier
+                              </Button>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <Modal
-        open={adding}
-        onClose={() => setAdding(false)}
-        title="Ajouter un article"
+        open={dishOpen !== null}
+        onClose={() => setDishOpen(null)}
+        title={dishOpen === "new" ? "Ajouter un plat" : "Modifier le plat"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setAdding(false)}>Annuler</Button>
-            <Button variant="primary" onClick={add}>Ajouter</Button>
+            {dishOpen !== null && dishOpen !== "new" && (
+              <Button variant="secondary" onClick={() => removeDish(dishOpen)}>
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                Retirer
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setDishOpen(null)}>Annuler</Button>
+            <Button variant="primary" onClick={saveDish} disabled={busy}>
+              {busy ? "Enregistrement…" : dishOpen === "new" ? "Ajouter" : "Enregistrer"}
+            </Button>
           </>
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="mi-name">Nom</label>
-            <input id="mi-name" value={name} onChange={e => setName(e.target.value)} className={inputClass} />
+          <div>
+            <label className={labelClass} htmlFor="d-name">Nom</label>
+            <input id="d-name" value={dish.name} onChange={e => setD("name", e.target.value)} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass} htmlFor="mi-cat">Catégorie</label>
-            <input id="mi-cat" value={category} onChange={e => setCategory(e.target.value)} list="cats" className={inputClass} />
-            <datalist id="cats">
-              {categories.map(c => <option key={c} value={c} />)}
-            </datalist>
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="mi-price">Prix</label>
-            <input id="mi-price" value={price} onChange={e => setPrice(e.target.value)} inputMode="decimal" className={inputClass} />
+            <label className={labelClass} htmlFor="d-cat">Catégorie</label>
+            <select id="d-cat" value={dish.category_id} onChange={e => setD("category_id", e.target.value)} className={selectClass}>
+              {categories.rows.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="mi-detail">Description</label>
-            <input id="mi-detail" value={detail} onChange={e => setDetail(e.target.value)} className={inputClass} />
+            <label className={labelClass} htmlFor="d-detail">Description courte</label>
+            <input id="d-detail" value={dish.detail} onChange={e => setD("detail", e.target.value)} placeholder="Beignets de taro, sauce ti-malice" className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="d-desc">Description complète</label>
+            <textarea id="d-desc" rows={2} value={dish.description} onChange={e => setD("description", e.target.value)} className={inputClass} />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="d-price">Prix (USD)</label>
+            <input id="d-price" value={dish.price} onChange={e => setD("price", e.target.value)} inputMode="decimal" placeholder="Vide = prix du marché" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="d-discount">Prix remisé (USD)</label>
+            <input id="d-discount" value={dish.discount_price} onChange={e => setD("discount_price", e.target.value)} inputMode="decimal" className={inputClass} />
+            <p className="mt-1 text-[11.5px] text-admin-ink-3">Doit être inférieur au prix.</p>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="d-prep">Préparation (minutes)</label>
+            <input id="d-prep" value={dish.prep_minutes} onChange={e => setD("prep_minutes", e.target.value)} inputMode="numeric" className={inputClass} />
+          </div>
+          <div>
+            <span className={labelClass}>Quantité du jour</span>
+            <p className="text-[12.5px] leading-relaxed text-admin-ink-3">
+              Elle se règle par service, dans <strong className="font-semibold">Disponibilité</strong> :
+              une commande confirmée la décompte toute seule.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="d-img">Photo (URL)</label>
+            <input id="d-img" value={dish.image_url} onChange={e => setD("image_url", e.target.value)} placeholder="https://…" className={inputClass} />
+            <p className="mt-1 text-[11.5px] text-admin-ink-3">
+              Le téléversement direct arrivera avec un espace de stockage public : les deux
+              existants sont privés, une photo y serait invisible aux clients.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <span className={labelClass}>Régimes</span>
+            <Chips options={DIETARY} selected={dish.dietary} idPrefix="di" onToggle={v => setD("dietary", toggleIn(dish.dietary, v))} />
+          </div>
+          <div className="sm:col-span-2">
+            <span className={labelClass}>Allergènes</span>
+            <Chips options={ALLERGENS} selected={dish.allergens} idPrefix="al" onToggle={v => setD("allergens", toggleIn(dish.allergens, v))} />
+            <p className="mt-1 text-[11.5px] text-admin-ink-3">
+              PAPOT ne garantit aucune absence d'allergène : ces mentions sont les vôtres.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2">
+            <span className={labelClass}>Jours où le plat est servi</span>
+            <div className="flex flex-wrap gap-1.5">
+              {DAY_SHORT.map((d, i) => {
+                const on = dish.available_weekdays.includes(i);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setD(
+                        "available_weekdays",
+                        on
+                          ? dish.available_weekdays.filter(x => x !== i)
+                          : [...dish.available_weekdays, i].sort((a, b) => a - b),
+                      )
+                    }
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-[12.5px] transition-colors",
+                      on ? "border-[#002089] bg-[#002089] text-white" : "border-admin-line text-admin-ink hover:border-[#002089]",
+                    )}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[11.5px] text-admin-ink-3">Aucun jour coché = tous les jours.</p>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="d-from">Servi à partir de</label>
+            <input id="d-from" type="time" value={dish.available_from} onChange={e => setD("available_from", e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="d-until">Jusqu'à</label>
+            <input id="d-until" type="time" value={dish.available_until} onChange={e => setD("available_until", e.target.value)} className={inputClass} />
+          </div>
+
+          <div className="sm:col-span-2 flex flex-wrap gap-x-6 gap-y-2 border-t border-admin-line pt-3">
+            <Check checked={dish.available} onChange={v => setD("available", v)} label="Au menu" />
+            <Check checked={dish.sold_out} onChange={v => setD("sold_out", v)} label="Épuisé aujourd'hui" />
+            <Check checked={dish.popular} onChange={v => setD("popular", v)} label="Populaire" />
+            <Check checked={dish.chef_special} onChange={v => setD("chef_special", v)} label="Suggestion du chef" />
+          </div>
+
+          <div className="sm:col-span-2 border-t border-admin-line pt-3">
+            <label className={labelClass} htmlFor="d-notes">Notes de préparation (privées)</label>
+            <textarea id="d-notes" rows={3} value={dish.prep_notes} onChange={e => setD("prep_notes", e.target.value)} className={inputClass} />
+            <p className="mt-1 text-[11.5px] text-admin-ink-3">
+              Visibles par votre équipe uniquement. Elles ne sont jamais servies au public.
+            </p>
+          </div>
+        </div>
+        {error && <p className="mt-4 text-[13px] font-medium text-[#b3261e]">{error}</p>}
+      </Modal>
+
+      <Modal
+        open={catOpen !== null}
+        onClose={() => setCatOpen(null)}
+        title={catOpen === "new" ? "Ajouter une catégorie" : "Modifier la catégorie"}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setCatOpen(null)}>Annuler</Button>
+            <Button variant="primary" onClick={saveCat}>
+              {catOpen === "new" ? "Ajouter" : "Enregistrer"}
+            </Button>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="c-name">Nom</label>
+            <input id="c-name" value={cat.name} onChange={e => setCat(c => ({ ...c, name: e.target.value }))} placeholder="Entrées" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="c-pos">Ordre</label>
+            <input id="c-pos" value={cat.position} onChange={e => setCat(c => ({ ...c, position: e.target.value }))} inputMode="numeric" className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="c-desc">Description</label>
+            <input id="c-desc" value={cat.description} onChange={e => setCat(c => ({ ...c, description: e.target.value }))} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <Check checked={cat.active} onChange={v => setCat(c => ({ ...c, active: v }))} label="Visible sur le menu public" />
           </div>
         </div>
         {error && <p className="mt-4 text-[13px] font-medium text-[#b3261e]">{error}</p>}
@@ -716,65 +1190,207 @@ export function Menu() {
 }
 
 /** Spec §78–§79. */
+type AreaRow = {
+  id: string;
+  name: string;
+  area_type: string | null;
+  capacity: number | null;
+  active: boolean;
+};
+
+type TableRow = {
+  id: string;
+  label: string;
+  table_number: string | null;
+  seats: number;
+  min_guests: number;
+  max_guests: number;
+  accessible: boolean;
+  can_combine: boolean;
+  active: boolean;
+  status: string;
+  area_id: string | null;
+};
+
+const AREA_TYPES = [
+  "Salle principale",
+  "Terrasse",
+  "Rooftop",
+  "Jardin",
+  "Bord de piscine",
+  "Bord de mer",
+  "Bar",
+  "Salon VIP",
+  "Salle privée",
+  "Autre",
+];
+
+type TableDraft = {
+  label: string;
+  table_number: string;
+  seats: string;
+  min_guests: string;
+  max_guests: string;
+  area_id: string;
+  accessible: boolean;
+  can_combine: boolean;
+  active: boolean;
+};
+
+const emptyTable = (): TableDraft => ({
+  label: "",
+  table_number: "",
+  seats: "4",
+  min_guests: "1",
+  max_guests: "4",
+  area_id: "",
+  accessible: false,
+  can_combine: false,
+  active: true,
+});
+
+const draftOf = (t: TableRow): TableDraft => ({
+  label: t.label,
+  table_number: t.table_number ?? "",
+  seats: String(t.seats),
+  min_guests: String(t.min_guests),
+  max_guests: String(t.max_guests),
+  area_id: t.area_id ?? "",
+  accessible: t.accessible,
+  can_combine: t.can_combine,
+  active: t.active,
+});
+
+/** A compact checkbox row for the table and area dialogs. */
+function Check({
+  checked, onChange, label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-[13px] text-admin-ink">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="h-4 w-4 accent-[#002089]"
+      />
+      {label}
+    </label>
+  );
+}
+
 export function Tables() {
-  const { active, can } = usePartner();
+  const { can } = usePartner();
   const { confirm, dialogProps } = useConfirm();
   const listings = useMyListings("restaurant");
   const restaurant = listings.rows[0];
+  const editable = can("manage_listings");
 
-  const [adding, setAdding] = useState(false);
-  const [label, setLabel] = useState("");
-  const [seats, setSeats] = useState("4");
-  const [areaId, setAreaId] = useState("");
+  /** null = closed, "new" = creating, otherwise the table being edited. */
+  const [editing, setEditing] = useState<TableRow | "new" | null>(null);
+  const [draft, setDraft] = useState<TableDraft>(emptyTable);
   const [error, setError] = useState<string | null>(null);
 
-  const areas = useTable<{ id: string; name: string }>({
+  const [areaOpen, setAreaOpen] = useState(false);
+  const [areaDraft, setAreaDraft] = useState({ name: "", area_type: "Salle principale", capacity: "" });
+
+  const areas = useTable<AreaRow>({
     from: "seating_areas",
-    select: "id, name",
+    select: "id, name, area_type, capacity, active",
     filters: [{ col: "listing_id", op: "eq", value: restaurant?.id ?? "" }],
     sort: { col: "position", dir: "asc" },
-    pageSize: 20,
+    pageSize: 30,
     enabled: !!restaurant,
   });
 
-  const tables = useTable<{
-    id: string;
-    label: string;
-    seats: number;
-    status: string;
-    area_id: string | null;
-  }>({
+  const tables = useTable<TableRow>({
     from: "restaurant_tables",
-    select: "id, label, seats, status, area_id",
+    select:
+      "id, label, table_number, seats, min_guests, max_guests, accessible, can_combine, active, status, area_id",
     filters: [{ col: "listing_id", op: "eq", value: restaurant?.id ?? "" }],
     sort: { col: "position", dir: "asc" },
     pageSize: 200,
     enabled: !!restaurant,
   });
 
-  const add = async () => {
+  const open = (t: TableRow | "new") => {
+    setDraft(t === "new" ? emptyTable() : draftOf(t));
+    setError(null);
+    setEditing(t);
+  };
+
+  const set = <K extends keyof TableDraft>(k: K, v: TableDraft[K]) =>
+    setDraft(d => ({ ...d, [k]: v }));
+
+  const num = (v: string, fallback: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : fallback;
+  };
+
+  const saveTable = async () => {
     if (!restaurant) return;
-    if (!label.trim()) return setError("Donnez un nom à la table.");
-    const { error } = await table("restaurant_tables").insert({
+    if (!draft.label.trim()) return setError("Donnez un nom à la table.");
+    const min = num(draft.min_guests, 1);
+    const max = num(draft.max_guests, min);
+    if (max < min) return setError("Le maximum de convives doit être supérieur au minimum.");
+
+    const payload = {
       listing_id: restaurant.id,
-      label: label.trim(),
-      seats: Number(seats) || 2,
-      area_id: areaId || null,
-    });
-    if (error) return setError(friendlyError(error));
-    setLabel("");
-    setAdding(false);
+      label: draft.label.trim(),
+      table_number: draft.table_number.trim() || null,
+      seats: num(draft.seats, max),
+      min_guests: min,
+      max_guests: max,
+      area_id: draft.area_id || null,
+      accessible: draft.accessible,
+      can_combine: draft.can_combine,
+      active: draft.active,
+    };
+
+    const { error: err } =
+      editing === "new"
+        ? await table("restaurant_tables").insert(payload)
+        : await table("restaurant_tables").update(payload).eq("id", (editing as TableRow).id);
+
+    if (err) return setError(friendlyError(err));
+    setEditing(null);
     setError(null);
     tables.reload();
   };
 
   const addArea = async () => {
     if (!restaurant) return;
-    const name = window.prompt("Nom de la salle (ex. Terrasse)");
-    if (!name?.trim()) return;
-    await table("seating_areas").insert({ listing_id: restaurant.id, name: name.trim() });
+    if (!areaDraft.name.trim()) return setError("Donnez un nom à la salle.");
+    const { error: err } = await table("seating_areas").insert({
+      listing_id: restaurant.id,
+      name: areaDraft.name.trim(),
+      area_type: areaDraft.area_type,
+      capacity: areaDraft.capacity ? num(areaDraft.capacity, 0) : null,
+    });
+    if (err) return setError(friendlyError(err));
+    setAreaOpen(false);
+    setAreaDraft({ name: "", area_type: "Salle principale", capacity: "" });
     areas.reload();
   };
+
+  const removeTable = (t: TableRow) =>
+    confirm({
+      title: `Supprimer la table ${t.label} ?`,
+      consequence:
+        "Elle ne sera plus proposée à la réservation. Les réservations déjà prises sur cette table perdent leur place attribuée.",
+      confirmLabel: "Supprimer",
+      danger: true,
+      onConfirm: async () => {
+        const { error: err } = await table("restaurant_tables").delete().eq("id", t.id);
+        if (err) return friendlyError(err);
+        setEditing(null);
+        tables.reload();
+        return null;
+      },
+    });
 
   const STATUS_STYLE: Record<string, string> = {
     available: "border-[#d7e6d9] bg-[#eef7f0] text-[#15803d]",
@@ -783,19 +1399,21 @@ export function Tables() {
     blocked: "border-admin-line bg-admin-canvas text-admin-ink-3",
   };
 
+  const bookable = tables.rows.filter(t => t.active);
+
   return (
     <>
       <PageHeader
         title="Salles et tables"
-        subtitle="Votre plan de salle et la capacité de chaque table."
+        subtitle="Votre plan de salle. Une table inactive n'est jamais proposée à la réservation."
         actions={
-          can("manage_listings") && restaurant ? (
+          editable && restaurant ? (
             <>
-              <Button variant="secondary" onClick={addArea}>
+              <Button variant="secondary" onClick={() => { setError(null); setAreaOpen(true); }}>
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 Salle
               </Button>
-              <Button variant="primary" onClick={() => setAdding(true)}>
+              <Button variant="primary" onClick={() => open("new")}>
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 Table
               </Button>
@@ -808,52 +1426,57 @@ export function Tables() {
         <EmptyState icon={UtensilsCrossed} title="Aucun restaurant" body="Créez d'abord votre fiche restaurant." />
       ) : (
         <>
-          <div className="mb-5 grid gap-2.5 sm:grid-cols-3">
+          <div className="mb-5 grid gap-2.5 sm:grid-cols-4">
             <Stat label="Salles" value={count(areas.rows.length)} />
             <Stat label="Tables" value={count(tables.rows.length)} />
-            <Stat label="Couverts" value={count(tables.rows.reduce((s, t) => s + t.seats, 0))} />
+            <Stat label="Réservables" value={count(bookable.length)} />
+            <Stat label="Couverts" value={count(bookable.reduce((s, t) => s + t.seats, 0))} />
           </div>
 
           {tables.rows.length === 0 ? (
             <EmptyState
               icon={UtensilsCrossed}
               title="Aucune table"
-              body="Ajoutez vos tables pour gérer les réservations par capacité."
+              body="Sans table, aucun créneau n'est proposé sur votre fiche. Ajoutez-en une pour ouvrir les réservations."
             />
           ) : (
             <div className="flex flex-col gap-4">
-              {[{ id: "", name: "Sans salle" }, ...areas.rows].map(area => {
+              {[{ id: "", name: "Sans salle", area_type: null, capacity: null, active: true } as AreaRow, ...areas.rows].map(area => {
                 const inArea = tables.rows.filter(t => (t.area_id ?? "") === area.id);
                 if (inArea.length === 0) return null;
                 return (
                   <Card key={area.id || "none"}>
-                    <CardHeader title={area.name} subtitle={`${count(inArea.length)} table(s)`} />
+                    <CardHeader
+                      title={area.name}
+                      subtitle={[
+                        area.area_type,
+                        `${count(inArea.length)} table(s)`,
+                        area.capacity ? `${count(area.capacity)} couverts` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    />
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                       {inArea.map(t => (
                         <button
                           key={t.id}
-                          onClick={() =>
-                            can("manage_listings") &&
-                            confirm({
-                              title: `Supprimer la table ${t.label} ?`,
-                              consequence: "Elle ne sera plus proposée à la réservation.",
-                              confirmLabel: "Supprimer",
-                              danger: true,
-                              onConfirm: async () => {
-                                const { error } = await table("restaurant_tables").delete().eq("id", t.id);
-                                if (error) return friendlyError(error);
-                                tables.reload();
-                                return null;
-                              },
-                            })
-                          }
+                          onClick={() => editable && open(t)}
+                          aria-label={`Modifier la table ${t.label}`}
                           className={cn(
                             "flex flex-col items-center justify-center rounded-xl border-2 px-3 py-4 transition-colors",
                             STATUS_STYLE[t.status] ?? STATUS_STYLE.available,
+                            !t.active && "opacity-50",
                           )}
                         >
                           <span className="font-display text-[16px] font-bold">{t.label}</span>
-                          <span className="mt-0.5 text-[11.5px]">{t.seats} places</span>
+                          <span className="mt-0.5 text-[11.5px]">
+                            {t.min_guests}–{t.max_guests} conv.
+                          </span>
+                          <span className="mt-1 flex items-center gap-1.5">
+                            {t.accessible && <Accessibility className="h-3.5 w-3.5" aria-label="Accessible" />}
+                            {t.can_combine && <Link2 className="h-3.5 w-3.5" aria-label="Combinable" />}
+                          </span>
+                          {!t.active && <span className="mt-1 text-[10.5px] font-semibold">Inactive</span>}
                         </button>
                       ))}
                     </div>
@@ -866,34 +1489,93 @@ export function Tables() {
       )}
 
       <Modal
-        open={adding}
-        onClose={() => setAdding(false)}
-        title="Ajouter une table"
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={editing === "new" ? "Ajouter une table" : "Modifier la table"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setAdding(false)}>Annuler</Button>
-            <Button variant="primary" onClick={add}>Ajouter</Button>
+            {editing !== null && editing !== "new" && (
+              <Button variant="secondary" onClick={() => removeTable(editing)}>
+                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                Supprimer
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setEditing(null)}>Annuler</Button>
+            <Button variant="primary" onClick={saveTable}>
+              {editing === "new" ? "Ajouter" : "Enregistrer"}
+            </Button>
           </>
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClass} htmlFor="t-label">Nom</label>
-            <input id="t-label" value={label} onChange={e => setLabel(e.target.value)} placeholder="T1" className={inputClass} />
+            <input id="t-label" value={draft.label} onChange={e => set("label", e.target.value)} placeholder="T1" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="t-number">Numéro (optionnel)</label>
+            <input id="t-number" value={draft.table_number} onChange={e => set("table_number", e.target.value)} placeholder="12" className={inputClass} />
           </div>
           <div>
             <label className={labelClass} htmlFor="t-seats">Places</label>
-            <input id="t-seats" value={seats} onChange={e => setSeats(e.target.value)} inputMode="numeric" className={inputClass} />
+            <input id="t-seats" value={draft.seats} onChange={e => set("seats", e.target.value)} inputMode="numeric" className={inputClass} />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <label className={labelClass} htmlFor="t-area">Salle</label>
-            <select id="t-area" value={areaId} onChange={e => setAreaId(e.target.value)} className={selectClass}>
+            <select id="t-area" value={draft.area_id} onChange={e => set("area_id", e.target.value)} className={selectClass}>
               <option value="">Sans salle</option>
               {areas.rows.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
+          <div>
+            <label className={labelClass} htmlFor="t-min">Convives minimum</label>
+            <input id="t-min" value={draft.min_guests} onChange={e => set("min_guests", e.target.value)} inputMode="numeric" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="t-max">Convives maximum</label>
+            <input id="t-max" value={draft.max_guests} onChange={e => set("max_guests", e.target.value)} inputMode="numeric" className={inputClass} />
+          </div>
+          <div className="sm:col-span-2 flex flex-wrap gap-x-6 gap-y-2 border-t border-admin-line pt-3">
+            <Check checked={draft.accessible} onChange={v => set("accessible", v)} label="Accessible" />
+            <Check checked={draft.can_combine} onChange={v => set("can_combine", v)} label="Combinable avec une autre table" />
+            <Check checked={draft.active} onChange={v => set("active", v)} label="Proposée à la réservation" />
+          </div>
         </div>
-        {error && <p className="mt-4 text-[13px] font-medium text-[#b3261e]">{error}</p>}
+        <p className="mt-3 text-[11.5px] text-admin-ink-3">
+          Les créneaux proposés à un groupe dépendent de ces bornes : un groupe de six ne voit
+          que les tables qui l'acceptent.
+        </p>
+        {error && <p className="mt-3 text-[13px] font-medium text-[#b3261e]">{error}</p>}
+      </Modal>
+
+      <Modal
+        open={areaOpen}
+        onClose={() => setAreaOpen(false)}
+        title="Ajouter une salle"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAreaOpen(false)}>Annuler</Button>
+            <Button variant="primary" onClick={addArea}>Ajouter</Button>
+          </>
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="a-name">Nom</label>
+            <input id="a-name" value={areaDraft.name} onChange={e => setAreaDraft(d => ({ ...d, name: e.target.value }))} placeholder="Terrasse" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="a-type">Type</label>
+            <select id="a-type" value={areaDraft.area_type} onChange={e => setAreaDraft(d => ({ ...d, area_type: e.target.value }))} className={selectClass}>
+              {AREA_TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="a-cap">Couverts (optionnel)</label>
+            <input id="a-cap" value={areaDraft.capacity} onChange={e => setAreaDraft(d => ({ ...d, capacity: e.target.value }))} inputMode="numeric" className={inputClass} />
+          </div>
+        </div>
+        {error && <p className="mt-3 text-[13px] font-medium text-[#b3261e]">{error}</p>}
       </Modal>
 
       <ConfirmDialog {...dialogProps} />
