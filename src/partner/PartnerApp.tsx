@@ -1,6 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { Building2, ShieldAlert } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { SPACE_HOME, useAccountSpace } from "../lib/accountSpace";
 import { Button, Card, PageHeader } from "../console/Ui";
 import { PartnerProvider, usePartner } from "./lib/partnerAuth";
 import { PartnerLayout } from "./components/PartnerLayout";
@@ -34,10 +35,11 @@ import { Promotions, Coupons } from "./pages/Marketing";
  */
 
 function Guard({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { memberships, loading } = usePartner();
+  const { space, loading: spaceLoading } = useAccountSpace();
 
-  if (authLoading || loading) {
+  if (authLoading || loading || spaceLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-admin-canvas">
         <div className="flex flex-col items-center gap-3">
@@ -54,6 +56,9 @@ function Guard({ children }: { children: React.ReactNode }) {
   // partner URL that was typed or bookmarked.
   if (!user) return <PartnerLogin />;
 
+  // A staff account stays back-office, whatever else is attached to it.
+  if (space === "admin") return <Navigate to={SPACE_HOME.admin} replace />;
+
   if (memberships.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-admin-canvas px-4">
@@ -65,14 +70,33 @@ function Guard({ children }: { children: React.ReactNode }) {
             Aucun établissement rattaché
           </h1>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-admin-ink-2">
-            Ce compte n'est associé à aucune entreprise partenaire. Si vous venez d'être invité,
-            vérifiez que vous utilisez bien l'adresse courriel sur laquelle l'invitation a été
-            envoyée. Si votre candidature est en cours, elle doit d'abord être approuvée.
+            Vous êtes connecté en tant que{" "}
+            <strong className="font-semibold text-admin-ink">{user.email}</strong>, et cette
+            adresse n'est rattachée à aucune entreprise.
           </p>
+          <p className="mt-2.5 text-[13px] leading-relaxed text-admin-ink-3">
+            Une invitation est écrite sur l'adresse exacte à laquelle elle a été envoyée :
+            connectez-vous avec celle-là. Si votre candidature est encore en cours d'examen, le
+            compte ne sera rattaché qu'après son approbation.
+          </p>
+
+          {/* The way out is another sign-in, not the traveller's space: this is
+              the partner URL, and sending someone to /compte from here is what
+              makes the dashboard feel unreachable. */}
           <div className="mt-5 flex justify-center gap-2">
-            <Button as="link" to="/" variant="secondary">Retour au site</Button>
-            <Button as="link" to="/compte" variant="primary">Mon compte</Button>
+            <Button variant="primary" onClick={() => void signOut()}>
+              Changer de compte
+            </Button>
+            <Button as="link" to="/" variant="secondary">
+              Retour au site
+            </Button>
           </div>
+          <p className="mt-4 text-[12.5px] text-admin-ink-3">
+            Vous cherchiez vos propres voyages ?{" "}
+            <Link to="/compte" className="font-semibold text-[#002089] hover:underline">
+              Espace voyageur
+            </Link>
+          </p>
         </Card>
       </div>
     );

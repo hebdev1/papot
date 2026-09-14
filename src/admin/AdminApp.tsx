@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Lock, ShieldAlert } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { SPACE_HOME, useAccountSpace } from "../lib/accountSpace";
 import { AdminProvider, useAdmin } from "./lib/adminAuth";
 import { AdminBooting, AdminLayout } from "./components/AdminLayout";
 import { Button, Card, PageHeader } from "../console/Ui";
@@ -51,8 +52,9 @@ import { AdminLogin } from "./pages/AdminLogin";
 function Guard({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { me, loading } = useAdmin();
+  const { space, loading: spaceLoading } = useAccountSpace();
 
-  if (authLoading || loading) return <AdminBooting />;
+  if (authLoading || loading || spaceLoading) return <AdminBooting />;
 
   // Signing in happens here rather than at /login, so the address stays on the
   // admin URL the operator typed or bookmarked.
@@ -74,8 +76,8 @@ function Guard({ children }: { children: React.ReactNode }) {
             <Button as="link" to="/" variant="secondary">
               Retour au site
             </Button>
-            <Button as="link" to="/compte" variant="primary">
-              Mon compte
+            <Button as="link" to={SPACE_HOME[space] ?? "/compte"} variant="primary">
+              {space === "partner" ? "Mon espace partenaire" : "Mon compte"}
             </Button>
           </div>
         </Card>

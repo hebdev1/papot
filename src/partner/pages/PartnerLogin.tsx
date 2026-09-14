@@ -31,7 +31,13 @@ export function PartnerLogin() {
     });
 
     setBusy(false);
-    if (error) setError("Courriel ou mot de passe incorrect.");
+    if (error) {
+      setError(
+        "Courriel ou mot de passe incorrect. Un espace partenaire s'ouvre avec l'adresse " +
+          "exacte de l'invitation : si votre candidature vient d'être approuvée, créez " +
+          "d'abord un compte avec cette adresse.",
+      );
+    }
   };
 
   return (

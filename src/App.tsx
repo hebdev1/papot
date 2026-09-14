@@ -2,6 +2,8 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
+import { SPACE_HOME, useAccountSpace } from "./lib/accountSpace";
+import { FoodCartProvider } from "./lib/foodCart";
 import { FavoritesProvider } from "./lib/favorites";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
@@ -16,6 +18,7 @@ import { ChooseAccount } from "./routes/ChooseAccount";
 import { Property } from "./routes/Property";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
+import { FoodCheckout, OrderTracking } from "./routes/FoodOrder";
 import { PanelLayout } from "./components/panel/PanelLayout";
 import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
@@ -158,6 +161,8 @@ function Shell() {
           <Route path="/p/:id" element={<Property />} />
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/booking/:id/confirmed" element={<BookingConfirmed />} />
+          <Route path="/commander/:id" element={<FoodCheckout />} />
+          <Route path="/commande/:reference" element={<OrderTracking />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
@@ -170,7 +175,9 @@ function Shell() {
 /** Signed-out visitors are sent to login rather than shown an empty panel. */
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) {
+  const { space, loading: spaceLoading } = useAccountSpace();
+
+  if (loading || spaceLoading) {
     return (
       <div className="grid min-h-screen place-content-center bg-[#FBF7F0] text-sm text-[#7a6355]">
         Chargement…
@@ -178,6 +185,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     );
   }
   if (!session) return <Navigate to="/login" replace />;
+
+  // Each account type lives in its own dashboard. A staff member or a partner
+  // who lands here is sent to theirs rather than shown a traveller's account.
+  if (space === "admin" || space === "partner") {
+    return <Navigate to={SPACE_HOME[space]} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -185,12 +198,14 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
+        <FoodCartProvider>
         <FavoritesProvider>
           <BrowserRouter>
             <ScrollToTop />
             <Shell />
           </BrowserRouter>
         </FavoritesProvider>
+        </FoodCartProvider>
       </CartProvider>
     </AuthProvider>
   );

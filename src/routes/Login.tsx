@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, ghostBtn, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
+import { resolveSpaceHome } from "../lib/accountSpace";
 
 /** Canvas 2a — /login */
 export function Login() {
@@ -16,7 +17,7 @@ export function Login() {
    */
   const next = (() => {
     const raw = params.get("next");
-    return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+    return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
   })();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,15 +30,23 @@ export function Login() {
     setBusy(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) {
+      setBusy(false);
+      setError("Courriel ou mot de passe incorrect.");
+      return;
+    }
+    // Each account type lands in its own dashboard. An explicit ?next still
+    // wins — a session that expired mid-task returns where it was, and the
+    // guard there sends it on if it does not belong.
+    const to = next ?? (await resolveSpaceHome());
     setBusy(false);
-    if (error) setError("Courriel ou mot de passe incorrect.");
-    else navigate(next);
+    navigate(to);
   };
 
   const google = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${next}` },
+      options: { redirectTo: `${window.location.origin}${next ?? "/compte"}` },
     });
     if (error) setError("La connexion Google n'est pas disponible pour le moment.");
   };
