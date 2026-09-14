@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Ban,
+  ChefHat,
   CheckCircle2,
   Circle,
   Clock,
@@ -13,6 +14,7 @@ import {
   Pause,
   ShieldAlert,
   Trash2,
+  Truck,
   XCircle,
 } from "lucide-react";
 import { Badge } from "../components/ui/cvui-badge";
@@ -56,6 +58,9 @@ const STATUS: Record<string, Entry> = {
   invited: { tone: "secondary", label: "Invité", Icon: Clock },
   scheduled: { tone: "info", label: "Planifié", Icon: Clock },
   ready: { tone: "info", label: "Prêt", Icon: Circle },
+  received: { tone: "info", label: "Reçue", Icon: Circle },
+  preparing: { tone: "warning", label: "En préparation", Icon: ChefHat },
+  out_for_delivery: { tone: "info", label: "En livraison", Icon: Truck },
   unverified: { tone: "secondary", label: "Non vérifié", Icon: Circle },
   inactive: { tone: "secondary", label: "Inactif", Icon: Circle },
   closed: { tone: "secondary", label: "Fermé", Icon: CheckCircle2 },
