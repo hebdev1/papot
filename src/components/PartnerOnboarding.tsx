@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type React from "react";
 import { supabase } from "../lib/supabase";
 import { Badge } from "./ui/cvui-badge";
-import { buildPayload } from "../lib/partnerPayload";
+import { buildPayload, packList, unpackList } from "../lib/partnerPayload";
 import { validateStep } from "../lib/partnerValidation";
 import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
 
@@ -536,7 +536,9 @@ function StepDetails({ partnerType, data, onChange }: { partnerType: PartnerType
   const [starRating, setStarRating] = useState(Number(data.stars || 0));
   const [bookingType, setBookingType] = useState(data.bookingType || "");
   const [ownerType, setOwnerType] = useState(data.ownerType || "");
-  const [cuisines, setCuisines] = useState<string[]>([]);
+  // Held in `formData`, not in local state: this step unmounts on every Back,
+  // and anything kept only here is gone before the payload is built.
+  const cuisines = unpackList(data.cuisines);
   const CUISINE_OPTIONS = ["Haïtienne", "Caribéenne", "Créole", "Française", "Italienne", "Américaine", "Mexicaine", "Chinoise", "Japonaise", "Africaine", "Fruits de mer", "Végétalienne", "Café", "Bar & Grill", "Internationale"];
 
   if (partnerType === "hotel") return (
@@ -629,7 +631,7 @@ function StepDetails({ partnerType, data, onChange }: { partnerType: PartnerType
         <p className="text-xs font-semibold text-[#7a6355] uppercase tracking-wide mb-2">Cuisine(s)</p>
         <div className="flex flex-wrap gap-2">
           {CUISINE_OPTIONS.map(c => (
-            <button key={c} onClick={() => setCuisines(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])}
+            <button key={c} onClick={() => onChange("cuisines", packList(cuisines.includes(c) ? cuisines.filter(x => x !== c) : [...cuisines, c]))}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors ${cuisines.includes(c) ? "border-[#e76f2e] bg-[#fff5f0] text-[#e76f2e]" : "border-[#e2d5c3] text-[#7a6355] hover:border-[#6ad7fb]"}`}>
               {c}
             </button>

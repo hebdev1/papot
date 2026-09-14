@@ -25,6 +25,17 @@ export const amenitySlug = (label: string) =>
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 
+/**
+ * The wizard's `formData` is a flat `Record<string, string>`, so a multi-select
+ * has to be encoded to live in it. "|" is the separator because no option label
+ * the wizard offers contains one, and unlike JSON it stays readable in the
+ * autosaved draft.
+ */
+const MULTI_SEP = "|";
+export const packList = (values: string[]) => values.join(MULTI_SEP);
+export const unpackList = (value?: string) =>
+  (value ?? "").split(MULTI_SEP).map(v => v.trim()).filter(Boolean);
+
 const CANCELLATION: Record<string, string> = {
   "Gratuite jusqu'à 2h avant": "free_2h",
   "Gratuite jusqu'à 24h avant": "free_24h",
@@ -95,6 +106,10 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
       fleetSize: isCar ? f.fleetSize : undefined,
       seats: isRestaurant ? f.restCapacity : undefined,
       priceBand: isRestaurant ? priceBand(f.priceRange) : undefined,
+      // Hotel-only, and not `isLodging`: `formData` survives a change of
+      // partner type, so a guesthouse could otherwise carry a rating left
+      // behind by the hotel branch — which the DB rejects outright.
+      stars: type === "hotel" ? f.stars : undefined,
     },
 
     service: isRestaurant
@@ -131,6 +146,10 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
     },
 
     amenities: state.amenities.map(amenitySlug),
+
+    // What the restaurant actually cooks. `business.subtype` holds the format
+    // ("Bistrot", "Pizzeria"), which is not a cuisine and must never stand in for one.
+    cuisines: isRestaurant ? unpackList(f.cuisines) : [],
 
     rooms: isLodging
       ? state.rooms.map(r => ({

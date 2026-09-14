@@ -489,6 +489,13 @@ export function VerificationDetail() {
               <Field label="Nom commercial">{row.business_name}</Field>
               <Field label="Raison sociale">{row.legal_name ?? "—"}</Field>
               <Field label="Catégorie déclarée">{row.business_subtype ?? "—"}</Field>
+              {/* The format a restaurant declared ("Bistrot") is not its cuisine,
+                  so the two are shown side by side rather than one standing in
+                  for the other. Blank on the verticals that collect neither. */}
+              <Field label="Cuisine(s) déclarée(s)">
+                {row.cuisines.length > 0 ? row.cuisines.join(" · ") : "—"}
+              </Field>
+              <Field label="Classement étoiles">{row.stars ? `${row.stars} ★` : "—"}</Field>
               <Field label="Année de création">{row.year_established ?? "—"}</Field>
               <Field label="Site web">{row.website ?? "—"}</Field>
               <Field label="Langue du dossier">
