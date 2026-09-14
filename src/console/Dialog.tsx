@@ -33,13 +33,29 @@ export function Modal({
   const panel = useRef<HTMLDivElement>(null);
   const restoreTo = useRef<HTMLElement | null>(null);
 
+  /**
+   * `onClose` is an inline arrow at every call site, so it is a different
+   * function on every render of the parent. Reading it through a ref keeps the
+   * effect below keyed to `open` alone.
+   *
+   * It used to sit in the dependency array, which meant a keystroke in any
+   * field re-ran the effect: the cleanup restored focus, the setup moved it to
+   * the panel, and the field lost it. Each character had to be preceded by a
+   * click. It also overwrote `restoreTo` on every run, so closing the dialog
+   * never returned focus to the control that opened it.
+   */
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
     restoreTo.current = document.activeElement as HTMLElement;
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        close.current();
         return;
       }
       if (e.key !== "Tab" || !panel.current) return;
@@ -70,7 +86,7 @@ export function Modal({
       document.body.style.overflow = overflow;
       restoreTo.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -265,12 +281,19 @@ export function Drawer({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  // Same reason as the modal: an inline `onClose` would re-register this
+  // listener on every render of the parent.
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
