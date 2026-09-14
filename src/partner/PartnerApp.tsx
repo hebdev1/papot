@@ -9,6 +9,11 @@ import { PartnerLogin } from "./pages/PartnerLogin";
 import { Overview } from "./pages/Overview";
 import { Listings, ListingForm } from "./pages/Listings";
 import { Reservations, ReservationDetail } from "./pages/Reservations";
+import { Orders, OrderDetail, KitchenBoard } from "./pages/Orders";
+import { MenuOptions } from "./pages/MenuOptions";
+import { Stock } from "./pages/Stock";
+import { Meals } from "./pages/Meals";
+import { FoodMoney } from "./pages/FoodMoney";
 import { Calendar, Availability } from "./pages/Planning";
 import { Rates, Discounts, Fees } from "./pages/Pricing";
 import { Customers, Messages, Reviews } from "./pages/Clients";
@@ -123,12 +128,19 @@ export function PartnerApp() {
             <Route path="chambres" element={<Require permission="manage_listings"><Rooms /></Require>} />
             <Route path="flotte" element={<Require permission="manage_listings"><Fleet /></Require>} />
             <Route path="lieux" element={<Require permission="manage_listings"><PickupLocations /></Require>} />
-            <Route path="menu" element={<Require permission="manage_listings"><Menu /></Require>} />
+            <Route path="menu" element={<Require permission="manage_menu"><Menu /></Require>} />
+            <Route path="options" element={<Require permission="manage_menu"><MenuOptions /></Require>} />
+            <Route path="formules" element={<Require permission="manage_menu"><Meals /></Require>} />
             <Route path="tables" element={<Require permission="manage_listings"><Tables /></Require>} />
 
             <Route path="reservations" element={<Require permission="view_reservations"><Reservations /></Require>} />
             <Route path="reservations/:reference" element={<Require permission="view_reservations"><ReservationDetail /></Require>} />
             <Route path="calendrier" element={<Require permission="view_reservations"><Calendar /></Require>} />
+
+            <Route path="commandes" element={<Require permission="manage_orders"><Orders /></Require>} />
+            <Route path="commandes/:reference" element={<Require permission="manage_orders"><OrderDetail /></Require>} />
+            <Route path="cuisine" element={<Require permission="manage_orders"><KitchenBoard /></Require>} />
+            <Route path="stock" element={<Require permission="manage_inventory"><Stock /></Require>} />
             <Route path="disponibilite" element={<Require permission="manage_availability"><Availability /></Require>} />
 
             <Route path="tarifs" element={<Require permission="manage_pricing"><Rates /></Require>} />
@@ -140,6 +152,7 @@ export function PartnerApp() {
             <Route path="avis" element={<Require permission="manage_reviews"><Reviews /></Require>} />
 
             <Route path="finance" element={<Require permission="view_finance"><Finance /></Require>} />
+            <Route path="restauration" element={<Require permission="view_finance"><FoodMoney /></Require>} />
             <Route path="versements" element={<Require permission="view_finance"><Payouts /></Require>} />
             <Route path="transactions" element={<Require permission="view_finance"><Transactions /></Require>} />
             <Route path="factures" element={<Require permission="view_finance"><Invoices /></Require>} />

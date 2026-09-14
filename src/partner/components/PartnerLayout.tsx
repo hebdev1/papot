@@ -20,6 +20,7 @@ import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/auth";
 import { avatarTint, initials } from "../../console/format";
 import { ROLE_LABEL, TYPE_LABEL, usePartner } from "../lib/partnerAuth";
+import type { PartnerType } from "../lib/partnerAuth";
 import { FOOTER_ITEMS, MOBILE_MORE, MOBILE_TABS, OVERVIEW, visibleGroups, type NavItem } from "../lib/nav";
 import { PartnerHeader } from "./PartnerHeader";
 
@@ -61,8 +62,8 @@ export function PartnerLayout() {
         </main>
       </div>
 
-      <MobileNav onMore={() => setMoreOpen(true)} can={can} />
-      {moreOpen && <MoreSheet onClose={() => setMoreOpen(false)} can={can} />}
+      <MobileNav onMore={() => setMoreOpen(true)} can={can} type={active?.type} />
+      {moreOpen && <MoreSheet onClose={() => setMoreOpen(false)} can={can} type={active?.type} />}
       {!active && null}
     </div>
   );
@@ -398,8 +399,18 @@ export function QuickCreate() {
   );
 }
 
-function MobileNav({ onMore, can }: { onMore: () => void; can: (p: string) => boolean }) {
-  const tabs = MOBILE_TABS.filter(t => !t.permission || can(t.permission));
+function MobileNav({
+  onMore,
+  can,
+  type,
+}: {
+  onMore: () => void;
+  can: (p: string) => boolean;
+  type: PartnerType | undefined;
+}) {
+  const tabs = MOBILE_TABS.filter(
+    t => (!t.permission || can(t.permission)) && (!t.types || (type && t.types.includes(type))),
+  );
 
   return (
     <nav
@@ -433,10 +444,20 @@ function MobileNav({ onMore, can }: { onMore: () => void; can: (p: string) => bo
   );
 }
 
-function MoreSheet({ onClose, can }: { onClose: () => void; can: (p: string) => boolean }) {
+function MoreSheet({
+  onClose,
+  can,
+  type,
+}: {
+  onClose: () => void;
+  can: (p: string) => boolean;
+  type: PartnerType | undefined;
+}) {
   const { active, memberships, setActive } = usePartner();
   const { signOut } = useAuth();
-  const items = MOBILE_MORE.filter(i => !i.permission || can(i.permission));
+  const items = MOBILE_MORE.filter(
+    i => (!i.permission || can(i.permission)) && (!i.types || (type && i.types.includes(type))),
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-end lg:hidden">

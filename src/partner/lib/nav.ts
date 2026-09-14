@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   CalendarDays,
+  ChefHat,
   Car,
   ClipboardCheck,
   Coins,
@@ -12,6 +13,7 @@ import {
   FileText,
   Gauge,
   Home,
+  Layers,
   LayoutGrid,
   LifeBuoy,
   ListChecks,
@@ -27,6 +29,9 @@ import {
   Star,
   Tags,
   UserCog,
+  PackageCheck,
+  ShoppingBag,
+  SlidersHorizontal,
   Users,
   UtensilsCrossed,
   Wallet,
@@ -78,7 +83,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Chambres", to: "/partenaire/chambres", icon: BedDouble, permission: "manage_listings", types: ["hotel", "guesthouse"] },
       { label: "Flotte", to: "/partenaire/flotte", icon: Car, permission: "manage_listings", types: ["car"] },
       { label: "Lieux de prise en charge", to: "/partenaire/lieux", icon: MapPin, permission: "manage_listings", types: ["car"] },
-      { label: "Menu", to: "/partenaire/menu", icon: UtensilsCrossed, permission: "manage_listings", types: ["restaurant"] },
+      { label: "Menu", to: "/partenaire/menu", icon: UtensilsCrossed, permission: "manage_menu", types: ["restaurant"] },
+      { label: "Portions et options", to: "/partenaire/options", icon: SlidersHorizontal, permission: "manage_menu", types: ["restaurant"] },
+      { label: "Formules et assiettes", to: "/partenaire/formules", icon: Layers, permission: "manage_menu", types: ["restaurant"] },
       { label: "Salles et tables", to: "/partenaire/tables", icon: LayoutGrid, permission: "manage_listings", types: ["restaurant"] },
     ],
   },
@@ -90,6 +97,16 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Toutes les réservations", to: "/partenaire/reservations", icon: ClipboardCheck, permission: "view_reservations", match: "/partenaire/reservations" },
       { label: "Calendrier", to: "/partenaire/calendrier", icon: CalendarDays, permission: "view_reservations" },
       { label: "Disponibilité", to: "/partenaire/disponibilite", icon: CalendarDays, permission: "manage_availability" },
+    ],
+  },
+  {
+    id: "orders",
+    label: "Commandes",
+    icon: ShoppingBag,
+    items: [
+      { label: "Toutes les commandes", to: "/partenaire/commandes", icon: ShoppingBag, permission: "manage_orders", match: "/partenaire/commandes", types: ["restaurant"] },
+      { label: "Écran cuisine", to: "/partenaire/cuisine", icon: ChefHat, permission: "manage_orders", types: ["restaurant"] },
+      { label: "Disponibilité", to: "/partenaire/stock", icon: PackageCheck, permission: "manage_inventory", types: ["restaurant"] },
     ],
   },
   {
@@ -118,6 +135,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Wallet,
     items: [
       { label: "Tableau de bord", to: "/partenaire/finance", icon: Wallet, permission: "view_finance" },
+      { label: "Restauration", to: "/partenaire/restauration", icon: UtensilsCrossed, permission: "view_finance", types: ["restaurant"] },
       { label: "Versements", to: "/partenaire/versements", icon: Coins, permission: "view_finance" },
       { label: "Transactions", to: "/partenaire/transactions", icon: Receipt, permission: "view_finance" },
       { label: "Factures", to: "/partenaire/factures", icon: FileText, permission: "view_finance" },
@@ -176,12 +194,16 @@ export const FOOTER_ITEMS: NavItem[] = [
 /** Mobile tab bar (spec §4): five destinations, never a shrunken sidebar. */
 export const MOBILE_TABS: NavItem[] = [
   { label: "Accueil", to: "/partenaire", icon: Home, match: "/partenaire" },
+  { label: "Commandes", to: "/partenaire/commandes", icon: ShoppingBag, permission: "manage_orders", types: ["restaurant"] },
   { label: "Réservations", to: "/partenaire/reservations", icon: ClipboardCheck, permission: "view_reservations" },
-  { label: "Annonces", to: "/partenaire/annonces", icon: LayoutGrid, permission: "manage_listings" },
+  { label: "Menu", to: "/partenaire/menu", icon: UtensilsCrossed, permission: "manage_menu", types: ["restaurant"] },
+  { label: "Annonces", to: "/partenaire/annonces", icon: LayoutGrid, permission: "manage_listings", types: ["hotel", "guesthouse", "car"] },
   { label: "Messages", to: "/partenaire/messages", icon: MessageSquare, permission: "manage_messages" },
 ];
 
 export const MOBILE_MORE: NavItem[] = [
+  { label: "Écran cuisine", to: "/partenaire/cuisine", icon: ChefHat, permission: "manage_orders", types: ["restaurant"] },
+  { label: "Disponibilité des plats", to: "/partenaire/stock", icon: PackageCheck, permission: "manage_inventory", types: ["restaurant"] },
   { label: "Calendrier", to: "/partenaire/calendrier", icon: CalendarDays, permission: "view_reservations" },
   { label: "Disponibilité", to: "/partenaire/disponibilite", icon: CalendarDays, permission: "manage_availability" },
   { label: "Tarifs", to: "/partenaire/tarifs", icon: Coins, permission: "manage_pricing" },
