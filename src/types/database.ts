@@ -133,6 +133,7 @@ export type Database = {
           start_time: string | null
           starts_on: string | null
           status: Database["public"]["Enums"]["booking_status"]
+          table_id: string | null
           title: string
           trip_id: string | null
           unit_id: string | null
@@ -150,6 +151,7 @@ export type Database = {
           start_time?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          table_id?: string | null
           title: string
           trip_id?: string | null
           unit_id?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           start_time?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          table_id?: string | null
           title?: string
           trip_id?: string | null
           unit_id?: string | null
@@ -198,6 +201,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
             referencedColumns: ["id"]
           },
           {
@@ -346,6 +356,7 @@ export type Database = {
           partner_id: string | null
           partner_type: Database["public"]["Enums"]["partner_type"] | null
           percentage: number | null
+          revenue_kind: Database["public"]["Enums"]["revenue_kind"] | null
           scope: Database["public"]["Enums"]["commission_scope"]
           service_kind: Database["public"]["Enums"]["listing_kind"] | null
           starts_on: string | null
@@ -363,6 +374,7 @@ export type Database = {
           partner_id?: string | null
           partner_type?: Database["public"]["Enums"]["partner_type"] | null
           percentage?: number | null
+          revenue_kind?: Database["public"]["Enums"]["revenue_kind"] | null
           scope: Database["public"]["Enums"]["commission_scope"]
           service_kind?: Database["public"]["Enums"]["listing_kind"] | null
           starts_on?: string | null
@@ -380,6 +392,7 @@ export type Database = {
           partner_id?: string | null
           partner_type?: Database["public"]["Enums"]["partner_type"] | null
           percentage?: number | null
+          revenue_kind?: Database["public"]["Enums"]["revenue_kind"] | null
           scope?: Database["public"]["Enums"]["commission_scope"]
           service_kind?: Database["public"]["Enums"]["listing_kind"] | null
           starts_on?: string | null
@@ -398,6 +411,44 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_inventory: {
+        Row: {
+          component_id: string
+          day: string
+          low_threshold: number | null
+          prepared: number
+          remaining: number | null
+          sold: number
+          updated_at: string
+        }
+        Insert: {
+          component_id: string
+          day: string
+          low_threshold?: number | null
+          prepared?: number
+          remaining?: number | null
+          sold?: number
+          updated_at?: string
+        }
+        Update: {
+          component_id?: string
+          day?: string
+          low_threshold?: number | null
+          prepared?: number
+          remaining?: number | null
+          sold?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_inventory_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "food_components"
             referencedColumns: ["id"]
           },
         ]
@@ -547,6 +598,54 @@ export type Database = {
           },
         ]
       }
+      delivery_zones: {
+        Row: {
+          active: boolean
+          eta_minutes: number | null
+          fee: number
+          id: string
+          listing_id: string
+          min_order: number | null
+          name: string
+          position: number
+        }
+        Insert: {
+          active?: boolean
+          eta_minutes?: number | null
+          fee?: number
+          id?: string
+          listing_id: string
+          min_order?: number | null
+          name: string
+          position?: number
+        }
+        Update: {
+          active?: boolean
+          eta_minutes?: number | null
+          fee?: number
+          id?: string
+          listing_id?: string
+          min_order?: number | null
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_zones_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_zones_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       destinations: {
         Row: {
           blurb: string | null
@@ -594,6 +693,41 @@ export type Database = {
           tier?: number
         }
         Relationships: []
+      }
+      dish_variations: {
+        Row: {
+          active: boolean
+          id: string
+          item_id: string
+          name: string
+          position: number
+          price: number
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          item_id: string
+          name: string
+          position?: number
+          price: number
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          item_id?: string
+          name?: string
+          position?: number
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dish_variations_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       disputes: {
         Row: {
@@ -810,6 +944,60 @@ export type Database = {
           target_market?: string | null
         }
         Relationships: []
+      }
+      food_components: {
+        Row: {
+          active: boolean
+          category: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          listing_id: string
+          max_quantity: number | null
+          name: string
+          position: number
+          prep_minutes: number | null
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          listing_id: string
+          max_quantity?: number | null
+          name: string
+          position?: number
+          prep_minutes?: number | null
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          listing_id?: string
+          max_quantity?: number | null
+          name?: string
+          position?: number
+          prep_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_components_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "food_components_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       internal_notes: {
         Row: {
@@ -1192,38 +1380,365 @@ export type Database = {
           },
         ]
       }
-      menu_items: {
+      meal_fixed_items: {
         Row: {
-          category: string
-          detail: string | null
+          id: string
+          item_id: string
+          position: number
+          quantity: number
+          template_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          position?: number
+          quantity?: number
+          template_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          position?: number
+          quantity?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_fixed_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_fixed_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_group_options: {
+        Row: {
+          component_id: string | null
+          group_id: string
+          id: string
+          item_id: string | null
+          max_quantity: number | null
+          position: number
+          price_delta: number
+        }
+        Insert: {
+          component_id?: string | null
+          group_id: string
+          id?: string
+          item_id?: string | null
+          max_quantity?: number | null
+          position?: number
+          price_delta?: number
+        }
+        Update: {
+          component_id?: string | null
+          group_id?: string
+          id?: string
+          item_id?: string | null
+          max_quantity?: number | null
+          position?: number
+          price_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_group_options_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "food_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_group_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "meal_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_group_options_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_groups: {
+        Row: {
+          id: string
+          max_select: number
+          min_select: number
+          name: string
+          position: number
+          required: boolean
+          selection: string
+          template_id: string
+        }
+        Insert: {
+          id?: string
+          max_select?: number
+          min_select?: number
+          name: string
+          position?: number
+          required?: boolean
+          selection?: string
+          template_id: string
+        }
+        Update: {
+          id?: string
+          max_select?: number
+          min_select?: number
+          name?: string
+          position?: number
+          required?: boolean
+          selection?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_groups_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_templates: {
+        Row: {
+          active: boolean
+          base_price: number
+          description: string | null
+          id: string
+          image_url: string | null
+          kind: string
+          listing_id: string
+          name: string
+          position: number
+        }
+        Insert: {
+          active?: boolean
+          base_price?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          kind: string
+          listing_id: string
+          name: string
+          position?: number
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          kind?: string
+          listing_id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_templates_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_templates_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_categories: {
+        Row: {
+          active: boolean
+          description: string | null
           id: string
           listing_id: string
           name: string
           position: number
-          price: number | null
-          tag: string | null
         }
         Insert: {
-          category: string
-          detail?: string | null
+          active?: boolean
+          description?: string | null
           id?: string
           listing_id: string
           name: string
           position?: number
-          price?: number | null
-          tag?: string | null
         }
         Update: {
-          category?: string
-          detail?: string | null
+          active?: boolean
+          description?: string | null
           id?: string
           listing_id?: string
           name?: string
           position?: number
-          price?: number | null
-          tag?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "menu_categories_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_categories_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_modifier_groups: {
+        Row: {
+          group_id: string
+          item_id: string
+          position: number
+        }
+        Insert: {
+          group_id: string
+          item_id: string
+          position?: number
+        }
+        Update: {
+          group_id?: string
+          item_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_modifier_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "modifier_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_modifier_groups_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_notes: {
+        Row: {
+          item_id: string
+          prep_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          item_id: string
+          prep_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          item_id?: string
+          prep_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_notes_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: true
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          allergens: string[]
+          available: boolean
+          available_from: string | null
+          available_until: string | null
+          available_weekdays: number[]
+          category_id: string
+          chef_special: boolean
+          description: string | null
+          detail: string | null
+          dietary: string[]
+          discount_price: number | null
+          id: string
+          image_url: string | null
+          listing_id: string
+          name: string
+          popular: boolean
+          position: number
+          prep_minutes: number | null
+          price: number | null
+          sold_out: boolean
+        }
+        Insert: {
+          allergens?: string[]
+          available?: boolean
+          available_from?: string | null
+          available_until?: string | null
+          available_weekdays?: number[]
+          category_id: string
+          chef_special?: boolean
+          description?: string | null
+          detail?: string | null
+          dietary?: string[]
+          discount_price?: number | null
+          id?: string
+          image_url?: string | null
+          listing_id: string
+          name: string
+          popular?: boolean
+          position?: number
+          prep_minutes?: number | null
+          price?: number | null
+          sold_out?: boolean
+        }
+        Update: {
+          allergens?: string[]
+          available?: boolean
+          available_from?: string | null
+          available_until?: string | null
+          available_weekdays?: number[]
+          category_id?: string
+          chef_special?: boolean
+          description?: string | null
+          detail?: string | null
+          dietary?: string[]
+          discount_price?: number | null
+          id?: string
+          image_url?: string | null
+          listing_id?: string
+          name?: string
+          popular?: boolean
+          position?: number
+          prep_minutes?: number | null
+          price?: number | null
+          sold_out?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "menu_items_listing_id_fkey"
             columns: ["listing_id"]
@@ -1236,6 +1751,98 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modifier_groups: {
+        Row: {
+          active: boolean
+          id: string
+          listing_id: string
+          max_select: number
+          min_select: number
+          name: string
+          position: number
+          required: boolean
+          selection: string
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          listing_id: string
+          max_select?: number
+          min_select?: number
+          name: string
+          position?: number
+          required?: boolean
+          selection?: string
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          listing_id?: string
+          max_select?: number
+          min_select?: number
+          name?: string
+          position?: number
+          required?: boolean
+          selection?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modifier_groups_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modifier_groups_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modifiers: {
+        Row: {
+          active: boolean
+          group_id: string
+          id: string
+          kind: string
+          max_quantity: number | null
+          name: string
+          position: number
+          price_delta: number
+        }
+        Insert: {
+          active?: boolean
+          group_id: string
+          id?: string
+          kind?: string
+          max_quantity?: number | null
+          name: string
+          position?: number
+          price_delta?: number
+        }
+        Update: {
+          active?: boolean
+          group_id?: string
+          id?: string
+          kind?: string
+          max_quantity?: number | null
+          name?: string
+          position?: number
+          price_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modifiers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "modifier_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -1290,6 +1897,99 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      order_item_customizations: {
+        Row: {
+          component_id: string | null
+          id: string
+          kind: string
+          label: string
+          modifier_id: string | null
+          order_item_id: string
+          position: number
+          price_delta: number
+          quantity: number
+        }
+        Insert: {
+          component_id?: string | null
+          id?: string
+          kind: string
+          label: string
+          modifier_id?: string | null
+          order_item_id: string
+          position?: number
+          price_delta?: number
+          quantity?: number
+        }
+        Update: {
+          component_id?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          modifier_id?: string | null
+          order_item_id?: string
+          position?: number
+          price_delta?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_customizations_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "food_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_customizations_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "modifiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_customizations_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_history: {
+        Row: {
+          actor: string | null
+          at: string
+          id: string
+          order_id: string
+          reason: string | null
+          status: Database["public"]["Enums"]["food_order_status"]
+        }
+        Insert: {
+          actor?: string | null
+          at?: string
+          id?: string
+          order_id: string
+          reason?: string | null
+          status: Database["public"]["Enums"]["food_order_status"]
+        }
+        Update: {
+          actor?: string | null
+          at?: string
+          id?: string
+          order_id?: string
+          reason?: string | null
+          status?: Database["public"]["Enums"]["food_order_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partner_activity_log: {
         Row: {
@@ -1580,6 +2280,7 @@ export type Database = {
           confirmation_sent_at: string | null
           country: string
           created_at: string
+          cuisines: string[]
           daily_rate: number | null
           department: string | null
           deposit: number | null
@@ -1619,6 +2320,7 @@ export type Database = {
           rooms_count: number | null
           seats_capacity: number | null
           short_desc: string
+          stars: number | null
           status: Database["public"]["Enums"]["application_status"]
           submitted_at: string
           type: Database["public"]["Enums"]["partner_type"]
@@ -1646,6 +2348,7 @@ export type Database = {
           confirmation_sent_at?: string | null
           country?: string
           created_at?: string
+          cuisines?: string[]
           daily_rate?: number | null
           department?: string | null
           deposit?: number | null
@@ -1685,6 +2388,7 @@ export type Database = {
           rooms_count?: number | null
           seats_capacity?: number | null
           short_desc: string
+          stars?: number | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string
           type: Database["public"]["Enums"]["partner_type"]
@@ -1712,6 +2416,7 @@ export type Database = {
           confirmation_sent_at?: string | null
           country?: string
           created_at?: string
+          cuisines?: string[]
           daily_rate?: number | null
           department?: string | null
           deposit?: number | null
@@ -1751,6 +2456,7 @@ export type Database = {
           rooms_count?: number | null
           seats_capacity?: number | null
           short_desc?: string
+          stars?: number | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string
           type?: Database["public"]["Enums"]["partner_type"]
@@ -2231,10 +2937,12 @@ export type Database = {
           failure_reason: string | null
           id: string
           method: Database["public"]["Enums"]["payment_method"]
+          order_id: string | null
           partner_id: string | null
           processor: string | null
           processor_ref: string | null
           reference: string
+          revenue_kind: Database["public"]["Enums"]["revenue_kind"] | null
           risk_score: number | null
           status: Database["public"]["Enums"]["payment_status"]
         }
@@ -2250,10 +2958,12 @@ export type Database = {
           failure_reason?: string | null
           id?: string
           method: Database["public"]["Enums"]["payment_method"]
+          order_id?: string | null
           partner_id?: string | null
           processor?: string | null
           processor_ref?: string | null
           reference: string
+          revenue_kind?: Database["public"]["Enums"]["revenue_kind"] | null
           risk_score?: number | null
           status?: Database["public"]["Enums"]["payment_status"]
         }
@@ -2269,10 +2979,12 @@ export type Database = {
           failure_reason?: string | null
           id?: string
           method?: Database["public"]["Enums"]["payment_method"]
+          order_id?: string | null
           partner_id?: string | null
           processor?: string | null
           processor_ref?: string | null
           reference?: string
+          revenue_kind?: Database["public"]["Enums"]["revenue_kind"] | null
           risk_score?: number | null
           status?: Database["public"]["Enums"]["payment_status"]
         }
@@ -2289,6 +3001,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
             referencedColumns: ["id"]
           },
           {
@@ -2785,33 +3504,437 @@ export type Database = {
           },
         ]
       }
+      restaurant_hours: {
+        Row: {
+          closes_at: string
+          id: string
+          listing_id: string
+          opens_at: string
+          position: number
+          weekday: number
+        }
+        Insert: {
+          closes_at: string
+          id?: string
+          listing_id: string
+          opens_at: string
+          position?: number
+          weekday: number
+        }
+        Update: {
+          closes_at?: string
+          id?: string
+          listing_id?: string
+          opens_at?: string
+          position?: number
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_hours_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_hours_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_inventory: {
+        Row: {
+          day: string
+          item_id: string
+          low_threshold: number | null
+          prepared: number
+          remaining: number | null
+          sold: number
+          updated_at: string
+        }
+        Insert: {
+          day: string
+          item_id: string
+          low_threshold?: number | null
+          prepared?: number
+          remaining?: number | null
+          sold?: number
+          updated_at?: string
+        }
+        Update: {
+          day?: string
+          item_id?: string
+          low_threshold?: number | null
+          prepared?: number
+          remaining?: number | null
+          sold?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_order_items: {
+        Row: {
+          base_price: number | null
+          id: string
+          item_id: string | null
+          line_total: number
+          name: string
+          note: string | null
+          order_id: string
+          position: number
+          quantity: number
+          template_id: string | null
+          template_kind: string | null
+          unit_price: number
+          variation_id: string | null
+          variation_name: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          id?: string
+          item_id?: string | null
+          line_total: number
+          name: string
+          note?: string | null
+          order_id: string
+          position?: number
+          quantity: number
+          template_id?: string | null
+          template_kind?: string | null
+          unit_price: number
+          variation_id?: string | null
+          variation_name?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          id?: string
+          item_id?: string | null
+          line_total?: number
+          name?: string
+          note?: string | null
+          order_id?: string
+          position?: number
+          quantity?: number
+          template_id?: string | null
+          template_kind?: string | null
+          unit_price?: number
+          variation_id?: string | null
+          variation_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_order_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meal_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_order_items_variation_id_fkey"
+            columns: ["variation_id"]
+            isOneToOne: false
+            referencedRelation: "dish_variations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_orders: {
+        Row: {
+          address: string | null
+          address_notes: string | null
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_fee: number
+          delivery_zone_id: string | null
+          discount: number
+          fulfillment: Database["public"]["Enums"]["fulfillment_mode"]
+          id: string
+          listing_id: string
+          note: string | null
+          payment_method: string | null
+          payment_status: Database["public"]["Enums"]["food_payment_status"]
+          reference: string
+          rejection_reason: string | null
+          scheduled_for: string | null
+          service_day: string
+          service_fee: number
+          status: Database["public"]["Enums"]["food_order_status"]
+          subtotal: number
+          tax: number
+          tip: number
+          total: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_notes?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_fee?: number
+          delivery_zone_id?: string | null
+          discount?: number
+          fulfillment: Database["public"]["Enums"]["fulfillment_mode"]
+          id?: string
+          listing_id: string
+          note?: string | null
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["food_payment_status"]
+          reference: string
+          rejection_reason?: string | null
+          scheduled_for?: string | null
+          service_day?: string
+          service_fee?: number
+          status?: Database["public"]["Enums"]["food_order_status"]
+          subtotal: number
+          tax?: number
+          tip?: number
+          total: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_notes?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_fee?: number
+          delivery_zone_id?: string | null
+          discount?: number
+          fulfillment?: Database["public"]["Enums"]["fulfillment_mode"]
+          id?: string
+          listing_id?: string
+          note?: string | null
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["food_payment_status"]
+          reference?: string
+          rejection_reason?: string | null
+          scheduled_for?: string | null
+          service_day?: string
+          service_fee?: number
+          status?: Database["public"]["Enums"]["food_order_status"]
+          subtotal?: number
+          tax?: number
+          tip?: number
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_settings: {
+        Row: {
+          accept_online_orders: boolean
+          accept_online_reservations: boolean
+          allow_delivery: boolean
+          allow_dine_in_orders: boolean
+          allow_pickup: boolean
+          auto_confirm: boolean
+          cancellation_deadline_hours: number | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          default_duration_minutes: number
+          delivery_eta_minutes: number
+          delivery_free_over: number | null
+          delivery_instructions: string | null
+          deposit_amount: number | null
+          deposit_required: boolean
+          grace_period_minutes: number
+          listing_id: string
+          max_advance_days: number
+          max_party: number
+          min_notice_minutes: number
+          min_party: number
+          no_show_policy: string | null
+          order_max_advance_days: number
+          order_min_total: number | null
+          order_prep_minutes: number
+          pickup_instructions: string | null
+          same_day_allowed: boolean
+          updated_at: string
+        }
+        Insert: {
+          accept_online_orders?: boolean
+          accept_online_reservations?: boolean
+          allow_delivery?: boolean
+          allow_dine_in_orders?: boolean
+          allow_pickup?: boolean
+          auto_confirm?: boolean
+          cancellation_deadline_hours?: number | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          default_duration_minutes?: number
+          delivery_eta_minutes?: number
+          delivery_free_over?: number | null
+          delivery_instructions?: string | null
+          deposit_amount?: number | null
+          deposit_required?: boolean
+          grace_period_minutes?: number
+          listing_id: string
+          max_advance_days?: number
+          max_party?: number
+          min_notice_minutes?: number
+          min_party?: number
+          no_show_policy?: string | null
+          order_max_advance_days?: number
+          order_min_total?: number | null
+          order_prep_minutes?: number
+          pickup_instructions?: string | null
+          same_day_allowed?: boolean
+          updated_at?: string
+        }
+        Update: {
+          accept_online_orders?: boolean
+          accept_online_reservations?: boolean
+          allow_delivery?: boolean
+          allow_dine_in_orders?: boolean
+          allow_pickup?: boolean
+          auto_confirm?: boolean
+          cancellation_deadline_hours?: number | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          default_duration_minutes?: number
+          delivery_eta_minutes?: number
+          delivery_free_over?: number | null
+          delivery_instructions?: string | null
+          deposit_amount?: number | null
+          deposit_required?: boolean
+          grace_period_minutes?: number
+          listing_id?: string
+          max_advance_days?: number
+          max_party?: number
+          min_notice_minutes?: number
+          min_party?: number
+          no_show_policy?: string | null
+          order_max_advance_days?: number
+          order_min_total?: number | null
+          order_prep_minutes?: number
+          pickup_instructions?: string | null
+          same_day_allowed?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_settings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_settings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_tables: {
         Row: {
+          accessible: boolean
+          active: boolean
           area_id: string | null
+          can_combine: boolean
           id: string
           label: string
           listing_id: string
+          max_guests: number
+          min_guests: number
           position: number
           seats: number
           status: Database["public"]["Enums"]["table_status"]
+          table_number: string | null
         }
         Insert: {
+          accessible?: boolean
+          active?: boolean
           area_id?: string | null
+          can_combine?: boolean
           id?: string
           label: string
           listing_id: string
+          max_guests: number
+          min_guests?: number
           position?: number
           seats: number
           status?: Database["public"]["Enums"]["table_status"]
+          table_number?: string | null
         }
         Update: {
+          accessible?: boolean
+          active?: boolean
           area_id?: string | null
+          can_combine?: boolean
           id?: string
           label?: string
           listing_id?: string
+          max_guests?: number
+          min_guests?: number
           position?: number
           seats?: number
           status?: Database["public"]["Enums"]["table_status"]
+          table_number?: string | null
         }
         Relationships: [
           {
@@ -2962,22 +4085,37 @@ export type Database = {
       }
       seating_areas: {
         Row: {
+          active: boolean
+          area_type: string | null
+          capacity: number | null
+          description: string | null
           id: string
           listing_id: string
           name: string
           position: number
+          smoking: boolean
         }
         Insert: {
+          active?: boolean
+          area_type?: string | null
+          capacity?: number | null
+          description?: string | null
           id?: string
           listing_id: string
           name: string
           position?: number
+          smoking?: boolean
         }
         Update: {
+          active?: boolean
+          area_type?: string | null
+          capacity?: number | null
+          description?: string | null
           id?: string
           listing_id?: string
           name?: string
           position?: number
+          smoking?: boolean
         }
         Relationships: [
           {
@@ -3645,6 +4783,19 @@ export type Database = {
         }
         Returns: string
       }
+      advance_food_order: {
+        Args: { p_order: string; p_reason?: string; p_status: string }
+        Returns: string
+      }
+      assign_restaurant_table: {
+        Args: {
+          p_date: string
+          p_listing: string
+          p_party: number
+          p_time: string
+        }
+        Returns: string
+      }
       attach_application_documents: {
         Args: {
           p_application: string
@@ -3657,20 +4808,35 @@ export type Database = {
       build_partner_listings: { Args: { p_partner: string }; Returns: number }
       claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }
-      effective_commission: {
-        Args: {
-          p_kind: Database["public"]["Enums"]["listing_kind"]
-          p_partner_id: string
-        }
-        Returns: number
-      }
+      effective_commission:
+        | {
+            Args: {
+              p_kind: Database["public"]["Enums"]["listing_kind"]
+              p_partner_id: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_kind: Database["public"]["Enums"]["listing_kind"]
+              p_partner_id: string
+              p_revenue?: Database["public"]["Enums"]["revenue_kind"]
+            }
+            Returns: number
+          }
       get_booking: { Args: { p_reference: string }; Returns: Json }
       is_partner_member: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mark_food_order_paid: {
+        Args: { p_method?: string; p_order: string }
+        Returns: Json
+      }
+      my_account_space: { Args: never; Returns: string }
       my_bookings: { Args: never; Returns: Json }
       my_partner_ids: { Args: never; Returns: string[] }
       my_trips: { Args: never; Returns: Json }
       next_booking_reference: { Args: never; Returns: string }
+      next_order_reference: { Args: never; Returns: string }
       parse_int: { Args: { p: Json; p_field: string }; Returns: number }
       parse_num: { Args: { p: Json; p_field: string }; Returns: number }
       partner_can: {
@@ -3755,7 +4921,28 @@ export type Database = {
         }
         Returns: number
       }
+      place_food_order: { Args: { p_payload: Json }; Returns: Json }
+      reassign_reservation_table: {
+        Args: { p_item: string; p_table: string }
+        Returns: string
+      }
+      restaurant_availability: {
+        Args: { p_date: string; p_listing: string; p_party?: number }
+        Returns: Json
+      }
+      restaurant_finance: {
+        Args: { p_from?: string; p_partner: string; p_to?: string }
+        Returns: Json
+      }
+      restaurant_food_stats: {
+        Args: { p_days?: number; p_partner: string }
+        Returns: Json
+      }
       submit_partner_application: { Args: { p_payload: Json }; Returns: Json }
+      track_food_order: {
+        Args: { p_phone: string; p_reference: string }
+        Returns: Json
+      }
       trip_slack_days: { Args: never; Returns: number }
     }
     Enums: {
@@ -3827,6 +5014,24 @@ export type Database = {
         | "deposit"
         | "tax"
         | "other"
+      food_order_status:
+        | "received"
+        | "confirmed"
+        | "preparing"
+        | "ready"
+        | "out_for_delivery"
+        | "completed"
+        | "rejected"
+        | "cancelled"
+        | "refunded"
+        | "partially_refunded"
+      food_payment_status:
+        | "pending"
+        | "paid"
+        | "refunded"
+        | "partially_refunded"
+        | "failed"
+      fulfillment_mode: "dine_in" | "pickup" | "delivery"
       integration_status: "connected" | "disconnected" | "error"
       invoice_status: "draft" | "issued" | "paid" | "void" | "overdue"
       listing_kind: "stay" | "restaurant" | "car"
@@ -3853,6 +5058,9 @@ export type Database = {
         | "finance"
         | "marketing"
         | "viewer"
+        | "kitchen"
+        | "cashier"
+        | "delivery_manager"
       partner_member_status: "invited" | "active" | "inactive"
       partner_status:
         | "pending"
@@ -3897,6 +5105,7 @@ export type Database = {
         | "processing"
         | "completed"
         | "rejected"
+      revenue_kind: "reservation" | "food_order" | "delivery" | "tip"
       review_flag:
         | "spam"
         | "harassment"
@@ -4126,6 +5335,26 @@ export const Constants = {
         "tax",
         "other",
       ],
+      food_order_status: [
+        "received",
+        "confirmed",
+        "preparing",
+        "ready",
+        "out_for_delivery",
+        "completed",
+        "rejected",
+        "cancelled",
+        "refunded",
+        "partially_refunded",
+      ],
+      food_payment_status: [
+        "pending",
+        "paid",
+        "refunded",
+        "partially_refunded",
+        "failed",
+      ],
+      fulfillment_mode: ["dine_in", "pickup", "delivery"],
       integration_status: ["connected", "disconnected", "error"],
       invoice_status: ["draft", "issued", "paid", "void", "overdue"],
       listing_kind: ["stay", "restaurant", "car"],
@@ -4154,6 +5383,9 @@ export const Constants = {
         "finance",
         "marketing",
         "viewer",
+        "kitchen",
+        "cashier",
+        "delivery_manager",
       ],
       partner_member_status: ["invited", "active", "inactive"],
       partner_status: [
@@ -4204,6 +5436,7 @@ export const Constants = {
         "completed",
         "rejected",
       ],
+      revenue_kind: ["reservation", "food_order", "delivery", "tip"],
       review_flag: [
         "spam",
         "harassment",
