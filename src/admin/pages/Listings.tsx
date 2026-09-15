@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { Button, PageHeader } from "../../console/Ui";
 import { Stat } from "../../console/Cards";
@@ -222,6 +223,39 @@ export function ListingsTable({
           </span>
         </span>
       ),
+    },
+    {
+      /**
+       * The row itself opens the review; this opens what a visitor sees.
+       * A real anchor rather than `window.open`, so the address can be
+       * copied and sent to someone — which is most of why an operator
+       * looks a listing up in the first place.
+       */
+      id: "public",
+      header: "Site",
+      align: "center",
+      width: "64px",
+      mobile: "meta",
+      cell: r =>
+        r.status === "published" ? (
+          <a
+            href={`/p/${r.id}`}
+            target="_blank"
+            rel="noreferrer"
+            title={`Ouvrir la fiche publique de ${r.name}`}
+            aria-label={`Ouvrir la fiche publique de ${r.name}`}
+            className="inline-flex rounded-md p-1 text-admin-ink-3 transition-colors hover:bg-admin-canvas hover:text-[#002089]"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden />
+          </a>
+        ) : (
+          <span
+            title="Pas encore publiée : cette fiche n'existe pas pour un visiteur."
+            className="inline-flex p-1 text-admin-line"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden />
+          </span>
+        ),
     },
     {
       id: "partner_name",
