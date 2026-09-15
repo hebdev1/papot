@@ -11,12 +11,22 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
   return (
     <article className="snap-start shrink-0 w-[268px] bg-white rounded-2xl overflow-hidden border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.08)] transition-all duration-300 flex flex-col">
       <div className="relative h-36 bg-[#EAF8FF] flex items-center justify-center">
+        {/* The photo is the card's biggest target, so it carries the link to
+            the fiche. The favourite button and the badges stay outside the
+            anchor: an anchor inside an anchor is invalid markup, and the heart
+            has to stay clickable. */}
+        <Link
+          to={`/p/${listing.id}`}
+          aria-label={`Voir la fiche de ${listing.name}`}
+          className="absolute inset-0 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#002089]"
+        >
+          {listing.img ? (
+            <img src={listing.img} alt={listing.name} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs text-[#00508a]">photo — à fournir</span>
+          )}
+        </Link>
         <FavoriteButton listingId={listing.id} className="absolute top-3 right-3 z-10" />
-        {listing.img ? (
-          <img src={listing.img} alt={listing.name} className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <span className="text-xs text-[#00508a]">photo — à fournir</span>
-        )}
         {/* A restaurant nobody has reviewed shows no score rather than a zero. */}
         {formatRating(listing) && (
           <Badge
@@ -33,7 +43,11 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
 
       <div className="p-4 flex flex-col gap-2.5 flex-1">
         <div>
-          <h3 className="font-display text-base font-bold text-[#3E2C23] leading-tight">{listing.name}</h3>
+          <h3 className="font-display text-base font-bold text-[#3E2C23] leading-tight">
+            <Link to={`/p/${listing.id}`} className="transition-colors hover:text-[#002089]">
+              {listing.name}
+            </Link>
+          </h3>
           <p className="text-xs text-[#7a6355] mt-0.5">{listing.location}</p>
           <p className="text-xs text-[#7a6355] mt-1">
             <span className="font-semibold text-[#3E2C23]">{a.price_band}</span> · {listing.reviews} avis
