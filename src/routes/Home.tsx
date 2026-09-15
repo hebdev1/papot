@@ -4,6 +4,7 @@ import { Icon } from "../components/Icon";
 import { Carousel } from "../components/Carousel";
 import { StayCard } from "../components/StayCard";
 import { RestaurantCard } from "../components/RestaurantCard";
+import { OfferCard, type OfferRow } from "../components/OfferCard";
 import { CarCard } from "../components/CarCard";
 import { DestinationCard } from "../components/DestinationCard";
 import { PartnerSection } from "../components/PartnerSection";
@@ -36,8 +37,9 @@ function SectionHead({
   eyebrow: string;
   title: string;
   sub: string;
-  cta: string;
-  onCta: () => void;
+  /** Omitted where there is nowhere to send the visitor. */
+  cta?: string;
+  onCta?: () => void;
 }) {
   return (
     <div className="flex items-end justify-between gap-6 mb-5">
@@ -46,12 +48,14 @@ function SectionHead({
         <h2 className="font-display text-2xl lg:text-3xl font-bold text-[#002089] tracking-tight">{title}</h2>
         <span className="text-sm text-[#7a6355]">{sub}</span>
       </div>
-      <button
-        onClick={onCta}
-        className="hidden sm:block shrink-0 px-5 py-2.5 rounded-xl border-2 border-[#002089] text-[#002089] font-semibold text-sm bg-white hover:bg-[#002089] hover:text-white transition-colors"
-      >
-        {cta}
-      </button>
+      {cta && onCta && (
+        <button
+          onClick={onCta}
+          className="hidden sm:block shrink-0 px-5 py-2.5 rounded-xl border-2 border-[#002089] text-[#002089] font-semibold text-sm bg-white hover:bg-[#002089] hover:text-white transition-colors"
+        >
+          {cta}
+        </button>
+      )}
     </div>
   );
 }
@@ -68,6 +72,8 @@ export function Home({ onPartner }: { onPartner: () => void }) {
 
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [destinations, setDestinations] = useState<DestinationRow[]>([]);
+  const [offers, setOffers] = useState<OfferRow[]>([]);
+  const [savings, setSavings] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +106,50 @@ export function Home({ onPartner }: { onPartner: () => void }) {
     const n = Math.round((b - a) / 86_400_000);
     return Number.isFinite(n) && n > 0 ? n : 1;
   }, [checkin, checkout]);
+
+  /**
+   * Offers are loaded apart from the listings because their price depends on
+   * how long the visitor is staying, so the section follows the dates in the
+   * search bar. RLS already hides an offer that is paused, out of its window,
+   * or sitting on an unpublished annonce — nothing here has to ask.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("partner_packages")
+        .select("id, listing_id, name, description, price, basis, usage_limit, used_count, listings(id, name, img, location)")
+        .eq("active", true)
+        .order("position")
+        .limit(8);
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load offers:", error);
+        return;
+      }
+      const rows = (data ?? []) as unknown as OfferRow[];
+      setOffers(rows);
+
+      const answers = await Promise.all(
+        rows.map(o =>
+          supabase.rpc("package_quote", {
+            p_package: o.id,
+            p_units: o.basis === "total" ? 1 : nights,
+          }),
+        ),
+      );
+      if (cancelled) return;
+      const next: Record<string, number | null> = {};
+      rows.forEach((o, i) => {
+        const q = answers[i].data as unknown as { savings: number | null; savings_known: boolean } | null;
+        next[o.id] = q?.savings_known && q.savings !== null ? Number(q.savings) : null;
+      });
+      setSavings(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nights]);
 
   const search = () => {
     const p = new URLSearchParams({ kind: activeTab, checkin, checkout });
@@ -201,6 +251,21 @@ export function Home({ onPartner }: { onPartner: () => void }) {
       </section>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-14 flex flex-col gap-16">
+        {offers.length > 0 && (
+          <section>
+            <SectionHead
+              eyebrow="À saisir"
+              title="Offres du moment"
+              sub="Plusieurs prestations réunies sous un prix unique."
+            />
+            <Carousel ariaLabel="Offres du moment">
+              {offers.map(o => (
+                <OfferCard key={o.id} offer={o} units={nights} savings={savings[o.id] ?? null} />
+              ))}
+            </Carousel>
+          </section>
+        )}
+
         {/* 1 — Hébergements (cream) */}
         <section>
           <SectionHead
