@@ -5,7 +5,7 @@ import { Badge } from "../components/ui/cvui-badge";
 import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
-import { formatDateRange, nightsBetween, useCart } from "../lib/cart";
+import { formatDateRange, nightsBetween, useCart, type CartItem } from "../lib/cart";
 import { useFoodCart } from "../lib/foodCart";
 import type { Tables } from "../types/database";
 
@@ -160,6 +160,23 @@ export function Property() {
       )}
       {listing.kind === "car" && (
         <CarDetail listing={listing} a={a} rate={rate} cart={cart} navigate={navigate} />
+      )}
+
+      {/* A restaurant offer needs the créneau that the reservation panel
+          collects, so that one is rendered from inside RestaurantDetail. */}
+      {listing.kind !== "restaurant" && (
+        <Offers
+          listing={listing}
+          cart={cart}
+          navigate={navigate}
+          booking={{
+            units: nightsBetween(CHECKIN, CHECKOUT),
+            starts_on: CHECKIN,
+            ends_on: CHECKOUT,
+            party: 2,
+            ready: true,
+          }}
+        />
       )}
     </main>
   );
@@ -1000,6 +1017,20 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
           </div>
         </aside>
       </div>
+
+      <Offers
+        listing={listing}
+        cart={cart}
+        navigate={navigate}
+        booking={{
+          units: 1,
+          starts_on: date,
+          start_time: slot ? `${slot}:00` : null,
+          party,
+          ready: !!slot,
+          hint: "Choisissez un créneau",
+        }}
+      />
     </>
   );
 }
@@ -1141,6 +1172,199 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
         </aside>
       </div>
     </>
+  );
+}
+
+/* ── Offres ─────────────────────────────────────────────── */
+
+type PackageRow = Tables<"partner_packages"> & { package_lines: Tables<"package_lines">[] };
+
+type OfferQuote = {
+  price: number;
+  reference: number | null;
+  savings: number | null;
+  savings_known: boolean;
+};
+
+/**
+ * What the visitor has to have chosen before an offer can be booked. A stay and
+ * a rental already know their dates; a restaurant does not know its table until
+ * a créneau is picked, which is why its section is rendered from inside
+ * RestaurantDetail rather than beside it.
+ */
+type OfferBooking = {
+  units: number;
+  starts_on: string;
+  ends_on?: string | null;
+  start_time?: string | null;
+  party?: number | null;
+  ready: boolean;
+  hint?: string;
+};
+
+const unitWord = (basis: string, n: number) =>
+  basis === "per_day" ? (n > 1 ? "jours" : "jour") : n > 1 ? "nuits" : "nuit";
+
+/**
+ * A package is several things the partner already sells, under one name and one
+ * price. The saving is never computed here: `package_quote` reads each bound
+ * line's price in the database and answers, and this only displays what came
+ * back — including the refusal to name a saving when a line has no value.
+ */
+function Offers({
+  listing,
+  cart,
+  navigate,
+  booking,
+}: {
+  listing: ListingRow;
+  cart: { add: (item: CartItem) => void };
+  navigate: (to: string) => void;
+  booking: OfferBooking;
+}) {
+  const [rows, setRows] = useState<PackageRow[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, OfferQuote>>({});
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("partner_packages")
+        .select("*, package_lines(*)")
+        .eq("listing_id", listing.id)
+        .eq("active", true)
+        .order("position");
+      if (!live) return;
+      if (error) {
+        console.error("Failed to load offers:", error);
+        return;
+      }
+      const list = (data ?? []) as unknown as PackageRow[];
+      setRows(list);
+
+      const answers = await Promise.all(
+        list.map(p => supabase.rpc("package_quote", { p_package: p.id, p_units: booking.units })),
+      );
+      if (!live) return;
+      const next: Record<string, OfferQuote> = {};
+      list.forEach((p, i) => {
+        const q = answers[i].data as unknown as OfferQuote | null;
+        if (q) next[p.id] = q;
+      });
+      setQuotes(next);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [listing.id, booking.units]);
+
+  if (rows.length === 0) return null;
+
+  const book = (p: PackageRow) => {
+    cart.add({
+      kind: listing.kind as CartItem["kind"],
+      listing_id: listing.id,
+      title: p.name,
+      detail: p.package_lines
+        .map(l => l.label + (l.quantity > 1 ? ` ×${l.quantity}` : ""))
+        .join(", "),
+      // The database prices this again and ignores the figure below; it is here
+      // so the checkout summary has something to show on the way.
+      amount: Number(quotes[p.id]?.price ?? p.price),
+      package_id: p.id,
+      starts_on: booking.starts_on,
+      ends_on: booking.ends_on ?? null,
+      start_time: booking.start_time ?? null,
+      party: booking.party ?? null,
+    });
+    navigate(`/checkout/${listing.id}`);
+  };
+
+  return (
+    <section className="mt-10">
+      <h2 className="font-display text-2xl font-bold text-[#3E2C23]">Offres</h2>
+      <p className="text-sm text-[#7a6355] mt-1 mb-4">
+        Plusieurs prestations réunies sous un prix unique.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map(p => {
+          const q = quotes[p.id];
+          const savings =
+            q?.savings_known && q.savings !== null && Number(q.savings) > 0 ? Number(q.savings) : null;
+          const tooShort = p.min_units !== null && booking.units < p.min_units;
+          const left = p.usage_limit === null ? null : Math.max(p.usage_limit - p.used_count, 0);
+          const blocked = !booking.ready || tooShort || left === 0;
+
+          return (
+            <article
+              key={p.id}
+              className="bg-white rounded-2xl border border-[#e2d5c3] p-5 flex flex-col gap-3"
+            >
+              <div>
+                <h3 className="font-display text-lg font-bold text-[#3E2C23] leading-tight">{p.name}</h3>
+                {p.description && <p className="text-sm text-[#7a6355] mt-1">{p.description}</p>}
+              </div>
+
+              {p.package_lines.length > 0 && (
+                <ul className="flex flex-col gap-1 text-sm text-[#3E2C23]">
+                  {p.package_lines.map(l => (
+                    <li key={l.id} className="flex gap-2">
+                      <span className="text-[#002089] font-bold" aria-hidden>·</span>
+                      <span>
+                        {l.label}
+                        {l.quantity > 1 && <span className="text-[#7a6355]"> ×{l.quantity}</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="mt-auto pt-3 border-t border-[#e2d5c3]">
+                <p className="font-display text-2xl font-bold text-[#3E2C23]">
+                  {formatUsd(Number(q?.price ?? p.price))}
+                  <span className="text-sm font-normal text-[#7a6355] ml-1">
+                    {p.basis === "total"
+                      ? "pour le tout"
+                      : `total · ${booking.units} ${unitWord(p.basis, booking.units)}`}
+                  </span>
+                </p>
+
+                {/* Shown only when it is known and positive. A partner who has
+                    priced an offer above its parts does not get a "saving"
+                    printed for them, and a line without a value means there is
+                    no figure to print at all. */}
+                {savings !== null && (
+                  <p className="text-sm font-semibold text-[#15803d] mt-0.5">
+                    Vous économisez {formatUsd(savings)}
+                  </p>
+                )}
+
+                {left !== null && left > 0 && (
+                  <p className="text-xs text-[#7a6355] mt-0.5">
+                    Plus que {left} {left > 1 ? "disponibles" : "disponible"}
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => book(p)}
+                disabled={blocked}
+                className="bg-[#e76f2e] hover:bg-[#d05e20] disabled:bg-[#e2d5c3] disabled:text-[#7a6355] text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm"
+              >
+                {left === 0
+                  ? "Offre épuisée"
+                  : tooShort
+                    ? `Au moins ${p.min_units} ${unitWord(p.basis, p.min_units ?? 2)}`
+                    : booking.ready
+                      ? "Réserver cette offre"
+                      : (booking.hint ?? "Indisponible")}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

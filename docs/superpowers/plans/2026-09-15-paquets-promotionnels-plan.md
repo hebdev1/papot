@@ -208,10 +208,20 @@ dans le message de commit plutôt que de laisser croire que l'écran a été vu.
    toucher à quoi que ce soit : c'est ce chemin qui décide de la forme exacte.
 2. `CartItem` reçoit `package_id?: string | null`, et `Checkout` le transmet
    dans la charge utile.
-3. Dans `src/routes/Property.tsx`, une section « Offres » à côté du choix
-   existant. Choisir un paquet remplace le panneau de prix : prix du paquet,
-   contenu ligne à ligne, et « Vous économisez X » **seulement** quand
-   `savings_known` est vrai.
+3. Dans `src/routes/Property.tsx`, une section « Offres » : une carte par
+   offre, avec son contenu ligne à ligne, son prix, et « Vous économisez X »
+   **seulement** quand `savings_known` est vrai et positif.
+
+   Écart assumé : le panneau de prix n'est pas remplacé. Les trois métiers en
+   ont un chacun, et y faire entrer un paquet aurait demandé de passer un état
+   de sélection dans trois composants distincts pour un gain douteux — une
+   offre promotionnelle se lit mieux comme un produit à côté de la réservation
+   simple que comme une variante de celle-ci.
+
+   La section est rendue depuis `Property` pour un séjour et une location,
+   dont les dates sont des constantes du module, et depuis l'intérieur de
+   `RestaurantDetail` pour un restaurant, qui ne connaît sa table qu'une fois
+   le créneau choisi. Le bouton reste désactivé jusque-là.
 4. Le panier reçoit **un seul** article, portant `package_id`, le titre du
    paquet et le prix rendu par `package_quote` — un affichage, que la base
    recalculera de toute façon.

@@ -13,6 +13,12 @@ export type CartItem = {
   title: string;
   detail: string;
   amount: number;
+  /**
+   * Set when this line is a promotional package. `create_booking` then reads
+   * the price, the title and the annonce from the package itself and ignores
+   * everything sent here — so a tampered `amount` buys nothing cheaper.
+   */
+  package_id?: string | null;
   /** Structured dates, so the customer panel can compute countdowns. */
   starts_on?: string | null;
   ends_on?: string | null;
