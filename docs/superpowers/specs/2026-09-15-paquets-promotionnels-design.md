@@ -176,6 +176,15 @@ Les fenêtres de dates se comparent à `haiti_today()`, une fonction ajoutée ic
 le chantier restaurant répétait `America/Port-au-Prince` à chaque endroit, et une
 promotion l'interroge en quatre de plus.
 
+Une ligne de paquet ne peut désigner que ce que la même entreprise vend. Rien
+ne le disait : `unit_id`, `listing_id` et `menu_item_id` référençaient chacun
+leur table sans demander à qui elle appartenait, de sorte qu'un partenaire
+aurait pu emballer le véhicule d'un concurrent et, au paiement, écrire une
+réservation dans le calendrier d'un tiers — le cas « entre deux partenaires »
+que ce document met justement hors périmètre. L'invariant traverse trois tables,
+donc un déclencheur ; la paire paquet-annonce d'à côté reste déclarative parce
+que ses deux colonnes tiennent sur la même ligne.
+
 ## Écrans
 
 ### Partenaire — `/partenaire/paquets`

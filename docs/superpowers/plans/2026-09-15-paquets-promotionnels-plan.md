@@ -147,6 +147,9 @@ Fixture, dans une transaction annulée :
    - pour un restaurant, l'article porteur passe par `assign_restaurant_table`
      comme aujourd'hui.
 6. `update partner_packages set used_count = used_count + 1`.
+7. Ajouté en cours de route : un déclencheur sur `package_lines` qui refuse une
+   ligne désignant ce qu'une autre entreprise vend. Le trou est apparu en
+   préparant les jeux d'essai de cette tâche.
 
 ### Vérifications
 
