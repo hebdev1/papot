@@ -4995,6 +4995,10 @@ export type Database = {
       my_trips: { Args: never; Returns: Json }
       next_booking_reference: { Args: never; Returns: string }
       next_order_reference: { Args: never; Returns: string }
+      package_quote: {
+        Args: { p_package: string; p_units?: number }
+        Returns: Json
+      }
       parse_int: { Args: { p: Json; p_field: string }; Returns: number }
       parse_num: { Args: { p: Json; p_field: string }; Returns: number }
       partner_can: {
