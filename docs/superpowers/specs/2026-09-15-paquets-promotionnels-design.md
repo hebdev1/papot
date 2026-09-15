@@ -121,13 +121,22 @@ Le navigateur n'additionne rien : il affiche ce que la fonction renvoie.
 `amount` — c'est-à-dire que **le prix vient du navigateur**. Pour un paquet cela
 ne tient pas : une requête modifiée achèterait un paquet à 120 $ pour 1 $.
 
-L'article porte donc `package_id`, et `create_booking` **relit le prix dans la
-base** en ignorant tout montant fourni par le client.
+Le panier n'envoie donc **qu'un seul article**, portant `package_id`, et
+`create_booking` lit le paquet et ses lignes dans la base pour en déduire le
+prix et les articles à écrire. Tout montant fourni par le client est ignoré.
+
+Un article par ligne envoyé depuis le navigateur ne marcherait pas de toute
+façon : le panier ne tient qu'un article par type de service (`remove(kind)`,
+`key={i.kind}`), donc deux chambres dans un même paquet s'écraseraient. Et
+laisser le navigateur dire ce que le paquet contient rouvrirait la porte que
+relire le prix vient de fermer.
 
 Ce qu'une vente produit :
 
 - une ligne `booking_items` par ligne liée, pour que la chambre soit bloquée
-  dans son calendrier et le véhicule dans le sien ;
+  dans son calendrier et le véhicule dans le sien. La ligne liée qui porte sur
+  l'annonce du paquet elle-même **est** l'article porteur, elle ne s'y ajoute
+  pas ;
 - le prix **entier sur l'article porteur** — celui de `partner_packages.listing_id`,
   toujours en première position — les autres à 0 avec un détail
   « compris dans le paquet » — l'argent reste en un seul endroit pour la
