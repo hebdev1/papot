@@ -95,6 +95,26 @@ rule for `restaurant_details.price_band`. Photos are carried across as storage
 paths in `attrs.photos`, not as `img`: the `partner-photos` bucket is private,
 so there is no URL a public card could use.
 
+### Offers (promotional packages)
+
+`partner_packages` and `package_lines` let any business type bundle several
+things it already sells under one name and one price — a room plus breakfast, a
+car plus a driver, a table plus a menu. Every metier gets the same screen at
+`/partenaire/paquets` under `manage_promotions`; a package appears on the fiche
+of the annonce it sits on, and on the home page under "Offres du moment".
+
+Two rules carry the feature. **A bound line never copies a price**: it points at
+a `listing_units`, `listings` or `menu_items` row and `package_quote()` reads
+the value live, so a tariff changed this morning is the one compared this
+afternoon. **The saving is only shown when every line has a value** — a line the
+partner described without pricing means there is no figure to state, and PAPOT
+does not invent one. That is the same rule as the listings generator's.
+
+The price of a sale comes from the database, never the payload:
+`create_booking` reads `package_id`, re-reads the price, and ignores whatever
+`amount` the browser sent. Everything else in the cart is still priced by the
+browser — that is older than this feature and untouched by it.
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`
