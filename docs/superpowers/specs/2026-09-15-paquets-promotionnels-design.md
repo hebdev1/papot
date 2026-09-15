@@ -164,9 +164,17 @@ RLS sur les deux tables :
   publiée. Un paquet sur un brouillon est invisible.
 - **administration** — `admin_can()`.
 
-`used_count` n'est pas modifiable par le partenaire : un déclencheur refuse
-toute écriture sur cette colonne hors du chemin de réservation. Sans cela, on
-remet le compteur à zéro et « les 20 premiers » ne finit jamais.
+`used_count` n'est pas modifiable par le partenaire : sans cela on remet le
+compteur à zéro et « les 20 premiers » ne finit jamais. Ce sont des privilèges
+de colonne qui le disent — `revoke update` sur la table, puis `grant update`
+sur la liste des colonnes modifiables — plutôt qu'un déclencheur : la règle vit
+dans le système de droits au lieu d'un morceau de code, et le chemin de
+réservation, qui s'exécute `SECURITY DEFINER` sous le propriétaire, n'en est pas
+gêné.
+
+Les fenêtres de dates se comparent à `haiti_today()`, une fonction ajoutée ici :
+le chantier restaurant répétait `America/Port-au-Prince` à chaque endroit, et une
+promotion l'interroge en quatre de plus.
 
 ## Écrans
 

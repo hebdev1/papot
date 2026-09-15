@@ -51,12 +51,16 @@ end $do$;
      par `partner_can(partner_id, 'manage_promotions')`. Pour `package_lines`,
      la même chose à travers le paquet parent.
    - anonyme : `select` d'un paquet `active`, dans sa fenêtre
-     (`current_date` entre `starts_on` et `ends_on` quand elles existent), dont
+     (`haiti_today()` entre `starts_on` et `ends_on` quand elles existent), dont
      l'annonce est publiée.
    - administration : `admin_can()`.
-   - déclencheur `package_used_count_readonly` : un `update` qui change
-     `used_count` est refusé sauf quand `current_user` est le propriétaire des
-     tables, ce qui n'arrive que dans une fonction `SECURITY DEFINER`.
+   - `used_count` en lecture seule pour le client : `revoke update on
+     partner_packages from authenticated, anon`, puis `grant update (…)` sur les
+     seules colonnes modifiables. Un privilège de colonne plutôt qu'un
+     déclencheur : la règle vit dans le système de droits, et le chemin de
+     réservation s'exécute sous le propriétaire, que ces droits ne limitent pas.
+   - `haiti_today()`, pour que les fenêtres se comparent au jour de
+     Port-au-Prince et non à celui d'UTC.
 
 3. Régénérer `src/types/database.ts` et remettre l'en-tête.
 
@@ -70,7 +74,11 @@ Dans une transaction annulée :
 3. Une ligne liée portant `reference_value` → rejetée.
 4. `ends_on` antérieur à `starts_on` → rejeté.
 5. `update partner_packages set used_count = 0` sous un rôle partenaire →
-   refusé par le déclencheur.
+   refusé par le privilège de colonne, tandis qu'un `update` du nom et du prix
+   passe — sinon la liste des colonnes accordées serait incomplète.
+6. Un visiteur anonyme voit une offre active et pas une offre éteinte ou
+   expirée ; un partenaire d'une autre entreprise, sans rôle dans le personnel,
+   ne la voit ni ne la modifie.
 
 Puis `npx tsc --noEmit -p tsconfig.json` doit passer.
 
@@ -123,7 +131,7 @@ Fixture, dans une transaction annulée :
    jusqu'à la fin de la transaction et sérialise les acheteurs.
 3. Refus, chacun avec un message en français que le client peut lire :
    - paquet inactif ou annonce non publiée ;
-   - `current_date` hors de `[starts_on, ends_on]` ;
+   - `haiti_today()` hors de `[starts_on, ends_on]` ;
    - unités demandées `< min_units` ;
    - `used_count >= usage_limit`.
 4. `p_units` : le nombre de nuits déduit de `starts_on`/`ends_on` pour un

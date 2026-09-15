@@ -128,6 +128,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["listing_kind"]
           listing_id: string | null
+          package_id: string | null
           party: number | null
           position: number
           start_time: string | null
@@ -146,6 +147,7 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["listing_kind"]
           listing_id?: string | null
+          package_id?: string | null
           party?: number | null
           position?: number
           start_time?: string | null
@@ -164,6 +166,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["listing_kind"]
           listing_id?: string | null
+          package_id?: string | null
           party?: number | null
           position?: number
           start_time?: string | null
@@ -201,6 +204,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "partner_packages"
             referencedColumns: ["id"]
           },
           {
@@ -1991,6 +2001,81 @@ export type Database = {
           },
         ]
       }
+      package_lines: {
+        Row: {
+          id: string
+          label: string
+          listing_id: string | null
+          menu_item_id: string | null
+          package_id: string
+          position: number
+          quantity: number
+          recurring: boolean
+          reference_value: number | null
+          unit_id: string | null
+        }
+        Insert: {
+          id?: string
+          label: string
+          listing_id?: string | null
+          menu_item_id?: string | null
+          package_id: string
+          position?: number
+          quantity?: number
+          recurring?: boolean
+          reference_value?: number | null
+          unit_id?: string | null
+        }
+        Update: {
+          id?: string
+          label?: string
+          listing_id?: string | null
+          menu_item_id?: string | null
+          package_id?: string
+          position?: number
+          quantity?: number
+          recurring?: boolean
+          reference_value?: number | null
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_lines_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_lines_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_lines_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_lines_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "partner_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_lines_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "listing_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_activity_log: {
         Row: {
           action: string
@@ -2761,6 +2846,78 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_packages: {
+        Row: {
+          active: boolean
+          basis: Database["public"]["Enums"]["package_basis"]
+          created_at: string
+          description: string
+          ends_on: string | null
+          id: string
+          image_url: string | null
+          listing_id: string
+          min_units: number | null
+          name: string
+          partner_id: string
+          position: number
+          price: number
+          starts_on: string | null
+          usage_limit: number | null
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          basis: Database["public"]["Enums"]["package_basis"]
+          created_at?: string
+          description?: string
+          ends_on?: string | null
+          id?: string
+          image_url?: string | null
+          listing_id: string
+          min_units?: number | null
+          name: string
+          partner_id: string
+          position?: number
+          price: number
+          starts_on?: string | null
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          basis?: Database["public"]["Enums"]["package_basis"]
+          created_at?: string
+          description?: string
+          ends_on?: string | null
+          id?: string
+          image_url?: string | null
+          listing_id?: string
+          min_units?: number | null
+          name?: string
+          partner_id?: string
+          position?: number
+          price?: number
+          starts_on?: string | null
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_packages_listing_fkey"
+            columns: ["listing_id", "partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id", "partner_id"]
+          },
+          {
+            foreignKeyName: "partner_packages_listing_fkey"
+            columns: ["listing_id", "partner_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id", "partner_id"]
           },
         ]
       }
@@ -4825,6 +4982,7 @@ export type Database = {
             Returns: number
           }
       get_booking: { Args: { p_reference: string }; Returns: Json }
+      haiti_today: { Args: never; Returns: string }
       is_partner_member: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       mark_food_order_paid: {
@@ -5045,6 +5203,7 @@ export type Database = {
         | "suspended"
         | "archived"
       maintenance_kind: "maintenance" | "inspection" | "cleaning" | "repair"
+      package_basis: "per_night" | "per_day" | "total"
       partner_document_status:
         | "uploaded"
         | "under_review"
@@ -5369,6 +5528,7 @@ export const Constants = {
         "archived",
       ],
       maintenance_kind: ["maintenance", "inspection", "cleaning", "repair"],
+      package_basis: ["per_night", "per_day", "total"],
       partner_document_status: [
         "uploaded",
         "under_review",
