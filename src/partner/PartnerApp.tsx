@@ -24,6 +24,7 @@ import { BusinessProfile, Verification, Staff, Activity } from "./pages/Business
 import { BookingSettings, Notifications, Integrations, Account, PaymentSettings, Support } from "./pages/Settings";
 import { Rooms, Fleet, PickupLocations, Menu, Tables } from "./pages/Operations";
 import { Promotions, Coupons } from "./pages/Marketing";
+import { Packages } from "./pages/Packages";
 
 /**
  * Partner routing.
@@ -181,6 +182,7 @@ export function PartnerApp() {
             <Route path="transactions" element={<Require permission="view_finance"><Transactions /></Require>} />
             <Route path="factures" element={<Require permission="view_finance"><Invoices /></Require>} />
 
+            <Route path="paquets" element={<Require permission="manage_promotions"><Packages /></Require>} />
             <Route path="promotions" element={<Require permission="manage_promotions"><Promotions /></Require>} />
             <Route path="coupons" element={<Require permission="manage_promotions"><Coupons /></Require>} />
 

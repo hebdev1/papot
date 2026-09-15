@@ -146,6 +146,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Marketing",
     icon: Sparkles,
     items: [
+      { label: "Offres", to: "/partenaire/paquets", icon: Layers, permission: "manage_promotions" },
       { label: "Promotions", to: "/partenaire/promotions", icon: Sparkles, permission: "manage_promotions" },
       { label: "Codes promo", to: "/partenaire/coupons", icon: Tags, permission: "manage_promotions" },
     ],
