@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AuthLayout, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
+import { emailReturnUrl } from "../lib/authRedirect";
 
 const COOLDOWN_SECONDS = 42; // as drawn on 2e
 
@@ -25,7 +26,7 @@ export function CheckEmail() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: { emailRedirectTo: emailReturnUrl("/login") },
     });
     setBusy(false);
     setNote(error ? "Le renvoi a échoué. Réessayez dans un instant." : "Lien renvoyé.");

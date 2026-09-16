@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, ghostBtn, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
+import { sessionReturnUrl } from "../lib/authRedirect";
 import { resolveSpaceHome } from "../lib/accountSpace";
 
 /** Canvas 2a — /login */
@@ -46,7 +47,7 @@ export function Login() {
   const google = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${next ?? "/compte"}` },
+      options: { redirectTo: sessionReturnUrl(next ?? "/compte") },
     });
     if (error) setError("La connexion Google n'est pas disponible pour le moment.");
   };

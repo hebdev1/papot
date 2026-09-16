@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
+import { emailReturnUrl } from "../lib/authRedirect";
 
 /** Canvas 2c — /reset-password, request a link. */
 export function ResetRequest() {
@@ -15,7 +16,7 @@ export function ResetRequest() {
     setBusy(true);
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password/nouveau`,
+      redirectTo: emailReturnUrl("/reset-password/nouveau"),
     });
     setBusy(false);
     if (error) setError("L'envoi a échoué. Vérifiez l'adresse et réessayez.");

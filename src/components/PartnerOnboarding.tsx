@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { supabase } from "../lib/supabase";
+import { emailReturnUrl } from "../lib/authRedirect";
 import { Badge } from "./ui/cvui-badge";
 import { buildPayload, packList, unpackList } from "../lib/partnerPayload";
 import { validateStep } from "../lib/partnerValidation";
@@ -1445,7 +1446,7 @@ export default function PartnerOnboardingWizard({
           email: formData.email.trim(),
           password: formData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`,
+            emailRedirectTo: emailReturnUrl("/login"),
             data: {
               full_name: `${formData.firstName ?? ""} ${formData.lastName ?? ""}`.trim(),
               phone: formData.phone ?? null,

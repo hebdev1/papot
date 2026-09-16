@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError, AuthLayout, fieldInput, fieldLabel, primaryBtn } from "../components/AuthLayout";
 import { supabase } from "../lib/supabase";
+import { emailReturnUrl } from "../lib/authRedirect";
 
 /**
  * Plain language, never a code (spec §41). The rate-limit case is worth its
@@ -61,7 +62,7 @@ export function Signup() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: emailReturnUrl("/login"),
         data: {
           full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
           phone: phone.trim() ? `+509 ${phone.trim()}` : null,

@@ -18,7 +18,11 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
 - `src/lib/supabase.ts` - Supabase browser client, reads `VITE_SUPABASE_*` from `.env`
 - `src/types/database.ts` - Types generated from the Supabase schema
-- `.env` - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (git-ignored; publishable key only)
+- `.env` - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (git-ignored; publishable key only),
+  plus optional `VITE_SITE_URL` - the canonical origin for links that travel in
+  email. Set it on the production deployment only: unset, `src/lib/authRedirect.ts`
+  falls back to the current origin, which is what development and preview
+  deployments want.
 - `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and the `@` alias for `src`
 - `.mise.toml` - Toolchain versions for Node.js and pnpm
 
