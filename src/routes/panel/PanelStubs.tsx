@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bell,
@@ -17,6 +17,8 @@ import { StatusBadge } from "../../components/panel/Badges";
 import { useAuth } from "../../lib/auth";
 import { formatUsd } from "../../lib/currency";
 import { bookingIsPast, bookingIsUpcoming, formatRange, useMyBookings } from "../../lib/panel";
+import { supabase } from "../../lib/supabase";
+import { TicketReceipt, type TicketMethod } from "../../components/ui/ticket-receipt";
 
 /**
  * Sections whose backend does not exist yet (favourites, messaging,
@@ -25,11 +27,53 @@ import { bookingIsPast, bookingIsUpcoming, formatRange, useMyBookings } from "..
  * misrepresent what the product can do.
  */
 
+type Receipt = {
+  id: string;
+  reference: string;
+  booking_ref: string | null;
+  customer_label: string | null;
+  amount: number;
+  method: TicketMethod;
+  processor_ref: string | null;
+  status: string;
+  created_at: string;
+};
+
+/**
+ * Receipts, drawn as tickets.
+ *
+ * They come from `payments` rather than from the bookings: a receipt should
+ * carry the payment's own reference and the four digits that were charged,
+ * which is what someone reads out to support. `payments_customer_read` is what
+ * lets a traveller see their own — the gate is the same RLS as everywhere else.
+ *
+ * No confetti here. It belongs to the moment money changes hands, not to a
+ * receipt opened in March to check what was paid in January.
+ */
 export function PanelPayments() {
-  const { bookings, loading } = useMyBookings();
-  const paid = bookings
-    .filter(b => b.status !== "cancelled")
-    .reduce((s, b) => s + Number(b.total), 0);
+  const [rows, setRows] = useState<Receipt[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    supabase
+      .from("payments")
+      .select("id, reference, booking_ref, customer_label, amount, method, processor_ref, status, created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!live) return;
+        if (error) console.error("Failed to load receipts:", error);
+        setRows((data ?? []) as unknown as Receipt[]);
+        setLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const paid = rows
+    .filter(r => r.status === "paid")
+    .reduce((sum, r) => sum + Number(r.amount), 0);
 
   return (
     <>
@@ -38,43 +82,37 @@ export function PanelPayments() {
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[
           { label: "Total payé", value: formatUsd(paid) },
-          { label: "À venir", value: formatUsd(0) },
+          { label: "Reçus", value: String(rows.length) },
           { label: "Remboursements", value: formatUsd(0) },
         ].map(s => (
           <div key={s.label} className="rounded-2xl border border-[#e2d5c3] bg-white p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7a6355]">{s.label}</p>
+            <p className="text-[13px] text-[#7a6355]">{s.label}</p>
             <p className="mt-1 font-display text-xl font-bold text-[#3E2C23]">{s.value}</p>
           </div>
         ))}
       </div>
 
-      {!loading && bookings.length === 0 ? (
+      {!loading && rows.length === 0 ? (
         <EmptyState
           icon={CreditCard}
           title="Aucune transaction"
-          body="Vos paiements apparaîtront ici après votre première réservation."
+          body="Vos reçus apparaîtront ici après votre première réservation."
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          {bookings.map(b => (
-            <div
-              key={b.id}
-              className="flex items-center justify-between gap-4 rounded-2xl border border-[#e2d5c3] bg-white p-4"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-[#3E2C23]">{b.items[0]?.title ?? "Réservation"}</p>
-                <p className="text-[13px] text-[#7a6355]">
-                  {new Date(b.created_at).toLocaleDateString("fr-FR", {
-                    day: "numeric", month: "short", year: "numeric",
-                  })}{" "}
-                  · Réf. {b.reference}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="font-display font-bold text-[#3E2C23]">{formatUsd(Number(b.total))}</p>
-                <StatusBadge status="paid" className="mt-1" />
-              </div>
-            </div>
+        <div className="flex flex-wrap gap-5">
+          {rows.map(r => (
+            <TicketReceipt
+              key={r.id}
+              reference={r.reference}
+              amount={Number(r.amount)}
+              date={new Date(r.created_at)}
+              payerName={r.customer_label || "Voyageur"}
+              method={r.method}
+              // `demo_4242` — the digits are the tail, when the processor kept any.
+              last4={r.processor_ref?.match(/(\d{4})$/)?.[1] ?? null}
+              barcodeValue={r.booking_ref ?? r.reference}
+              subtitle={r.status === "paid" ? "Votre reçu, à garder." : "Paiement en attente."}
+            />
           ))}
         </div>
       )}
