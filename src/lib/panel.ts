@@ -103,6 +103,18 @@ export function useMyBookings() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(false);
+
+    /**
+     * Anything bought before this account existed becomes theirs here.
+     *
+     * It runs before the read rather than once at sign-up, because the purchase
+     * can come after: someone books, then creates the account from the
+     * confirmation email. Matching is on a confirmed address only, and the call
+     * touches no row that already has an owner — so on every other visit it
+     * costs an update of nothing.
+     */
+    await supabase.rpc("claim_my_purchases");
+
     const { data, error } = await supabase.rpc("my_bookings");
     if (error) {
       console.error("Failed to load bookings:", error);

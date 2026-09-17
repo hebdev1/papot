@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatUsd } from "../lib/currency";
 import { StatusBadge } from "../components/panel/Badges";
+import { useAuth } from "../lib/auth";
 
 type Item = { title: string; detail: string; amount: number; kind: string; status: string };
 type Booking = {
@@ -16,6 +17,7 @@ type Booking = {
 
 /** Canvas 1f — /booking/:reference/confirmed */
 export function BookingConfirmed() {
+  const { user } = useAuth();
   const { id } = useParams();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,11 +90,12 @@ export function BookingConfirmed() {
       </section>
 
       <div className="flex flex-wrap gap-3 mt-7">
+        {/* Menait à l'accueil, ce qui ne montrait aucune réservation. */}
         <Link
-          to="/"
+          to={user ? "/compte/reservations" : "/login"}
           className="flex-1 text-center py-3.5 rounded-xl bg-[#e76f2e] hover:bg-[#d05e20] text-white font-display font-bold text-[15px] transition-colors"
         >
-          Voir mes réservations
+          {user ? "Suivre ma réservation" : "Se connecter pour la suivre"}
         </Link>
         <button
           onClick={() => window.print()}

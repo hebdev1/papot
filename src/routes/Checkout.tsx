@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { useCart } from "../lib/cart";
 import { useAuth } from "../lib/auth";
+import { emailReturnUrl } from "../lib/authRedirect";
 
 const STEPS = ["Votre réservation", "Paiement", "Confirmation"];
 
@@ -62,6 +63,12 @@ export function Checkout() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demo, setDemo] = useState<boolean | null>(null);
+  // Coché par défaut : presque personne ne le décoche, et celui qui le décoche
+  // est pressé — lui imposer un compte au moment le plus fragile du parcours
+  // coûterait la vente. Sa réservation reste rattachable par courriel.
+  const [createAccount, setCreateAccount] = useState(true);
+  const [password, setPassword] = useState("");
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   // Whether the demo gateway is open is a platform setting, and the table that
   // holds it is staff-only, so the page asks for the single boolean instead.
@@ -100,6 +107,56 @@ export function Checkout() {
     // The gateway books and takes payment in one transaction. A refused
     // instrument leaves nothing behind — no booking, no payment row — so the
     // refusal path is the same code the real one will be.
+    /**
+     * Le compte d'abord, la réservation ensuite.
+     *
+     * Dans l'autre ordre, un échec de création laisse une réservation que
+     * personne ne peut suivre — précisément le problème qu'on répare. Un compte
+     * créé pour une réservation qui échoue ne coûte rien.
+     *
+     * Si la confirmation par courriel est exigée, signUp ne rend pas de session
+     * et la réservation part sans propriétaire : elle porte l'adresse, et
+     * claim_my_purchases() la rattachera à la première connexion.
+     */
+    if (!user && createAccount) {
+      const { data: signUp, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: emailReturnUrl("/compte"),
+          data: {
+            full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+            phone: phone.trim() ? `+509 ${phone.trim()}` : null,
+          },
+        },
+      });
+
+      // Supabase ne dit pas « cette adresse existe » — il rend un utilisateur
+      // sans identité, pour ne pas laisser énumérer les comptes. C'est le seul
+      // signal disponible, et il faut le lire plutôt que créer un doublon.
+      const alreadyRegistered =
+        signUpError?.message?.toLowerCase().includes("already") ||
+        (signUp?.user && (signUp.user.identities?.length ?? 0) === 0);
+
+      if (alreadyRegistered) {
+        setBusy(false);
+        setNeedsSignIn(true);
+        setError(
+          "Un compte existe déjà avec cette adresse. Connectez-vous pour que la réservation s'y ajoute.",
+        );
+        return;
+      }
+      if (signUpError) {
+        setBusy(false);
+        setError(
+          signUpError.message.toLowerCase().includes("password")
+            ? "Le mot de passe doit faire au moins 8 caractères."
+            : "Le compte n'a pas pu être créé. Réessayez, ou décochez la case pour continuer sans compte.",
+        );
+        return;
+      }
+    }
+
     const { data, error } = await supabase.rpc("demo_checkout", {
       p_number: instrument.trim(),
       p_payload: {
@@ -205,6 +262,66 @@ export function Checkout() {
                 </div>
               </div>
             </div>
+
+            {/* Rien de tout cela pour quelqu'un déjà connecté : sa réservation
+                lui appartient dès qu'elle est écrite. */}
+            {!user && (
+              <div className="mt-5 pt-5 border-t border-[#e2d5c3]">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={createAccount}
+                    onChange={e => {
+                      setCreateAccount(e.target.checked);
+                      setNeedsSignIn(false);
+                      setError(null);
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#002089]"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-[#3E2C23]">
+                      Créer mon compte pour suivre cette réservation
+                    </span>
+                    <span className="block text-xs text-[#7a6355] mt-0.5 leading-relaxed">
+                      Vous retrouvez vos réservations, vos messages et vos reçus dans votre espace.
+                    </span>
+                  </span>
+                </label>
+
+                {createAccount && (
+                  <div className="mt-3 flex flex-col gap-1.5 max-w-sm">
+                    <span className={label}>Mot de passe</span>
+                    <input
+                      required
+                      type="password"
+                      minLength={8}
+                      autoComplete="new-password"
+                      placeholder="8 caractères minimum"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className={input}
+                    />
+                  </div>
+                )}
+
+                {!createAccount && (
+                  <p className="mt-3 text-xs text-[#7a6355] bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
+                    Sans compte, la réservation part quand même et la référence vous est envoyée par
+                    courriel. Si vous créez un compte plus tard avec cette adresse, elle s'y ajoutera
+                    toute seule.
+                  </p>
+                )}
+
+                {needsSignIn && (
+                  <Link
+                    to={`/login?next=${encodeURIComponent(window.location.pathname)}`}
+                    className="inline-block mt-3 text-sm font-semibold text-[#002089] underline"
+                  >
+                    Se connecter avec cette adresse
+                  </Link>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
