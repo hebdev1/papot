@@ -20,6 +20,7 @@ import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
 import { FoodCheckout, OrderTracking } from "./routes/FoodOrder";
 import { Plan } from "./routes/Plan";
+import { AiBubble } from "./components/AiBubble";
 import { PanelLayout } from "./components/panel/PanelLayout";
 import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
@@ -169,6 +170,10 @@ function Shell() {
         </Routes>
       </div>
       <Footer />
+      {/* Sur le site public seulement : les consoles admin et partenaire sont
+          des surfaces de travail, et un assistant de voyage n'a rien à dire à
+          quelqu'un qui valide une annonce. */}
+      <AiBubble />
       {partnerOpen && <PartnerOnboardingWizard onClose={() => setPartnerOpen(false)} />}
     </div>
   );
