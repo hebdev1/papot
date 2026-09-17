@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { Carousel } from "../components/Carousel";
 import { StayCard } from "../components/StayCard";
@@ -7,6 +7,7 @@ import { RestaurantCard } from "../components/RestaurantCard";
 import { OfferCard, type OfferRow } from "../components/OfferCard";
 import { GuestsPicker } from "../components/GuestsPicker";
 import { DEFAULT_GUESTS, guestsQuery, type Guests } from "../lib/guests";
+import { useAiEnabled } from "../lib/aiChat";
 import { CarCard } from "../components/CarCard";
 import { DestinationCard } from "../components/DestinationCard";
 import { PartnerSection } from "../components/PartnerSection";
@@ -71,6 +72,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   const [checkin, setCheckin] = useState("2026-10-12");
   const [checkout, setCheckout] = useState("2026-10-16");
   const [guests, setGuests] = useState<Guests>(DEFAULT_GUESTS);
+  const { enabled: aiOpen } = useAiEnabled();
 
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [destinations, setDestinations] = useState<DestinationRow[]>([]);
@@ -173,6 +175,18 @@ export function Home({ onPartner }: { onPartner: () => void }) {
             <p className="text-[#a8d8f0] mt-4 text-base lg:text-lg">
               Hébergements, voitures et tables partout en Haïti — réservation immédiate.
             </p>
+
+            {/* §7. Absent tant que la passerelle est fermée : une porte qui ne
+                s'ouvre pas vaut moins que pas de porte. */}
+            {aiOpen && (
+              <Link
+                to="/planifier"
+                className="inline-flex items-center gap-2 mt-6 bg-white hover:bg-[#F5E9D8] text-[#002089] font-bold px-5 py-3 rounded-xl transition-colors shadow-lg"
+              >
+                <span aria-hidden>✨</span>
+                Planifier avec AI Papot
+              </Link>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl shadow-2xl shadow-[rgba(0,0,0,0.25)] p-2.5 max-w-5xl mx-auto">

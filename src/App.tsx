@@ -19,6 +19,7 @@ import { Property } from "./routes/Property";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
 import { FoodCheckout, OrderTracking } from "./routes/FoodOrder";
+import { Plan } from "./routes/Plan";
 import { PanelLayout } from "./components/panel/PanelLayout";
 import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
@@ -157,6 +158,7 @@ function Shell() {
       <div className="flex-1">
         <Routes>
           <Route path="/" element={<Home onPartner={() => setPartnerOpen(true)} />} />
+          <Route path="/planifier" element={<Plan />} />
           <Route path="/search" element={<Search />} />
           <Route path="/p/:id" element={<Property />} />
           <Route path="/checkout/:id" element={<Checkout />} />
