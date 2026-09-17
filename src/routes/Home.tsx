@@ -7,6 +7,8 @@ import { RestaurantCard } from "../components/RestaurantCard";
 import { OfferCard, type OfferRow } from "../components/OfferCard";
 import { GuestsPicker } from "../components/GuestsPicker";
 import { DEFAULT_GUESTS, guestsQuery, type Guests } from "../lib/guests";
+import { defaultStayDates, nightsBetween, stayDatesQuery, type StayDates } from "../lib/stayDates";
+import { StayDatesPicker } from "../components/StayDatesPicker";
 import { useAiEnabled } from "../lib/aiChat";
 import { CarCard } from "../components/CarCard";
 import { DestinationCard } from "../components/DestinationCard";
@@ -69,8 +71,11 @@ export function Home({ onPartner }: { onPartner: () => void }) {
 
   const [activeTab, setActiveTab] = useState("stay");
   const [where, setWhere] = useState("");
-  const [checkin, setCheckin] = useState("2026-10-12");
-  const [checkout, setCheckout] = useState("2026-10-16");
+  // A rolling window. The two dates used to be written into the file, so the
+  // search bar offered the same October nights to everyone — and would have
+  // offered them still after they had gone past.
+  const [dates, setDates] = useState<StayDates>(defaultStayDates);
+  const { checkin, checkout } = dates;
   const [guests, setGuests] = useState<Guests>(DEFAULT_GUESTS);
   const { enabled: aiOpen } = useAiEnabled();
 
@@ -104,12 +109,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   const primary = destinations.filter(d => d.tier <= 2);
   const alsoAvailable = destinations.filter(d => d.tier === 3);
 
-  const nights = useMemo(() => {
-    const a = new Date(checkin).getTime();
-    const b = new Date(checkout).getTime();
-    const n = Math.round((b - a) / 86_400_000);
-    return Number.isFinite(n) && n > 0 ? n : 1;
-  }, [checkin, checkout]);
+  const nights = useMemo(() => nightsBetween(checkin, checkout), [checkin, checkout]);
 
   /**
    * Offers are loaded apart from the listings because their price depends on
@@ -156,7 +156,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   }, [nights]);
 
   const search = () => {
-    const p = new URLSearchParams({ kind: activeTab, checkin, checkout, ...guestsQuery(guests) });
+    const p = new URLSearchParams({ kind: activeTab, ...stayDatesQuery(dates), ...guestsQuery(guests) });
     if (where.trim()) p.set("where", where.trim());
     navigate(`/search?${p}`);
   };
@@ -225,25 +225,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
                 </div>
               </label>
 
-              <label className="flex-1 flex flex-col gap-1 px-3 py-2 rounded-xl border-2 border-[#e2d5c3] focus-within:border-[#6ad7fb] transition-colors">
-                <span className="text-[10px] font-semibold text-[#7a6355] uppercase tracking-wide">Arrivée</span>
-                <input
-                  type="date"
-                  value={checkin}
-                  onChange={e => setCheckin(e.target.value)}
-                  className="text-sm text-[#3E2C23] outline-none bg-transparent"
-                />
-              </label>
-
-              <label className="flex-1 flex flex-col gap-1 px-3 py-2 rounded-xl border-2 border-[#e2d5c3] focus-within:border-[#6ad7fb] transition-colors">
-                <span className="text-[10px] font-semibold text-[#7a6355] uppercase tracking-wide">Départ</span>
-                <input
-                  type="date"
-                  value={checkout}
-                  onChange={e => setCheckout(e.target.value)}
-                  className="text-sm text-[#3E2C23] outline-none bg-transparent"
-                />
-              </label>
+              <StayDatesPicker value={dates} onChange={setDates} className="flex-[2]" />
 
               <GuestsPicker value={guests} onChange={setGuests} className="flex-1" />
 

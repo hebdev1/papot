@@ -93,8 +93,15 @@ export const useCart = () => useContext(CartContext);
 
 /** "12 → 16 oct." as drawn on 1e. */
 export function formatDateRange(from: string, to: string): string {
+  // "2026-10-12" parses as midnight UTC, and formatting it in the browser's own
+  // zone printed "11 oct." anywhere west of Greenwich — which is all of Haiti.
+  // The date is a calendar day, not an instant, so it is read back in UTC.
   const fmt = (d: string, withMonth: boolean) =>
-    new Date(d).toLocaleDateString("fr-FR", { day: "numeric", ...(withMonth ? { month: "short" } : {}) });
+    new Date(`${d}T00:00:00Z`).toLocaleDateString("fr-FR", {
+      timeZone: "UTC",
+      day: "numeric",
+      ...(withMonth ? { month: "short" } : {}),
+    });
   try {
     return `${fmt(from, false)} → ${fmt(to, true)}`;
   } catch {
@@ -102,7 +109,9 @@ export function formatDateRange(from: string, to: string): string {
   }
 }
 
-export const nightsBetween = (from: string, to: string) => {
-  const n = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000);
-  return Number.isFinite(n) && n > 0 ? n : 1;
-};
+/**
+ * Nights between two dates. The implementation lives with the rest of the date
+ * reasoning in `stayDates`, and is re-exported here because the cart has always
+ * been where the rest of the app imported it from.
+ */
+export { nightsBetween } from "./stayDates";
