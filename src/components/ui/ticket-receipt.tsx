@@ -90,7 +90,12 @@ function Barcode({ value }: { value: string }) {
 
 /* ── confetti ─────────────────────────────────────────────────────────── */
 
-function Confetti() {
+/**
+ * Exported because the confirmation page celebrates too, and it has no payment
+ * row to hang a ticket on when the buyer did not create an account. One
+ * implementation, two moments — and the reduced-motion rule travels with it.
+ */
+export function Celebration() {
   const colors = ["#002089", "#e76f2e", "#6ad7fb", "#15803d", "#eab308"];
   const pieces = React.useMemo(
     () =>
@@ -180,7 +185,7 @@ export const TicketReceipt = React.forwardRef<HTMLDivElement, TicketReceiptProps
 
     return (
       <>
-        {confetti && <Confetti />}
+        {confetti && <Celebration />}
 
         <div
           ref={ref}

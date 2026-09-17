@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { formatUsd } from "../lib/currency";
 import { StatusBadge } from "../components/panel/Badges";
 import { useAuth } from "../lib/auth";
+import { Celebration } from "../components/ui/ticket-receipt";
 
 type Item = { title: string; detail: string; amount: number; kind: string; status: string };
 type Booking = {
@@ -21,6 +22,19 @@ export function BookingConfirmed() {
   const { id } = useParams();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [party, setParty] = useState(false);
+
+  useEffect(() => {
+    // Elle attend que la réservation soit là : fêter une page qui va afficher
+    // « introuvable » serait grotesque. Une fois, puis elle se retire.
+    if (!booking) return;
+    const on = setTimeout(() => setParty(true), 150);
+    const off = setTimeout(() => setParty(false), 6500);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
+  }, [booking]);
 
   useEffect(() => {
     if (!id) return;
@@ -51,7 +65,11 @@ export function BookingConfirmed() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 lg:px-8 py-14">
-      <div className="text-center flex flex-col items-center">
+      {/* Une seule fois, a l'arrivee. Elle s'efface d'elle-meme, et ne part
+          pas du tout pour qui a demande moins de mouvement. */}
+      {party && <Celebration />}
+
+      <div className="relative z-10 text-center flex flex-col items-center">
         <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center text-4xl mb-6">✅</div>
         <h1 className="font-display text-3xl font-bold text-[#002089]">Votre voyage est confirmé</h1>
         <p className="text-[#7a6355] mt-3 max-w-lg leading-relaxed">
