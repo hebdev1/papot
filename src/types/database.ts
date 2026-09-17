@@ -4965,6 +4965,15 @@ export type Database = {
       build_partner_listings: { Args: { p_partner: string }; Returns: number }
       claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }
+      demo_checkout: {
+        Args: { p_number: string; p_payload: Json }
+        Returns: Json
+      }
+      demo_instrument_result: {
+        Args: { p_method: string; p_number: string }
+        Returns: string
+      }
+      demo_payments_enabled: { Args: never; Returns: boolean }
       effective_commission:
         | {
             Args: {

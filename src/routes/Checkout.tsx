@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
@@ -11,6 +11,27 @@ const METHODS = [
   { id: "card", label: "Carte bancaire", sub: "Visa, Mastercard" },
   { id: "moncash", label: "MonCash", sub: "Depuis Haïti" },
   { id: "natcash", label: "NatCash", sub: "Depuis Haïti" },
+];
+
+/**
+ * The instruments the demo gateway accepts.
+ *
+ * Shown on the page rather than hidden in a wiki: the point of a test gateway
+ * is that anyone can walk the journey, including the refusals, without being
+ * told which numbers to type. The database holds the same list and is what
+ * actually decides — this is a legend, not a rule.
+ */
+const DEMO_CARDS = [
+  { number: "4242 4242 4242 4242", outcome: "Paiement accepté", ok: true },
+  { number: "4000 0000 0000 0002", outcome: "Carte refusée", ok: false },
+  { number: "4000 0000 0000 9995", outcome: "Provision insuffisante", ok: false },
+  { number: "4000 0000 0000 0069", outcome: "Carte expirée", ok: false },
+];
+
+const DEMO_MOBILE = [
+  { number: "+509 0000 0000", outcome: "Paiement accepté", ok: true },
+  { number: "+509 0000 0001", outcome: "Refusé par l'opérateur", ok: false },
+  { number: "+509 0000 0002", outcome: "Solde insuffisant", ok: false },
 ];
 
 const KIND_LABEL: Record<string, string> = {
@@ -35,8 +56,26 @@ export function Checkout() {
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState("");
   const [method, setMethod] = useState("card");
+  const [instrument, setInstrument] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvc, setCvc] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demo, setDemo] = useState<boolean | null>(null);
+
+  // Whether the demo gateway is open is a platform setting, and the table that
+  // holds it is staff-only, so the page asks for the single boolean instead.
+  useEffect(() => {
+    let live = true;
+    supabase.rpc("demo_payments_enabled").then(({ data }) => {
+      if (live) setDemo(data === true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const isCard = method === "card";
 
   if (items.length === 0) {
     return (
@@ -58,7 +97,11 @@ export function Checkout() {
     setBusy(true);
     setError(null);
 
-    const { data, error } = await supabase.rpc("create_booking", {
+    // The gateway books and takes payment in one transaction. A refused
+    // instrument leaves nothing behind — no booking, no payment row — so the
+    // refusal path is the same code the real one will be.
+    const { data, error } = await supabase.rpc("demo_checkout", {
+      p_number: instrument.trim(),
       p_payload: {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -85,7 +128,10 @@ export function Checkout() {
     setBusy(false);
     if (error || !data) {
       console.error("Booking failed:", error);
-      setError("Le paiement n'a pas pu être finalisé. Réessayez.");
+      // The gateway answers in French and says why — "Carte refusée par la
+      // banque", "Provision insuffisante". Replacing that with a generic
+      // sentence would throw away the only useful part of a decline.
+      setError(error?.message || "Le paiement n'a pas pu être finalisé. Réessayez.");
       return;
     }
 
@@ -179,30 +225,84 @@ export function Checkout() {
               ))}
             </div>
 
-            {method === "card" && (
-              <div className="grid grid-cols-4 gap-3 mt-4">
-                <div className="col-span-4 flex flex-col gap-1.5">
-                  <span className={label}>Numéro de carte</span>
-                  <input disabled placeholder="—— —— —— ——" className={`${input} opacity-60`} />
-                </div>
-                <div className="col-span-2 flex flex-col gap-1.5">
-                  <span className={label}>MM / AA</span>
-                  <input disabled placeholder="MM / AA" className={`${input} opacity-60`} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={label}>CVC</span>
-                  <input disabled placeholder="123" className={`${input} opacity-60`} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={label}>Code postal</span>
-                  <input disabled placeholder="HT" className={`${input} opacity-60`} />
-                </div>
+            <div className="grid grid-cols-4 gap-3 mt-4">
+              <div className="col-span-4 flex flex-col gap-1.5">
+                <label className={label} htmlFor="instrument">
+                  {isCard ? "Numéro de carte" : "Numéro du compte"}
+                </label>
+                <input
+                  id="instrument"
+                  value={instrument}
+                  onChange={e => setInstrument(e.target.value)}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder={isCard ? "4242 4242 4242 4242" : "+509 0000 0000"}
+                  className={input}
+                />
               </div>
-            )}
+              {isCard && (
+                <>
+                  <div className="col-span-2 flex flex-col gap-1.5">
+                    <label className={label} htmlFor="expiry">MM / AA</label>
+                    <input
+                      id="expiry"
+                      value={expiry}
+                      onChange={e => setExpiry(e.target.value)}
+                      placeholder="12 / 30"
+                      autoComplete="off"
+                      className={input}
+                    />
+                  </div>
+                  <div className="col-span-2 flex flex-col gap-1.5">
+                    <label className={label} htmlFor="cvc">CVC</label>
+                    <input
+                      id="cvc"
+                      value={cvc}
+                      onChange={e => setCvc(e.target.value)}
+                      placeholder="123"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className={input}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
 
-            <p className="text-xs text-[#7a6355] mt-4 bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
-              Passerelle de paiement à confirmer — section 6.1 du spec. Aucun débit réel n'est effectué.
-            </p>
+            {/* The expiry and CVC are collected because a payment form that did
+                not ask for them would not be the form we are testing. The demo
+                gateway ignores them: only the number decides, so every outcome
+                is reachable without memorising a second field. */}
+            {demo === true ? (
+              <div className="mt-4 bg-[#F5E9D8] rounded-xl p-4">
+                <p className="text-[13px] font-bold text-[#3E2C23]">
+                  Mode démonstration — aucun argent ne circule
+                </p>
+                <p className="text-xs text-[#7a6355] mt-1 leading-relaxed">
+                  Aucune vraie carte n'est acceptée et rien n'est débité. Utilisez l'un de ces
+                  numéros pour parcourir le site comme un client, y compris les refus.
+                </p>
+                <ul className="mt-3 flex flex-col gap-1">
+                  {(isCard ? DEMO_CARDS : DEMO_MOBILE).map(d => (
+                    <li key={d.number} className="flex items-center justify-between gap-3 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setInstrument(d.number)}
+                        className="font-mono font-semibold text-[#002089] hover:underline"
+                      >
+                        {d.number}
+                      </button>
+                      <span className={d.ok ? "text-[#15803d]" : "text-[#b3261e]"}>{d.outcome}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-[#7a6355] mt-4 bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
+                Passerelle de paiement à confirmer — section 6.1 du spec. Aucun débit réel n'est
+                effectué.
+              </p>
+            )}
           </section>
         </div>
 
