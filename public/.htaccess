@@ -1,0 +1,35 @@
+# PAPOT est une application à page unique : /admin, /partenaire et /p/<id>
+# n'existent pas sur le disque. Sans cette règle, Apache cherche un dossier
+# portant ce nom, ne le trouve pas, et répond 404 — l'accueil s'affiche, les
+# routes profondes non. C'est exactement ce que fait un hébergement mutualisé.
+#
+# Vercel n'en a pas besoin (vercel.json porte la même règle), mais ce fichier
+# part dans dist/ et ne gêne rien : il rend le build déployable tel quel sur
+# n'importe quel Apache.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Un fichier ou un dossier qui existe vraiment est servi tel quel.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Tout le reste est rendu par l'application.
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Les noms des fichiers d'assets contiennent une empreinte : ils ne changent
+# jamais de contenu, donc ils peuvent être gardés indéfiniment.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpe?g|svg|webp|avif)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # index.html, lui, ne doit jamais être gardé : c'est lui qui nomme la
+  # version des assets. Un index.html en cache sert l'ancien site.
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
