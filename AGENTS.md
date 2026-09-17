@@ -144,6 +144,21 @@ The price of a sale comes from the database, never the payload:
 `amount` the browser sent. Everything else in the cart is still priced by the
 browser — that is older than this feature and untouched by it.
 
+### Money
+
+`commission_rules` is what `effective_commission()` reads; `platform_settings`
+only displays the rates in the admin screen. The two were out of step — the
+rates were declared and the rules table was empty, so every commission computed
+to zero — and the rules are now seeded from the settings. Change a rate in
+`commission_rules`, not in `platform_settings`, or the figure shown and the
+figure charged part company.
+
+Payment runs through `demo_checkout(payload, number)` while the demo gateway is
+on: it validates a test instrument, books, and writes one `payments` row per
+partner, all in one transaction. A refusal writes nothing. The switch is the
+`demo_payments` platform setting, so it goes off from `/admin/parametres`
+without a deploy.
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`
