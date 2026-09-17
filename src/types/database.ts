@@ -119,6 +119,565 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          mode: Database["public"]["Enums"]["ai_mode"]
+          model: string | null
+          prompt_version: string | null
+          session_id: string
+          status: string
+          trip_state_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          mode?: Database["public"]["Enums"]["ai_mode"]
+          model?: string | null
+          prompt_version?: string | null
+          session_id: string
+          status?: string
+          trip_state_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          mode?: Database["public"]["Enums"]["ai_mode"]
+          model?: string | null
+          prompt_version?: string | null
+          session_id?: string
+          status?: string
+          trip_state_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_trip_fkey"
+            columns: ["trip_state_id"]
+            isOneToOne: false
+            referencedRelation: "ai_trip_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_cost_usage: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          estimated_cost: number
+          id: string
+          input_tokens: number
+          model: string
+          output_tokens: number
+          provider: string
+          tool_calls: number
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          estimated_cost?: number
+          id?: string
+          input_tokens?: number
+          model: string
+          output_tokens?: number
+          provider: string
+          tool_calls?: number
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          estimated_cost?: number
+          id?: string
+          input_tokens?: number
+          model?: string
+          output_tokens?: number
+          provider?: string
+          tool_calls?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_cost_usage_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_document_chunks: {
+        Row: {
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          metadata: Json
+          position: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          position?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "ai_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_documents: {
+        Row: {
+          body: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          language: string
+          metadata: Json
+          source_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          language?: string
+          metadata?: Json
+          source_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          language?: string
+          metadata?: Json
+          source_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_documents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "ai_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_feedback: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          helpful: boolean
+          id: string
+          message_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          helpful: boolean
+          id?: string
+          message_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          helpful?: boolean
+          id?: string
+          message_id?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_knowledge_sources: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          language: string | null
+          last_error: string | null
+          last_synced_at: string | null
+          priority: number
+          source_type: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label: string
+          language?: string | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          priority?: number
+          source_type: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          language?: string | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          priority?: number
+          source_type?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["ai_role"]
+          structured_content: Json | null
+          token_count: number | null
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["ai_role"]
+          structured_content?: Json | null
+          token_count?: number | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["ai_role"]
+          structured_content?: Json | null
+          token_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_model_configs: {
+        Row: {
+          active: boolean
+          id: string
+          max_output_tokens: number
+          model: string
+          provider: string
+          task: string
+          temperature: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          max_output_tokens?: number
+          model: string
+          provider?: string
+          task: string
+          temperature?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          max_output_tokens?: number
+          model?: string
+          provider?: string
+          task?: string
+          temperature?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_preferences: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          id: string
+          key: string
+          source: string
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          key: string
+          source?: string
+          updated_at?: string
+          user_id: string
+          value: Json
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          key?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      ai_tool_calls: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          error_reason: string | null
+          id: string
+          input_json: Json | null
+          latency_ms: number | null
+          message_id: string | null
+          output_status: string
+          tool_name: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          input_json?: Json | null
+          latency_ms?: number | null
+          message_id?: string | null
+          output_status: string
+          tool_name: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          input_json?: Json | null
+          latency_ms?: number | null
+          message_id?: string | null
+          output_status?: string
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tool_calls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_tool_calls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_trip_items: {
+        Row: {
+          alternative: boolean
+          availability: Database["public"]["Enums"]["ai_availability"]
+          booking_status: Database["public"]["Enums"]["ai_item_booking"]
+          created_at: string
+          ends_at: string | null
+          guests: number | null
+          id: string
+          kind: string
+          listing_id: string | null
+          package_id: string | null
+          position: number
+          pricing: Json
+          quantity: number
+          starts_at: string | null
+          title: string
+          trip_state_id: string
+          unit_id: string | null
+        }
+        Insert: {
+          alternative?: boolean
+          availability?: Database["public"]["Enums"]["ai_availability"]
+          booking_status?: Database["public"]["Enums"]["ai_item_booking"]
+          created_at?: string
+          ends_at?: string | null
+          guests?: number | null
+          id?: string
+          kind: string
+          listing_id?: string | null
+          package_id?: string | null
+          position?: number
+          pricing?: Json
+          quantity?: number
+          starts_at?: string | null
+          title?: string
+          trip_state_id: string
+          unit_id?: string | null
+        }
+        Update: {
+          alternative?: boolean
+          availability?: Database["public"]["Enums"]["ai_availability"]
+          booking_status?: Database["public"]["Enums"]["ai_item_booking"]
+          created_at?: string
+          ends_at?: string | null
+          guests?: number | null
+          id?: string
+          kind?: string
+          listing_id?: string | null
+          package_id?: string | null
+          position?: number
+          pricing?: Json
+          quantity?: number
+          starts_at?: string | null
+          title?: string
+          trip_state_id?: string
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_trip_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trip_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trip_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "partner_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trip_items_trip_state_id_fkey"
+            columns: ["trip_state_id"]
+            isOneToOne: false
+            referencedRelation: "ai_trip_states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_trip_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "listing_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_trip_states: {
+        Row: {
+          budget: Json
+          created_at: string
+          id: string
+          itinerary: Json
+          pricing: Json
+          request: Json
+          session_id: string
+          status: Database["public"]["Enums"]["ai_trip_status"]
+          updated_at: string
+          user_id: string | null
+          warnings: Json
+        }
+        Insert: {
+          budget?: Json
+          created_at?: string
+          id?: string
+          itinerary?: Json
+          pricing?: Json
+          request?: Json
+          session_id: string
+          status?: Database["public"]["Enums"]["ai_trip_status"]
+          updated_at?: string
+          user_id?: string | null
+          warnings?: Json
+        }
+        Update: {
+          budget?: Json
+          created_at?: string
+          id?: string
+          itinerary?: Json
+          pricing?: Json
+          request?: Json
+          session_id?: string
+          status?: Database["public"]["Enums"]["ai_trip_status"]
+          updated_at?: string
+          user_id?: string | null
+          warnings?: Json
+        }
+        Relationships: []
+      }
       booking_items: {
         Row: {
           amount: number
@@ -4944,6 +5503,7 @@ export type Database = {
         Args: { p_order: string; p_reason?: string; p_status: string }
         Returns: string
       }
+      ai_enabled: { Args: never; Returns: boolean }
       assign_restaurant_table: {
         Args: {
           p_date: string
@@ -5127,6 +5687,17 @@ export type Database = {
         | "marketing_manager"
         | "analyst"
         | "risk_manager"
+      ai_availability: "unknown" | "available" | "limited" | "unavailable"
+      ai_item_booking: "planned" | "held" | "booked" | "cancelled"
+      ai_mode: "explore" | "plan" | "assist"
+      ai_role: "user" | "assistant" | "system" | "tool"
+      ai_trip_status:
+        | "draft"
+        | "planning"
+        | "ready"
+        | "held"
+        | "booked"
+        | "cancelled"
       application_status: "new" | "reviewing" | "accepted" | "rejected"
       availability_status:
         | "available"
@@ -5441,6 +6012,18 @@ export const Constants = {
         "marketing_manager",
         "analyst",
         "risk_manager",
+      ],
+      ai_availability: ["unknown", "available", "limited", "unavailable"],
+      ai_item_booking: ["planned", "held", "booked", "cancelled"],
+      ai_mode: ["explore", "plan", "assist"],
+      ai_role: ["user", "assistant", "system", "tool"],
+      ai_trip_status: [
+        "draft",
+        "planning",
+        "ready",
+        "held",
+        "booked",
+        "cancelled",
       ],
       application_status: ["new", "reviewing", "accepted", "rejected"],
       availability_status: [
