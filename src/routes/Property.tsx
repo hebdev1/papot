@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { Badge } from "../components/ui/cvui-badge";
 import { supabase } from "../lib/supabase";
@@ -7,6 +7,8 @@ import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 import { formatDateRange, nightsBetween, useCart, type CartItem } from "../lib/cart";
 import { useFoodCart } from "../lib/foodCart";
+import { GuestsPicker } from "../components/GuestsPicker";
+import { formatGuests, partySize, readGuests, type Guests } from "../lib/guests";
 import type { Tables } from "../types/database";
 
 type Unit = Tables<"listing_units">;
@@ -184,6 +186,10 @@ export function Property() {
 
 /* ── 1b — hébergement ───────────────────────────────────── */
 function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
+  const [params] = useSearchParams();
+  // Seeded from the search that led here, so the party chosen on the home page
+  // is still the party when the traveller arrives.
+  const [guests, setGuests] = useState<Guests>(() => readGuests(params));
   const [unitId, setUnitId] = useState<string | null>(null);
   const available = units.filter((u: Unit) => u.available);
   const selected: Unit | undefined = available.find((u: Unit) => u.id === unitId) ?? available[0];
@@ -200,11 +206,11 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
       listing_id: listing.id,
       unit_id: selected?.id ?? null,
       title: `${listing.name}${selected ? ` · ${selected.name}` : ""}`,
-      detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${nights} nuits · 2 adultes`,
+      detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${nights} nuits · ${formatGuests(guests)}`,
       amount: total,
       starts_on: CHECKIN,
       ends_on: CHECKOUT,
-      party: 2,
+      party: partySize(guests),
     });
     navigate(`/checkout/${listing.id}`);
   };
@@ -316,10 +322,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
                 <p className="text-sm text-[#3E2C23]">16 oct.</p>
               </div>
             </div>
-            <div className="flex items-center justify-between p-3 mt-2 rounded-xl border-2 border-[#e2d5c3]">
-              <span className="text-sm text-[#3E2C23]">2 adultes · 0 enfant</span>
-              <span className="text-xs font-semibold text-[#002089]">Modifier</span>
-            </div>
+            <GuestsPicker value={guests} onChange={setGuests} className="mt-2" />
 
             <div className="mt-5 flex flex-col gap-2 text-sm">
               <Row label={`${formatUsd(nightly)} × ${nights} nuits`} value={formatUsd(nightly * nights)} />

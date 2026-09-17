@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { StayCard } from "../components/StayCard";
+import { formatGuests, readGuests } from "../lib/guests";
 import { CarCard } from "../components/CarCard";
 import { RestaurantCard } from "../components/RestaurantCard";
 import { supabase } from "../lib/supabase";
@@ -47,6 +48,9 @@ export function Search() {
   const kind = (["stay", "car", "restaurant"].includes(rawKind) ? rawKind : "stay") as Kind;
   const unsupported = rawKind === "flight";
   const where = params.get("where") ?? "";
+  // The party travels in the URL, so a shared or reloaded search keeps the
+  // one it was made for.
+  const guests = readGuests(params);
 
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -276,7 +280,7 @@ export function Search() {
               </h1>
               {kind === "stay" && (
                 <p className="text-[#7a6355] text-sm mt-1">
-                  {nights} nuit{nights > 1 ? "s" : ""} · 2 adultes · prix totaux, taxes incluses
+                  {nights} nuit{nights > 1 ? "s" : ""} · {formatGuests(guests)} · prix totaux, taxes incluses
                 </p>
               )}
             </div>
@@ -317,7 +321,7 @@ export function Search() {
           ) : kind === "stay" ? (
             <div className="flex flex-col gap-5">
               {results.map(l => (
-                <StayCard key={l.id} listing={l} rate={rate} nights={nights} />
+                <StayCard key={l.id} listing={l} rate={rate} nights={nights} query={params.toString()} />
               ))}
             </div>
           ) : (

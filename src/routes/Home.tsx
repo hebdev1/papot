@@ -5,6 +5,8 @@ import { Carousel } from "../components/Carousel";
 import { StayCard } from "../components/StayCard";
 import { RestaurantCard } from "../components/RestaurantCard";
 import { OfferCard, type OfferRow } from "../components/OfferCard";
+import { GuestsPicker } from "../components/GuestsPicker";
+import { DEFAULT_GUESTS, guestsQuery, type Guests } from "../lib/guests";
 import { CarCard } from "../components/CarCard";
 import { DestinationCard } from "../components/DestinationCard";
 import { PartnerSection } from "../components/PartnerSection";
@@ -68,7 +70,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   const [where, setWhere] = useState("");
   const [checkin, setCheckin] = useState("2026-10-12");
   const [checkout, setCheckout] = useState("2026-10-16");
-  const [guests] = useState("2 adultes");
+  const [guests, setGuests] = useState<Guests>(DEFAULT_GUESTS);
 
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [destinations, setDestinations] = useState<DestinationRow[]>([]);
@@ -152,7 +154,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   }, [nights]);
 
   const search = () => {
-    const p = new URLSearchParams({ kind: activeTab, checkin, checkout });
+    const p = new URLSearchParams({ kind: activeTab, checkin, checkout, ...guestsQuery(guests) });
     if (where.trim()) p.set("where", where.trim());
     navigate(`/search?${p}`);
   };
@@ -229,14 +231,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
                 />
               </label>
 
-              <div className="flex-1 flex flex-col gap-1 px-3 py-2 rounded-xl border-2 border-[#e2d5c3]">
-                <span className="text-[10px] font-semibold text-[#7a6355] uppercase tracking-wide">Voyageurs</span>
-                <div className="flex items-center gap-2">
-                  <Icon.Users />
-                  <span className="text-sm text-[#3E2C23] flex-1 truncate">{guests}</span>
-                  <Icon.ChevronDown />
-                </div>
-              </div>
+              <GuestsPicker value={guests} onChange={setGuests} className="flex-1" />
 
               <button
                 onClick={search}

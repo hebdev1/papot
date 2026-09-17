@@ -10,11 +10,18 @@ export function StayCard({
   listing,
   rate,
   nights = 1,
+  query,
 }: {
   listing: ListingRow;
   rate: number;
   nights?: number;
+  /**
+   * The search that produced this card, carried onto the fiche so the dates and
+   * the party survive the click. A card shown outside a search has none.
+   */
+  query?: string;
 }) {
+  const to = `/p/${listing.id}${query ? `?${query}` : ""}`;
   const a = attrsOf(listing);
   const soldOut = isSoldOut(listing);
   const total = listing.price * nights;
@@ -86,14 +93,14 @@ export function StayCard({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link
-              to={`/p/${listing.id}`}
+              to={to}
               className="text-sm font-semibold text-[#002089] px-4 py-2.5 rounded-xl border-2 border-[#e2d5c3] hover:border-[#002089] transition-colors"
             >
               Voir la fiche
             </Link>
             {soldOut ? (
               <Link
-                to={`/p/${listing.id}`}
+                to={to}
                 className="bg-white border-2 border-[#002089] text-[#002089] font-bold px-5 py-2.5 rounded-xl text-sm"
               >
                 Autres dates
