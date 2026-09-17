@@ -3,6 +3,9 @@ dist/
 build/
 .cache/
 .env*
+# …sauf l'origine canonique : publique, et un build correct ne doit pas dependre
+# d'une variable que quelqu'un doit penser a definir.
+!.env.production
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo

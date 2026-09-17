@@ -26,6 +26,31 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and the `@` alias for `src`
 - `.mise.toml` - Toolchain versions for Node.js and pnpm
 
+## Deployment
+
+The canonical site is **https://papotht.com**, served from Hostinger. The build
+is static: `npx pnpm@10 build`, then upload everything in `dist/` to
+`public_html/`.
+
+**Upload the hidden files too.** `dist/.htaccess` is what makes `/admin`,
+`/partenaire` and `/p/<id>` work: without it the server looks for a directory of
+that name, fails, and answers 404 — the home page loads and every deep route
+does not. The File Manager and most FTP clients skip dotfiles unless told
+otherwise (File Manager: Settings → Show hidden files; FileZilla: Server → Force
+showing hidden files). A 404 on `/admin` and a working `/` is always this.
+
+Hostinger puts a CDN in front (`Server: hcdn`), which caches those 404s. Purge
+it after the first upload: hPanel → Performance → CDN → Purge cache.
+
+`.env.production` pins `VITE_SITE_URL` to the canonical origin. It is versioned
+because it holds no secret, and because a correct build should not depend on
+someone remembering to set a variable. Vite reads it for `vite build` only, so
+development keeps its own origin and never mails a confirmation link to
+production.
+
+`papot.vercel.app` still deploys from `main` and works; it is a mirror, not the
+canonical site.
+
 ## Admin console
 
 The staff console lives under `src/admin/` and is mounted at `/admin`, lazily,
