@@ -8,7 +8,10 @@ import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 import { formatDateRange, nightsBetween, useCart, type CartItem } from "../lib/cart";
 import { useFoodCart } from "../lib/foodCart";
 import { GuestsPicker } from "../components/GuestsPicker";
+import { StayDatesPicker } from "../components/StayDatesPicker";
 import { formatGuests, partySize, readGuests, type Guests } from "../lib/guests";
+import { readStayDates, type StayDates } from "../lib/stayDates";
+import { availabilityNote, useStayAvailability, useUnitsAvailability } from "../lib/availability";
 import type { Tables } from "../types/database";
 
 type Unit = Tables<"listing_units">;
@@ -64,13 +67,13 @@ type Option = {
 type KV = { k: string; v: string };
 type Pickup = { name: string; detail: string; fee: number };
 
-const CHECKIN = "2026-10-12";
-const CHECKOUT = "2026-10-16";
-
 const card = "bg-white rounded-2xl border border-[#e2d5c3] p-6";
 const h2 = "font-display text-xl font-bold text-[#002089] mb-4";
 const cta =
   "w-full py-3.5 rounded-xl bg-[#e76f2e] hover:bg-[#d05e20] text-white font-display font-bold text-[15px] shadow-[0_6px_18px_rgba(231,111,46,.3)] transition-colors";
+/** A button that cannot act should not look like one that can. */
+const disabledCta =
+  "!bg-[#e2d5c3] !text-[#7a6355] !shadow-none cursor-not-allowed hover:!bg-[#e2d5c3]";
 
 /** Main tile uses the listing photo when there is one; the rest stay
     placeholders, since the canvas marks the extra shots as "à fournir". */
@@ -99,6 +102,11 @@ function Gallery({ labels, more, img, alt }: { labels: string[]; more?: number; 
 export function Property() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // The window the search was made for. The fiche used to override it with two
+  // dates written into this file, so every visitor booked the same four nights
+  // of October whatever they had asked for.
+  const [dates, setDates] = useState<StayDates>(() => readStayDates(params));
   const rate = useUsdHtgRate();
   const cart = useCart();
 
@@ -155,13 +163,30 @@ export function Property() {
       <p className="text-sm text-[#7a6355] mb-4">{(a.breadcrumb as string) ?? listing.location}</p>
 
       {listing.kind === "stay" && (
-        <StayDetail listing={listing} a={a} units={units} rate={rate} cart={cart} navigate={navigate} />
+        <StayDetail
+          listing={listing}
+          a={a}
+          units={units}
+          rate={rate}
+          cart={cart}
+          navigate={navigate}
+          dates={dates}
+          setDates={setDates}
+        />
       )}
       {listing.kind === "restaurant" && (
         <RestaurantDetail listing={listing} a={a} menu={menu} privates={privates} cart={cart} navigate={navigate} />
       )}
       {listing.kind === "car" && (
-        <CarDetail listing={listing} a={a} rate={rate} cart={cart} navigate={navigate} />
+        <CarDetail
+          listing={listing}
+          a={a}
+          rate={rate}
+          cart={cart}
+          navigate={navigate}
+          dates={dates}
+          setDates={setDates}
+        />
       )}
 
       {/* A restaurant offer needs the créneau that the reservation panel
@@ -172,9 +197,9 @@ export function Property() {
           cart={cart}
           navigate={navigate}
           booking={{
-            units: nightsBetween(CHECKIN, CHECKOUT),
-            starts_on: CHECKIN,
-            ends_on: CHECKOUT,
+            units: nightsBetween(dates.checkin, dates.checkout),
+            starts_on: dates.checkin,
+            ends_on: dates.checkout,
             party: 2,
             ready: true,
           }}
@@ -185,16 +210,40 @@ export function Property() {
 }
 
 /* ── 1b — hébergement ───────────────────────────────────── */
-function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
+function StayDetail({ listing, a, units, rate, cart, navigate, dates, setDates }: any) {
   const [params] = useSearchParams();
   // Seeded from the search that led here, so the party chosen on the home page
   // is still the party when the traveller arrives.
   const [guests, setGuests] = useState<Guests>(() => readGuests(params));
   const [unitId, setUnitId] = useState<string | null>(null);
   const available = units.filter((u: Unit) => u.available);
-  const selected: Unit | undefined = available.find((u: Unit) => u.id === unitId) ?? available[0];
 
-  const nights = nightsBetween(CHECKIN, CHECKOUT);
+  // The same function the checkout consults under a lock, asked once for every
+  // room type. The traveller learns a room is gone on the fiche, while they can
+  // still pick another one — not after filling in a card.
+  const byUnit = useUnitsAvailability(listing.id, dates.checkin, dates.checkout);
+
+  // Until the traveller chooses, the panel opens on a room they can actually
+  // book. Defaulting to the first one in the list means landing on "complet"
+  // while a free room sits directly underneath it.
+  const selected: Unit | undefined =
+    available.find((u: Unit) => u.id === unitId) ??
+    available.find((u: Unit) => byUnit[u.id]?.available !== false) ??
+    available[0];
+  const chosen = selected ? byUnit[selected.id] : undefined;
+  const note = availabilityNote(
+    chosen
+      ? {
+          available: chosen.available,
+          reason: chosen.reason,
+          left: chosen.units_left ?? undefined,
+          taken: chosen.units_taken ?? undefined,
+        }
+      : null,
+  );
+  const soldOut = chosen !== undefined && !chosen.available;
+
+  const nights = nightsBetween(dates.checkin, dates.checkout);
   const nightly = Number(selected?.price ?? listing.price);
   const cleaning = Number(a.cleaning_fee ?? 0);
   const service = Number(a.service_fee ?? 0);
@@ -206,10 +255,10 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
       listing_id: listing.id,
       unit_id: selected?.id ?? null,
       title: `${listing.name}${selected ? ` · ${selected.name}` : ""}`,
-      detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${nights} nuits · ${formatGuests(guests)}`,
+      detail: `${formatDateRange(dates.checkin, dates.checkout)} · ${nights} ${unitWord("per_night", nights)} · ${formatGuests(guests)}`,
       amount: total,
-      starts_on: CHECKIN,
-      ends_on: CHECKOUT,
+      starts_on: dates.checkin,
+      ends_on: dates.checkout,
       party: partySize(guests),
     });
     navigate(`/checkout/${listing.id}`);
@@ -245,25 +294,47 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
             <div className="flex flex-col gap-3">
               {units.map((u: Unit) => {
                 const on = selected?.id === u.id;
+                // Two different things used to share one sentence. `u.available`
+                // is the switch the partner flips to withdraw a room type
+                // altogether; the dates are what the availability check answers.
+                // The list said "Indisponible ces dates" for both, which was
+                // true of neither.
+                const state = byUnit[u.id];
+                const free = u.available && state?.available !== false;
+                // Only real scarcity: a one-room type is not "last available",
+                // it is simply a room type with one room.
+                const left = state && (state.units_taken ?? 0) > 0 ? state.units_left : null;
+
                 return (
                   <button
                     key={u.id}
-                    disabled={!u.available}
+                    disabled={!free}
                     onClick={() => setUnitId(u.id)}
                     className={`flex items-center justify-between gap-4 text-left p-4 rounded-xl border-2 transition-colors ${
-                      !u.available
+                      !free
                         ? "border-[#e2d5c3] opacity-60 cursor-not-allowed"
                         : on
                           ? "border-[#002089] bg-[#EAF8FF]"
                           : "border-[#e2d5c3] hover:border-[#002089]"
                     }`}
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-display font-bold text-[#3E2C23]">{u.name}</p>
                       <p className="text-xs text-[#7a6355] mt-0.5">{u.detail}</p>
+                      {free && left !== null && left <= 3 && (
+                        <p className="text-xs font-semibold text-[#c2410c] mt-1">
+                          {left === 1 ? "Dernière disponible" : `Plus que ${left} à ces dates`}
+                        </p>
+                      )}
                     </div>
-                    <span className="text-sm font-display font-bold text-[#002089] shrink-0">
-                      {u.available ? `${formatUsd(Number(u.price))} / nuit` : "Indisponible ces dates"}
+                    <span className="text-sm font-display font-bold text-[#002089] shrink-0 text-right">
+                      {free ? (
+                        `${formatUsd(Number(u.price))} / nuit`
+                      ) : (
+                        <span className="font-semibold text-[#7a6355]">
+                          {!u.available ? "Retirée de la vente" : (state?.reason ?? "Indisponible ces dates")}
+                        </span>
+                      )}
                     </span>
                   </button>
                 );
@@ -312,20 +383,11 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
               <span className="text-sm font-normal text-[#7a6355] ml-1">par nuit</span>
             </p>
 
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <div className="p-3 rounded-xl border-2 border-[#e2d5c3]">
-                <p className="text-[10px] uppercase tracking-wide text-[#7a6355] font-semibold">Arrivée</p>
-                <p className="text-sm text-[#3E2C23]">12 oct.</p>
-              </div>
-              <div className="p-3 rounded-xl border-2 border-[#e2d5c3]">
-                <p className="text-[10px] uppercase tracking-wide text-[#7a6355] font-semibold">Départ</p>
-                <p className="text-sm text-[#3E2C23]">16 oct.</p>
-              </div>
-            </div>
+            <StayDatesPicker value={dates} onChange={setDates} className="mt-4" />
             <GuestsPicker value={guests} onChange={setGuests} className="mt-2" />
 
             <div className="mt-5 flex flex-col gap-2 text-sm">
-              <Row label={`${formatUsd(nightly)} × ${nights} nuits`} value={formatUsd(nightly * nights)} />
+              <Row label={`${formatUsd(nightly)} × ${nights} ${unitWord("per_night", nights)}`} value={formatUsd(nightly * nights)} />
               {cleaning > 0 && <Row label="Ménage" value={formatUsd(cleaning)} />}
               {service > 0 && <Row label="Frais de service" value={formatUsd(service)} />}
               <div className="border-t border-[#e2d5c3] pt-2.5 mt-1 flex items-center justify-between">
@@ -335,11 +397,25 @@ function StayDetail({ listing, a, units, rate, cart, navigate }: any) {
               <p className="text-xs text-[#7a6355]">≈ {formatHtg(total, rate)} au taux du jour</p>
             </div>
 
-            <button onClick={book} className={`${cta} mt-4`}>
-              Réserver
+            {note && (
+              // "Plus que deux" is a nudge; "complet" is a stop. They are not
+              // the same message and do not get the same colour.
+              <p
+                className={`text-[13px] font-semibold mt-3 ${
+                  note.tone === "stop" ? "text-[#b3261e]" : "text-[#c2410c]"
+                }`}
+              >
+                {note.text}
+              </p>
+            )}
+
+            <button onClick={book} disabled={soldOut} className={`${cta} mt-4 ${soldOut ? disabledCta : ""}`}>
+              {soldOut ? "Indisponible à ces dates" : "Réserver"}
             </button>
             <p className="text-xs text-[#7a6355] text-center mt-2.5 leading-relaxed">
-              Vous ne serez débité qu'après confirmation de l'hôte
+              {soldOut
+                ? "Choisissez d'autres dates ou une autre chambre."
+                : "Vous ne serez débité qu'après confirmation de l'hôte"}
             </p>
           </div>
 
@@ -1039,12 +1115,18 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
 }
 
 /* ── 1d — voiture ───────────────────────────────────────── */
-function CarDetail({ listing, a, rate, cart, navigate }: any) {
+function CarDetail({ listing, a, rate, cart, navigate, dates, setDates }: any) {
   const pickups: Pickup[] = (a.pickups as Pickup[]) ?? [];
   const [pickupIdx, setPickupIdx] = useState(0);
   const [withDriver, setWithDriver] = useState(false);
 
-  const days = nightsBetween(CHECKIN, CHECKOUT);
+  // A vehicle is one vehicle: the annonce is the inventory, and there is no
+  // room type to choose between.
+  const { availability } = useStayAvailability(listing.id, null, dates.checkin, dates.checkout);
+  const note = availabilityNote(availability);
+  const soldOut = availability !== null && !availability.available;
+
+  const days = nightsBetween(dates.checkin, dates.checkout);
   const base = Number(listing.price) * days;
   const driver = withDriver ? Number(a.driver_per_day ?? 0) * days : 0;
   const delivery = Number(pickups[pickupIdx]?.fee ?? 0);
@@ -1055,10 +1137,10 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
       kind: "car",
       listing_id: listing.id,
       title: listing.name,
-      detail: `${formatDateRange(CHECKIN, CHECKOUT)} · ${pickups[pickupIdx]?.name ?? "retrait"} 09:00`,
+      detail: `${formatDateRange(dates.checkin, dates.checkout)} · ${pickups[pickupIdx]?.name ?? "retrait"} 09:00`,
       amount: total,
-      starts_on: CHECKIN,
-      ends_on: CHECKOUT,
+      starts_on: dates.checkin,
+      ends_on: dates.checkout,
       start_time: "09:00:00",
     });
     navigate(`/checkout/${listing.id}`);
@@ -1133,10 +1215,13 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
               <span className="text-sm font-normal text-[#7a6355] ml-1">par jour</span>
             </p>
 
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <Field label="Retrait" value="12 oct. 09:00" />
-              <Field label="Retour" value="16 oct. 09:00" />
-            </div>
+            <StayDatesPicker
+              value={dates}
+              onChange={setDates}
+              labels={["Retrait", "Retour"]}
+              className="mt-4"
+            />
+            <p className="text-xs text-[#7a6355] mt-1.5">Retrait et retour à 09:00</p>
 
             <label className="flex items-center justify-between gap-3 mt-3 p-3 rounded-xl border-2 border-[#e2d5c3] cursor-pointer">
               <span className="text-sm text-[#3E2C23]">
@@ -1152,7 +1237,7 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
             </label>
 
             <div className="mt-5 flex flex-col gap-2 text-sm">
-              <Row label={`${formatUsd(Number(listing.price))} × ${days} jours`} value={formatUsd(base)} />
+              <Row label={`${formatUsd(Number(listing.price))} × ${days} ${unitWord("per_day", days)}`} value={formatUsd(base)} />
               {withDriver && <Row label="Chauffeur" value={formatUsd(driver)} />}
               <Row
                 label={pickups[pickupIdx]?.name ?? "Retrait"}
@@ -1165,11 +1250,23 @@ function CarDetail({ listing, a, rate, cart, navigate }: any) {
               <p className="text-xs text-[#7a6355]">≈ {formatHtg(total, rate)}</p>
             </div>
 
-            <button onClick={book} className={`${cta} mt-4`}>
-              Réserver
+            {note && (
+              <p
+                className={`text-[13px] font-semibold mt-3 ${
+                  note.tone === "stop" ? "text-[#b3261e]" : "text-[#c2410c]"
+                }`}
+              >
+                {note.text}
+              </p>
+            )}
+
+            <button onClick={book} disabled={soldOut} className={`${cta} mt-4 ${soldOut ? disabledCta : ""}`}>
+              {soldOut ? "Indisponible à ces dates" : "Réserver"}
             </button>
             <p className="text-xs text-[#7a6355] text-center mt-2.5 leading-relaxed">
-              Caution de {a.deposit} $ préautorisée, non débitée
+              {soldOut
+                ? "Ce véhicule est déjà loué sur cette période."
+                : `Caution de ${a.deposit} $ préautorisée, non débitée`}
             </p>
           </div>
         </aside>

@@ -144,6 +144,42 @@ The price of a sale comes from the database, never the payload:
 `amount` the browser sent. Everything else in the cart is still priced by the
 browser — that is older than this feature and untouched by it.
 
+### Availability
+
+A room and a vehicle are finite, and until recently nothing said so.
+`create_booking` wrote a `stay` or `car` line with no overlap check at all — only
+restaurants were protected, by `assign_restaurant_table`. The same room could be
+sold twice for the same night, and the live data contained exactly that.
+
+`stay_availability(listing, from, to, unit)` is the one rule. The fiche reads it
+to show what is left; `create_booking` calls it through
+`assign_stay_inventory()`, which first takes `for update` on the row that carries
+the capacity — the `listing_units` row for a séjour, the `listings` row for a
+voiture — so two buyers of the last room are serialised and the second is told
+rather than sold. `stay_availability_units()` answers a whole room list in one
+round trip, for the fiche.
+
+Three things decide capacity, in this order: `listing_units.units` for a room
+type, one for a vehicle, and a per-day cap or closure in `listing_availability`.
+**An empty calendar means open** — blocking is an act, not a default, and the
+opposite would silently close every business that has not found the screen at
+`/partenaire/disponibilite`. Dates are half-open, so a departure on the 16th
+leaves the 16th free for the next guest.
+
+A paquet holds everything it bundles, not only its first room: every bound line
+except the one already written as the main article gets its own `booking_items`
+row at zero, and that row is held like any other sale.
+
+Scarcity is only shown when something has actually gone (`taken > 0`). A vehicle
+is always one vehicle, so "il n'en reste qu'un" under every car would be a true
+sentence carrying no information — which is what invented urgency looks like.
+
+The dates come from the URL (`checkin` / `checkout`), collected on the home page
+and editable on the fiche. They used to be two constants in `Property.tsx`, which
+is why the availability check could not ship without `src/lib/stayDates.ts`: with
+one date for everybody, the first buyer of a one-room type would have locked out
+everyone after them.
+
 ### Money
 
 `commission_rules` is what `effective_commission()` reads; `platform_settings`

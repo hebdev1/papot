@@ -5513,6 +5513,15 @@ export type Database = {
         }
         Returns: string
       }
+      assign_stay_inventory: {
+        Args: {
+          p_from: string
+          p_listing: string
+          p_to: string
+          p_unit?: string
+        }
+        Returns: undefined
+      }
       attach_application_documents: {
         Args: {
           p_application: string
@@ -5669,6 +5678,25 @@ export type Database = {
       restaurant_food_stats: {
         Args: { p_days?: number; p_partner: string }
         Returns: Json
+      }
+      stay_availability: {
+        Args: {
+          p_from: string
+          p_listing: string
+          p_to: string
+          p_unit?: string
+        }
+        Returns: Json
+      }
+      stay_availability_units: {
+        Args: { p_from: string; p_listing: string; p_to: string }
+        Returns: {
+          available: boolean
+          reason: string
+          unit_id: string
+          units_left: number
+          units_taken: number
+        }[]
       }
       submit_partner_application: { Args: { p_payload: Json }; Returns: Json }
       track_food_order: {
