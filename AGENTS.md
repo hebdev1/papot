@@ -75,12 +75,36 @@ RPC first.
 After any migration, regenerate the client types or the build will fail:
 `src/types/database.ts` is generated, not hand-written.
 
-The schema lives in Supabase and is not yet mirrored into this repository.
-To pull it into `supabase/migrations/` (needs the project's database password):
+## Migrations
+
+`supabase/migrations/` mirrors the schema, one file per migration, named
+`<version>_<name>.sql` the way the CLI names them. The files were taken from
+`supabase_migrations.schema_migrations` — Supabase's own record of what it
+executed — so they are the applied statements themselves, not a reconstruction
+from the current schema. `supabase/config.toml` carries the project ref.
+
+Migrations reach the database through the Supabase MCP server, which records
+them in that table. **Write the file too**, with the same version and name, or
+the repository and the project drift apart — and the drift is invisible until
+someone tries to build the schema from scratch.
+
+To check that nothing has drifted, compare one fingerprint rather than 115
+files:
+
+```sql
+select count(*), md5(string_agg(version || ':' ||
+         md5(rtrim(replace(array_to_string(statements, E';\n\n') || ';', E'\r\n', E'\n'))),
+         ',' order by version))
+  from supabase_migrations.schema_migrations;
+```
+
+and the same md5 over the local files, each `rstrip()`ped, joined the same way.
+
+To link a fresh clone (asks for the database password, which is not in the
+repository):
 
 ```
 npx supabase link --project-ref sqkbtygodsomekizhhyj
-npx supabase db pull
 ```
 
 ## Partner dashboard

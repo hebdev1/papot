@@ -1,0 +1,8 @@
+# Which Supabase project this repository belongs to.
+#
+# `supabase link` normally writes this file; it is checked in so that a fresh
+# clone knows where `supabase/migrations/` is meant to go without anyone having
+# to remember the project ref. The ref is not a secret — it is half of the
+# public API URL already in `.env` — and linking still asks for the database
+# password, which is not here and is not in the repository.
+project_id = "sqkbtygodsomekizhhyj"
