@@ -56,7 +56,17 @@ const ANTHROPIC_VERSION = "2023-06-01";
 export class AnthropicProvider implements LLMProvider {
   readonly name = "anthropic";
 
-  constructor(private readonly apiKey: string | undefined) {}
+  /**
+   * `workspaceId` is optional and usually unnecessary: a key created inside a
+   * workspace already knows which one it belongs to. An organisation-level key
+   * does not, and Anthropic then requires the workspace to be named on every
+   * request. Supporting both means the deployment works with whichever key the
+   * owner happens to have made.
+   */
+  constructor(
+    private readonly apiKey: string | undefined,
+    private readonly workspaceId?: string,
+  ) {}
 
   async *stream(input: ChatInput): AsyncIterable<ChatChunk> {
     if (!this.apiKey) throw new MissingCredentials(this.name);
@@ -68,6 +78,7 @@ export class AnthropicProvider implements LLMProvider {
         "x-api-key": this.apiKey,
         "anthropic-version": ANTHROPIC_VERSION,
         "content-type": "application/json",
+        ...(this.workspaceId ? { "anthropic-workspace-id": this.workspaceId } : {}),
       },
       body: JSON.stringify({
         model: input.model,
@@ -172,7 +183,10 @@ async function* sse(body: ReadableStream<Uint8Array>): AsyncIterable<any> {
 export function providerFor(name: string): LLMProvider {
   switch (name) {
     case "anthropic":
-      return new AnthropicProvider(Deno.env.get("ANTHROPIC_API_KEY"));
+      return new AnthropicProvider(
+        Deno.env.get("ANTHROPIC_API_KEY"),
+        Deno.env.get("ANTHROPIC_WORKSPACE_ID"),
+      );
     default:
       throw new Error(`Fournisseur inconnu : ${name}`);
   }
