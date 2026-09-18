@@ -179,7 +179,7 @@ export function Search() {
               <span className="flex items-center gap-2 font-display font-bold text-[#3E2C23]">
                 <Icon.Filter /> Filtres
               </span>
-              <button onClick={reset} className="text-xs font-semibold text-[#002089] hover:text-[#e76f2e]">
+              <button onClick={reset} className="text-xs font-semibold text-[#002089] hover:underline">
                 Réinitialiser
               </button>
             </div>

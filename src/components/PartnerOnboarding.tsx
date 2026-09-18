@@ -385,7 +385,7 @@ function StepWelcome({ onStart }: { onStart: (type: PartnerType) => void }) {
         ))}
       </div>
       <p className="text-sm text-[#7a6355]">
-        Déjà partenaire ? <a href="#" className="text-[#002089] font-semibold hover:text-[#e76f2e] transition-colors">Se connecter</a>
+        Déjà partenaire ? <a href="#" className="text-[#002089] font-semibold hover:underline transition-colors">Se connecter</a>
       </p>
     </div>
   );
@@ -729,7 +729,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
         </div>
       )}
       {rooms.length > 0 && !addingRoom && (
-        <button onClick={() => setAddingRoom(true)} className="border-2 border-dashed border-[#c8b9a5] hover:border-[#e76f2e] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#e76f2e] font-semibold transition-colors flex items-center justify-center gap-2">
+        <button onClick={() => setAddingRoom(true)} className="border-2 border-dashed border-[#c8b9a5] hover:border-[#002089] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#002089] font-semibold transition-colors flex items-center justify-center gap-2">
           <Ico.Plus /> Ajouter un type de chambre
         </button>
       )}
@@ -778,7 +778,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
         </div>
       )}
       {vehicles.length > 0 && !addingVehicle && (
-        <button onClick={() => setAddingVehicle(true)} className="border-2 border-dashed border-[#c8b9a5] hover:border-[#e76f2e] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#e76f2e] font-semibold transition-colors flex items-center justify-center gap-2">
+        <button onClick={() => setAddingVehicle(true)} className="border-2 border-dashed border-[#c8b9a5] hover:border-[#002089] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#002089] font-semibold transition-colors flex items-center justify-center gap-2">
           <Ico.Plus /> Ajouter un véhicule
         </button>
       )}
