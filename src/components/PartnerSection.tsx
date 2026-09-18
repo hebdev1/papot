@@ -41,9 +41,9 @@ const PARTNER_TYPES = [
 
 export function PartnerSection({ onOpen }: { onOpen: () => void }) {
   return (
-    <section className="py-16 px-4 lg:px-8">
+    <section className="py-10 lg:py-12 px-4 lg:px-8">
       {/* Section header */}
-      <div className="text-center mb-12">
+      <div className="text-center mb-8">
         <p className="text-xs font-semibold text-[#e76f2e] uppercase tracking-widest mb-2">Rejoignez notre réseau</p>
         <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#3E2C23] mb-3">
           Vous avez un établissement ?<br />Rejoignez PAPOT.
@@ -54,7 +54,7 @@ export function PartnerSection({ onOpen }: { onOpen: () => void }) {
       </div>
 
       {/* 3 type cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto mb-7">
         {PARTNER_TYPES.map(type => (
           <button
             key={type.id}

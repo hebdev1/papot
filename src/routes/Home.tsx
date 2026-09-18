@@ -241,7 +241,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-14 flex flex-col gap-16">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-10 flex flex-col gap-8 lg:gap-10">
         {offers.length > 0 && (
           <section>
             <SectionHead
@@ -274,7 +274,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
         </section>
 
         {/* 2 — Destinations (white) */}
-        <section className="bg-white -mx-4 lg:-mx-8 px-4 lg:px-8 py-12 rounded-3xl border border-[#e2d5c3]">
+        <section className="bg-white -mx-4 lg:-mx-8 px-4 lg:px-8 py-6 lg:py-8 rounded-3xl border border-[#e2d5c3]">
           <SectionHead
             eyebrow="Où aller"
             title="Explorer Haïti"
@@ -324,7 +324,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
         </section>
 
         {/* 4 — Restaurants (white) */}
-        <section className="bg-white -mx-4 lg:-mx-8 px-4 lg:px-8 py-12 rounded-3xl border border-[#e2d5c3]">
+        <section className="bg-white -mx-4 lg:-mx-8 px-4 lg:px-8 py-6 lg:py-8 rounded-3xl border border-[#e2d5c3]">
           <SectionHead
             eyebrow="Réserver une table"
             title="Les restaurants du moment"
