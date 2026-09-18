@@ -218,7 +218,7 @@ export function FoodCheckout() {
   };
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-8">
+    <main className="max-w-5xl mx-auto px-4 py-8 lg:py-10">
       <p className="text-xs text-[#7a6355] mb-1">
         <Link to={`/p/${restaurant.id}`} className="hover:underline">
           {restaurant.name}
@@ -634,7 +634,7 @@ export function OrderTracking() {
 
   if (!order) {
     return (
-      <main className="max-w-md mx-auto px-4 py-16">
+      <main className="max-w-md mx-auto px-4 py-8 lg:py-10">
         <h1 className="font-display text-2xl font-bold text-[#3E2C23] mb-2">Suivre la commande</h1>
         <p className="text-sm text-[#7a6355] mb-6">
           Commande {reference}. Indiquez le numéro de téléphone laissé au restaurant.
@@ -669,7 +669,7 @@ export function OrderTracking() {
   const stopped = STOPPED[order.status];
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-10">
+    <main className="max-w-2xl mx-auto px-4 py-8 lg:py-10">
       <p className="text-xs text-[#7a6355] mb-1">
         <Link to={`/p/${order.restaurant_id}`} className="hover:underline">
           {order.restaurant}

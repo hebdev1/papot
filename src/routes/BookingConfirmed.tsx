@@ -50,11 +50,11 @@ export function BookingConfirmed() {
     };
   }, [id]);
 
-  if (loading) return <main className="max-w-3xl mx-auto px-4 py-24 text-center text-[#7a6355]">Chargement…</main>;
+  if (loading) return <main className="max-w-3xl mx-auto px-4 py-16 text-center text-[#7a6355]">Chargement…</main>;
 
   if (!booking)
     return (
-      <main className="max-w-3xl mx-auto px-4 py-24 text-center">
+      <main className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 className="font-display text-2xl font-bold text-[#002089]">Réservation introuvable</h1>
         <p className="text-[#7a6355] mt-2">Vérifiez la référence reçue par courriel.</p>
         <Link to="/" className="inline-block mt-5 text-[#002089] font-semibold underline">
@@ -64,7 +64,7 @@ export function BookingConfirmed() {
     );
 
   return (
-    <main className="max-w-3xl mx-auto px-4 lg:px-8 py-14">
+    <main className="max-w-3xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
       {/* Une seule fois, a l'arrivee. Elle s'efface d'elle-meme, et ne part
           pas du tout pour qui a demande moins de mouvement. */}
       {party && <Celebration />}

@@ -171,7 +171,7 @@ export function Search() {
   }, [listings, where, kind, maxPrice, types, essentials, cancellation, sort, carDetails, carFilters, restoDetails, restoFilters]);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="lg:w-64 shrink-0">
           <div className="bg-white rounded-2xl border border-[#e2d5c3] p-5">

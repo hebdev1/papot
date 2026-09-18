@@ -145,10 +145,10 @@ export function Property() {
     };
   }, [id]);
 
-  if (loading) return <main className="max-w-7xl mx-auto px-4 py-20 text-[#7a6355]">Chargement…</main>;
+  if (loading) return <main className="max-w-7xl mx-auto px-4 py-16 text-[#7a6355]">Chargement…</main>;
   if (!listing)
     return (
-      <main className="max-w-3xl mx-auto px-4 py-24 text-center">
+      <main className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 className="font-display text-2xl font-bold text-[#002089]">Établissement introuvable</h1>
         <button onClick={() => navigate("/")} className="mt-4 text-[#002089] font-semibold underline">
           Retour à l'accueil
@@ -159,7 +159,7 @@ export function Property() {
   const a = attrsOf(listing) as ReturnType<typeof attrsOf> & Record<string, unknown>;
 
   return (
-    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
       <p className="text-sm text-[#7a6355] mb-4">{(a.breadcrumb as string) ?? listing.location}</p>
 
       {listing.kind === "stay" && (

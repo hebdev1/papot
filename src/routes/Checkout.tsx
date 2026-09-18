@@ -86,7 +86,7 @@ export function Checkout() {
 
   if (items.length === 0) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-24 text-center">
+      <main className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 className="font-display text-2xl font-bold text-[#002089]">Votre panier est vide</h1>
         <p className="text-[#7a6355] mt-2">Ajoutez un hébergement, une voiture ou une table pour continuer.</p>
         <Link
@@ -200,7 +200,7 @@ export function Checkout() {
   const byKind = (kind: string) => items.filter(i => i.kind === kind).reduce((s, i) => s + i.amount, 0);
 
   return (
-    <main className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
+    <main className="max-w-6xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
       <div className="flex items-center gap-2 text-sm mb-8">
         <span className="font-display font-bold text-[#002089]">Paiement sécurisé</span>
         <span className="flex-1" />

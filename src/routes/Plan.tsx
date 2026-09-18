@@ -22,7 +22,7 @@ export function Plan() {
   const [lookups, setLookups] = useState<string[]>([]);
 
   if (loading) {
-    return <main className="max-w-7xl mx-auto px-4 py-20 text-[#7a6355]">Chargement…</main>;
+    return <main className="max-w-7xl mx-auto px-4 py-16 text-[#7a6355]">Chargement…</main>;
   }
 
   // La route disparaît avec l'interrupteur : une passerelle fermée n'est pas
@@ -30,7 +30,7 @@ export function Plan() {
   if (!enabled) return <Navigate to="/" replace />;
 
   return (
-    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <section className="flex-1 min-w-0 w-full">
           <div className="mb-5">
