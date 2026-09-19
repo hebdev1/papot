@@ -1,7 +1,12 @@
 import type { Tables } from "../types/database";
 
 export type ListingRow = Tables<"listings">;
-export type DestinationRow = Tables<"destinations">;
+/**
+ * The measured view, not the table. `hotels`, `restaurants` and `from_usd` used
+ * to be columns somebody typed by hand and nothing ever checked; they are now
+ * counted from published listings at read time.
+ */
+export type DestinationRow = Tables<"destinations_public">;
 
 /** Narrowed view of the per-kind `attrs` jsonb. All fields optional by design. */
 export type ListingAttrs = {

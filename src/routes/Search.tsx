@@ -7,6 +7,7 @@ import { CarCard } from "../components/CarCard";
 import { RestaurantCard } from "../components/RestaurantCard";
 import { supabase } from "../lib/supabase";
 import { useUsdHtgRate } from "../lib/currency";
+import { placeKey } from "../lib/placeKey";
 import { attrsOf, type ListingRow } from "../lib/listings";
 import type { Enums } from "../types/database";
 import { CarFilters, carMatches, emptyCarFilters, type CarDetail, type CarFilterState } from "../components/CarFilters";
@@ -142,21 +143,21 @@ export function Search() {
   };
 
   const results = useMemo(() => {
-    const q = where.trim().toLowerCase();
+    const q = placeKey(where);
     let out = listings.filter(l => {
       if (kind === "car") {
         const d = carDetails[l.id];
-        const haystack = `${l.city} ${l.location} ${l.name} ${d?.make ?? ""} ${d?.model ?? ""}`.toLowerCase();
+        const haystack = placeKey(`${l.city} ${l.location} ${l.name} ${d?.make ?? ""} ${d?.model ?? ""}`);
         if (q && !haystack.includes(q)) return false;
         return carMatches(d, Number(l.price), carFilters);
       }
       if (kind === "restaurant") {
         const d = restoDetails[l.id];
-        const haystack = `${l.city} ${l.location} ${l.name} ${d?.cuisine ?? ""}`.toLowerCase();
+        const haystack = placeKey(`${l.city} ${l.location} ${l.name} ${d?.cuisine ?? ""}`);
         if (q && !haystack.includes(q)) return false;
         return restaurantMatches(l, d, restoFilters);
       }
-      if (q && !`${l.city} ${l.location} ${l.name}`.toLowerCase().includes(q)) return false;
+      if (q && !placeKey(`${l.city} ${l.location} ${l.name}`).includes(q)) return false;
       if (l.price > maxPrice) return false;
       if (types.length && !types.includes(l.type)) return false;
       if (essentials.length && !essentials.every(e => l.amenities.includes(e))) return false;

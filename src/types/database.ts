@@ -1221,13 +1221,10 @@ export type Database = {
           city: string
           country: string
           created_at: string
-          from_usd: number | null
-          hotels: number
           id: string
           img: string | null
           position: number
           region: string | null
-          restaurants: number
           tagline: string | null
           tier: number
         }
@@ -1236,13 +1233,10 @@ export type Database = {
           city: string
           country: string
           created_at?: string
-          from_usd?: number | null
-          hotels?: number
           id?: string
           img?: string | null
           position?: number
           region?: string | null
-          restaurants?: number
           tagline?: string | null
           tier?: number
         }
@@ -1251,13 +1245,10 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
-          from_usd?: number | null
-          hotels?: number
           id?: string
           img?: string | null
           position?: number
           region?: string | null
-          restaurants?: number
           tagline?: string | null
           tier?: number
         }
@@ -5292,6 +5283,57 @@ export type Database = {
         }
         Relationships: []
       }
+      destinations_public: {
+        Row: {
+          blurb: string | null
+          cars: number | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          from_usd: number | null
+          hotels: number | null
+          id: string | null
+          img: string | null
+          position: number | null
+          region: string | null
+          restaurants: number | null
+          tagline: string | null
+          tier: number | null
+        }
+        Insert: {
+          blurb?: string | null
+          cars?: never
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          from_usd?: never
+          hotels?: never
+          id?: string | null
+          img?: string | null
+          position?: number | null
+          region?: string | null
+          restaurants?: never
+          tagline?: string | null
+          tier?: number | null
+        }
+        Update: {
+          blurb?: string | null
+          cars?: never
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          from_usd?: never
+          hotels?: never
+          id?: string | null
+          img?: string | null
+          position?: number | null
+          region?: string | null
+          restaurants?: never
+          tagline?: string | null
+          tier?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_activity_feed: {
@@ -5316,6 +5358,7 @@ export type Database = {
         Args: { p_reason: string; p_reference: string }
         Returns: undefined
       }
+      admin_create_listing: { Args: { p_payload: Json }; Returns: Json }
       admin_customer_analytics: { Args: never; Returns: Json }
       admin_customer_stats: { Args: never; Returns: Json }
       admin_decide_application: {
@@ -5663,6 +5706,7 @@ export type Database = {
         Returns: number
       }
       place_food_order: { Args: { p_payload: Json }; Returns: Json }
+      place_key: { Args: { t: string }; Returns: string }
       reassign_reservation_table: {
         Args: { p_item: string; p_table: string }
         Returns: string

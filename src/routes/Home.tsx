@@ -89,7 +89,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
     (async () => {
       const [l, d] = await Promise.all([
         supabase.from("listings").select("*").eq("published", true).order("position"),
-        supabase.from("destinations").select("*").order("position"),
+        supabase.from("destinations_public").select("*").order("position"),
       ]);
       if (cancelled) return;
       if (l.error) console.error("Failed to load listings:", l.error);
@@ -106,7 +106,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   const cars = useMemo(() => listings.filter(l => l.kind === "car"), [listings]);
   const restaurants = useMemo(() => listings.filter(l => l.kind === "restaurant"), [listings]);
 
-  const primary = destinations.filter(d => d.tier <= 2);
+  const primary = destinations.filter(d => (d.tier ?? 3) <= 2);
   const alsoAvailable = destinations.filter(d => d.tier === 3);
 
   const nights = useMemo(() => nightsBetween(checkin, checkout), [checkin, checkout]);
@@ -296,10 +296,11 @@ export function Home({ onPartner }: { onPartner: () => void }) {
                 {alsoAvailable.map(d => (
                   <button
                     key={d.id}
-                    onClick={() => navigate(`/search?kind=stay&where=${encodeURIComponent(d.city)}`)}
+                    onClick={() => navigate(`/search?kind=stay&where=${encodeURIComponent(d.city ?? "")}`)}
                     className="text-sm text-[#002089] border border-[#e2d5c3] hover:border-[#002089] bg-white px-3.5 py-1.5 rounded-full transition-colors"
                   >
-                    {d.city} <span className="text-[#7a6355]">{d.hotels}</span>
+                    {d.city}
+                    {(d.hotels ?? 0) > 0 && <span className="text-[#7a6355]"> {d.hotels}</span>}
                   </button>
                 ))}
               </div>
