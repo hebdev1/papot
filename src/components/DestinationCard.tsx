@@ -22,7 +22,7 @@ export function DestinationCard({ dest }: { dest: DestinationRow }) {
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
       ) : (
-        <span className="absolute inset-0 flex items-center justify-center text-xs text-[#00508a] bg-[#EAF8FF] text-center px-4">
+        <span className="absolute inset-0 flex items-center justify-center text-xs text-[#00508a] bg-[#D6F0FB] text-center px-4">
           photo — {dest.city}, à fournir
         </span>
       )}

@@ -181,7 +181,7 @@ export function Home({ onPartner }: { onPartner: () => void }) {
             {aiOpen && (
               <Link
                 to="/planifier"
-                className="inline-flex items-center gap-2 mt-6 bg-white hover:bg-[#DAF5FE] text-[#002089] font-bold px-5 py-3 rounded-xl transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 mt-6 bg-white hover:bg-[#E9F9FE] text-[#002089] font-bold px-5 py-3 rounded-xl transition-colors shadow-lg"
               >
                 <span aria-hidden>✨</span>
                 Planifier avec AI Papot
@@ -199,8 +199,8 @@ export function Home({ onPartner }: { onPartner: () => void }) {
                   onClick={() => setActiveTab(t.id)}
                   className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     activeTab === t.id
-                      ? "bg-[#DAF5FE] text-[#002089]"
-                      : "text-[#7a6355] hover:text-[#002089] hover:bg-[#DAF5FE]/60"
+                      ? "bg-[#E9F9FE] text-[#002089]"
+                      : "text-[#7a6355] hover:text-[#002089] hover:bg-[#E9F9FE]/60"
                   }`}
                 >
                   {t.icon}

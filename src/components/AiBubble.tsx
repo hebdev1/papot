@@ -44,7 +44,7 @@ export function AiBubble() {
           ref={panel}
           role="dialog"
           aria-label="AI Papot"
-          className="fixed z-50 flex flex-col bg-[#DAF5FE] shadow-2xl border border-[#e2d5c3]
+          className="fixed z-50 flex flex-col bg-[#E9F9FE] shadow-2xl border border-[#e2d5c3]
                      inset-x-3 bottom-3 top-16 rounded-2xl
                      sm:inset-x-auto sm:top-auto sm:right-5 sm:bottom-24 sm:w-[380px] sm:h-[min(560px,70vh)]"
         >

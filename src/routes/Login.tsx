@@ -59,7 +59,7 @@ export function Login() {
       img="/photos/labadee.jpg"
       subtitle="Connectez-vous pour retrouver vos réservations."
       footer={
-        <div className="mt-auto p-3.5 rounded-xl bg-[#EAF8FF] text-[13px] leading-relaxed text-[#00508a]">
+        <div className="mt-auto p-3.5 rounded-xl bg-[#D6F0FB] text-[13px] leading-relaxed text-[#00508a]">
           Vous êtes un établissement ?{" "}
           <Link to="/?partner=1" className="text-[#002089] font-bold">
             Devenir partenaire

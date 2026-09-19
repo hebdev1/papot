@@ -225,7 +225,7 @@ function UploadZone({
         accept="image/jpeg,image/png"
         onChange={e => take(e.target.files)}
       />
-      <div className="w-12 h-12 rounded-full bg-[#DAF5FE] flex items-center justify-center mx-auto mb-3 text-[#7a6355] group-hover:text-[#002089] transition-colors">
+      <div className="w-12 h-12 rounded-full bg-[#E9F9FE] flex items-center justify-center mx-auto mb-3 text-[#7a6355] group-hover:text-[#002089] transition-colors">
         <Ico.Upload />
       </div>
       <p className="text-sm font-semibold text-[#3E2C23]">{label}</p>
@@ -303,7 +303,7 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
 
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#DAF5FE] border border-[#e2d5c3] rounded-xl px-4 py-3 flex gap-3 items-start">
+    <div className="bg-[#E9F9FE] border border-[#e2d5c3] rounded-xl px-4 py-3 flex gap-3 items-start">
       <span className="text-lg shrink-0">ℹ️</span>
       <p className="text-xs text-[#7a6355] leading-relaxed">{children}</p>
     </div>
@@ -372,7 +372,7 @@ function StepWelcome({ onStart }: { onStart: (type: PartnerType) => void }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-8">
         {PARTNER_TYPES.map(pt => (
           <div key={pt.id} className="bg-white border-2 border-[#e2d5c3] hover:border-[#6ad7fb] rounded-2xl p-6 text-left transition-all duration-200 hover:shadow-lg hover:shadow-[rgba(0,32,137,0.08)] group">
-            <div className="w-14 h-14 rounded-2xl bg-[#DAF5FE] flex items-center justify-center text-3xl mb-4">{pt.emoji}</div>
+            <div className="w-14 h-14 rounded-2xl bg-[#E9F9FE] flex items-center justify-center text-3xl mb-4">{pt.emoji}</div>
             <h3 className="font-display font-bold text-[#3E2C23] text-lg mb-2">{pt.label}</h3>
             <p className="text-sm text-[#7a6355] mb-5 leading-relaxed">{pt.desc}</p>
             <button
@@ -406,7 +406,7 @@ function StepTypeSelection({ selected, onSelect }: { selected: PartnerType; onSe
                   <Ico.Check />
                 </span>
               )}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${isSelected ? "bg-[#e76f2e]/10" : "bg-[#DAF5FE]"}`}>{pt.emoji}</div>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${isSelected ? "bg-[#e76f2e]/10" : "bg-[#E9F9FE]"}`}>{pt.emoji}</div>
               <div className="min-w-0">
                 <p className="font-display font-bold text-[#3E2C23] text-lg leading-tight">{pt.label}</p>
                 <p className="text-xs text-[#7a6355] mt-1 leading-relaxed">{pt.desc}</p>
@@ -458,7 +458,7 @@ function StepBusinessProfile({ data, onChange }: { data: Record<string, string>;
     <div>
       <SectionTitle title="Profil d'entreprise" subtitle="Ces informations seront affichées sur votre fiche publique." />
       <div className="flex flex-col items-center mb-8">
-        <div className="w-24 h-24 rounded-2xl bg-[#DAF5FE] border-2 border-dashed border-[#c8b9a5] flex flex-col items-center justify-center cursor-pointer hover:border-[#6ad7fb] transition-colors">
+        <div className="w-24 h-24 rounded-2xl bg-[#E9F9FE] border-2 border-dashed border-[#c8b9a5] flex flex-col items-center justify-center cursor-pointer hover:border-[#6ad7fb] transition-colors">
           <span className="text-2xl mb-1">📷</span>
           <span className="text-xs text-[#7a6355] font-medium">Logo</span>
         </div>
@@ -684,7 +684,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
     <div>
       <SectionTitle title={partnerType === "hotel" ? "Types de chambres" : "Hébergements"} subtitle="Ajoutez vos chambres ou espaces disponibles à la réservation." />
       {rooms.length === 0 && !addingRoom && (
-        <div className="bg-[#DAF5FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-12 text-center mb-6">
+        <div className="bg-[#E9F9FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-12 text-center mb-6">
           <span className="text-4xl block mb-3">🛏️</span>
           <p className="font-display font-bold text-[#3E2C23] text-lg mb-2">Ajoutez vos chambres</p>
           <p className="text-[#7a6355] text-sm mb-6">Définissez les types de chambres et leurs tarifs.</p>
@@ -696,7 +696,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
       )}
       {rooms.map(r => (
         <div key={r.id} className="bg-white border border-[#e2d5c3] rounded-xl p-4 mb-3 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-[#DAF5FE] flex items-center justify-center text-2xl shrink-0">🛏️</div>
+          <div className="w-14 h-14 rounded-xl bg-[#E9F9FE] flex items-center justify-center text-2xl shrink-0">🛏️</div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#3E2C23]">{r.name}</p>
             <p className="text-xs text-[#7a6355]">{r.type} · {r.capacity} pers. · {r.beds} lit(s) · {r.units} unité(s)</p>
@@ -705,7 +705,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
             <p className="font-display font-bold text-[#3E2C23]">{r.price} $<span className="text-xs font-normal text-[#7a6355]">/nuit</span></p>
           </div>
           <div className="flex gap-1 shrink-0">
-            <button className="p-2 rounded-lg hover:bg-[#DAF5FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
+            <button className="p-2 rounded-lg hover:bg-[#E9F9FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
             <button onClick={() => setRooms(rooms.filter(x => x.id !== r.id))} className="p-2 rounded-lg hover:bg-red-50 text-[#7a6355] hover:text-red-500 transition-colors"><Ico.Trash /></button>
           </div>
         </div>
@@ -740,7 +740,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
     <div>
       <SectionTitle title="Flotte de véhicules" subtitle="Ajoutez vos véhicules disponibles à la location." />
       {vehicles.length === 0 && !addingVehicle && (
-        <div className="bg-[#DAF5FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-12 text-center mb-6">
+        <div className="bg-[#E9F9FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-12 text-center mb-6">
           <span className="text-4xl block mb-3">🚗</span>
           <p className="font-display font-bold text-[#3E2C23] text-lg mb-2">Ajoutez votre premier véhicule</p>
           <button onClick={() => setAddingVehicle(true)}
@@ -751,7 +751,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
       )}
       {vehicles.map(v => (
         <div key={v.id} className="bg-white border border-[#e2d5c3] rounded-xl p-4 mb-3 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-[#DAF5FE] flex items-center justify-center text-2xl shrink-0">🚗</div>
+          <div className="w-14 h-14 rounded-xl bg-[#E9F9FE] flex items-center justify-center text-2xl shrink-0">🚗</div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#3E2C23]">{v.year} {v.make} {v.model}</p>
             <p className="text-xs text-[#7a6355]">{v.type} · {v.seats} places · {v.transmission}</p>
@@ -824,7 +824,7 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {["Salle principale", "Terrasse", "Jardin", "VIP"].map(zone => (
-            <div key={zone} className="bg-[#DAF5FE] rounded-xl p-3 text-center border border-[#e2d5c3]">
+            <div key={zone} className="bg-[#E9F9FE] rounded-xl p-3 text-center border border-[#e2d5c3]">
               <p className="text-sm font-semibold text-[#3E2C23]">{zone}</p>
               <p className="text-xs text-[#7a6355]">4 tables</p>
             </div>
@@ -932,7 +932,7 @@ function StepPhotos({ partnerType, photos, onPhotos }: { partnerType: PartnerTyp
   return (
     <div>
       <SectionTitle title="Photos & Médias" subtitle="Montrez à vos clients ce qui rend votre établissement unique." />
-      <div className="bg-[#DAF5FE] border border-[#e2d5c3] rounded-xl p-4 mb-6 flex items-start gap-3">
+      <div className="bg-[#E9F9FE] border border-[#e2d5c3] rounded-xl p-4 mb-6 flex items-start gap-3">
         <span className="text-lg shrink-0">💡</span>
         <p className="text-xs text-[#7a6355] leading-relaxed">
           Les annonces avec des photos de qualité reçoivent <strong className="text-[#002089]">42% plus de réservations</strong>. Nous recommandons au minimum 5 photos.
@@ -944,7 +944,7 @@ function StepPhotos({ partnerType, photos, onPhotos }: { partnerType: PartnerTyp
           <UploadZone multiple={false} onFiles={f => onPhotos([...photos, ...f])} label="Photo de couverture" hint="Cette image apparaît en tête de votre annonce" />
           <UploadZone multiple={false} onFiles={f => onPhotos([...photos, ...f])} label="Logo de l'établissement" hint="PNG transparent recommandé · Carré · 400×400 px min." />
           <div className="grid grid-cols-3 gap-3">
-            {["#DAF5FE", "#E5D9C8", "#EAF8FF"].map((bg, i) => (
+            {["#E9F9FE", "#D6F0FB", "#C2E7F7"].map((bg, i) => (
               <div key={i} className="aspect-square rounded-xl border-2 border-[#e2d5c3] flex items-center justify-center" style={{ background: bg }}>
                 <span className="text-[#b0a090] text-xs text-center px-2">Photo {i + 1}</span>
               </div>
@@ -1165,7 +1165,7 @@ function StepReview({ partnerType }: { partnerType: PartnerType }) {
           );
         })}
       </div>
-      <div className="mt-6 bg-[#DAF5FE] rounded-xl p-4 flex items-center justify-between gap-4">
+      <div className="mt-6 bg-[#E9F9FE] rounded-xl p-4 flex items-center justify-between gap-4">
         <div>
           <p className="font-semibold text-[#3E2C23]">Aperçu de votre annonce</p>
           <p className="text-xs text-[#7a6355]">Voyez comment votre établissement apparaîtra aux clients.</p>
@@ -1223,7 +1223,7 @@ function StepSuccess({ onDashboard, onPreview, onAdd }: { onDashboard: () => voi
       <p className="text-[#7a6355] mb-2 leading-relaxed">
         Notre équipe examine votre dossier. Vous serez notifié par e-mail dès que votre annonce sera approuvée.
       </p>
-      <div className="bg-[#DAF5FE] border border-[#e2d5c3] rounded-xl px-6 py-3 mb-8 flex items-center gap-3">
+      <div className="bg-[#E9F9FE] border border-[#e2d5c3] rounded-xl px-6 py-3 mb-8 flex items-center gap-3">
         <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0"/>
         <span className="text-sm font-semibold text-[#3E2C23]">Statut : En cours d'examen</span>
       </div>
@@ -1270,7 +1270,7 @@ function WizardShell({
   const showProgress = !isFirstStep && !isLastStep;
   const pct = showProgress ? Math.round((step / totalSteps) * 100) : 0;
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#DAF5FE]">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#E9F9FE]">
       {/* Top bar */}
       <div className="bg-[#002089] px-4 lg:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">

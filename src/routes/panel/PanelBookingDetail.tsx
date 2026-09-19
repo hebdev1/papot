@@ -120,7 +120,7 @@ export function PanelBookingDetail() {
         </section>
 
         {/* Help, with the booking already attached (§30) */}
-        <section className="rounded-2xl bg-[#EAF8FF] p-5">
+        <section className="rounded-2xl bg-[#D6F0FB] p-5">
           <h2 className="mb-1 font-display text-base font-bold text-[#002089]">
             Besoin d'aide avec cette réservation ?
           </h2>
@@ -158,7 +158,7 @@ function ItemDetail({ item }: { item: BookingItem }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-[#e2d5c3] bg-white">
       <div className="flex flex-col sm:flex-row">
-        <div className="h-36 shrink-0 bg-[#EAF8FF] sm:h-auto sm:w-40">
+        <div className="h-36 shrink-0 bg-[#D6F0FB] sm:h-auto sm:w-40">
           {item.img ? (
             <img src={item.img} alt={item.title} className="h-full w-full object-cover" />
           ) : (

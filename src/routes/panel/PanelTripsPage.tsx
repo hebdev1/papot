@@ -83,7 +83,7 @@ function TripCard({ trip }: { trip: Trip }) {
       to={`/compte/voyages/${trip.id}`}
       className="flex flex-col overflow-hidden rounded-2xl border border-[#e2d5c3] bg-white transition-shadow hover:shadow-md sm:flex-row"
     >
-      <div className="h-40 shrink-0 bg-[#EAF8FF] sm:h-auto sm:w-48">
+      <div className="h-40 shrink-0 bg-[#D6F0FB] sm:h-auto sm:w-48">
         {cover ? (
           <img src={cover} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -211,7 +211,7 @@ export function PanelTripDetail() {
                 to={`/compte/reservations/${i.reference}`}
                 className="flex items-center gap-3 rounded-xl border border-[#e2d5c3] p-3 transition-colors hover:border-[#002089]"
               >
-                <span className="grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-[#EAF8FF] text-[#002089]">
+                <span className="grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-[#D6F0FB] text-[#002089]">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

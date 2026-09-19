@@ -137,7 +137,7 @@ export function BookingCard({ booking, item }: { booking: Booking; item: Booking
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-[#e2d5c3] bg-white transition-shadow hover:shadow-md sm:flex-row">
-      <div className="h-36 shrink-0 bg-[#EAF8FF] sm:h-auto sm:w-44">
+      <div className="h-36 shrink-0 bg-[#D6F0FB] sm:h-auto sm:w-44">
         {item.img ? (
           <img src={item.img} alt={item.title} className="h-full w-full object-cover" />
         ) : (

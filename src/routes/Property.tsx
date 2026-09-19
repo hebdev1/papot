@@ -80,7 +80,7 @@ const disabledCta =
 function Gallery({ labels, more, img, alt }: { labels: string[]; more?: number; img?: string; alt?: string }) {
   return (
     <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[300px] mb-7">
-      <div className="col-span-2 row-span-2 bg-[#EAF8FF] rounded-2xl overflow-hidden flex items-center justify-center text-sm text-[#00508a]">
+      <div className="col-span-2 row-span-2 bg-[#D6F0FB] rounded-2xl overflow-hidden flex items-center justify-center text-sm text-[#00508a]">
         {img ? (
           <img src={img} alt={alt ?? ""} className="w-full h-full object-cover" />
         ) : (
@@ -88,7 +88,7 @@ function Gallery({ labels, more, img, alt }: { labels: string[]; more?: number; 
         )}
       </div>
       {labels.slice(1, 4).map(l => (
-        <div key={l} className="bg-[#EAF8FF] rounded-2xl flex items-center justify-center text-xs text-[#00508a]">
+        <div key={l} className="bg-[#D6F0FB] rounded-2xl flex items-center justify-center text-xs text-[#00508a]">
           {l}
         </div>
       ))}
@@ -314,7 +314,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate, dates, setDates }
                       !free
                         ? "border-[#e2d5c3] opacity-60 cursor-not-allowed"
                         : on
-                          ? "border-[#002089] bg-[#EAF8FF]"
+                          ? "border-[#002089] bg-[#D6F0FB]"
                           : "border-[#e2d5c3] hover:border-[#002089]"
                     }`}
                   >
@@ -419,7 +419,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate, dates, setDates }
             </p>
           </div>
 
-          <div className="bg-[#EAF8FF] rounded-2xl p-5">
+          <div className="bg-[#D6F0FB] rounded-2xl p-5">
             <p className="font-display font-bold text-[#002089]">Ajouter à ce séjour</p>
             <p className="text-[13px] text-[#00508a] leading-relaxed mt-1.5">
               Une voiture avec retrait à l'aéroport, ou une table pour votre première soirée. Même panier, un seul
@@ -906,7 +906,7 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                   key={c}
                   onClick={() => setCat(c)}
                   className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    activeCat === c ? "bg-[#002089] text-white" : "bg-[#DAF5FE] text-[#3E2C23]"
+                    activeCat === c ? "bg-[#002089] text-white" : "bg-[#E9F9FE] text-[#3E2C23]"
                   }`}
                 >
                   {c}
@@ -1024,7 +1024,7 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
             )}
 
             {switched && (
-              <p className="mt-3 text-xs text-[#00508a] bg-[#EAF8FF] rounded-xl px-3 py-2.5">
+              <p className="mt-3 text-xs text-[#00508a] bg-[#D6F0FB] rounded-xl px-3 py-2.5">
                 Votre panier contenait des plats d'un autre restaurant : une commande ne peut
                 venir que d'un seul. Il a été remplacé.
               </p>
@@ -1089,7 +1089,7 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
             )}
 
             {cart.items.some((i: any) => i.kind === "stay") && (
-              <p className="text-xs text-[#00508a] bg-[#EAF8FF] rounded-xl p-3 mt-3 leading-relaxed">
+              <p className="text-xs text-[#00508a] bg-[#D6F0FB] rounded-xl p-3 mt-3 leading-relaxed">
                 Vous avez déjà un séjour dans votre panier. Cette table s'ajoute au même paiement.
               </p>
             )}
@@ -1192,7 +1192,7 @@ function CarDetail({ listing, a, rate, cart, navigate, dates, setDates }: any) {
                   key={p.name}
                   onClick={() => setPickupIdx(i)}
                   className={`flex items-center justify-between gap-4 text-left p-4 rounded-xl border-2 transition-colors ${
-                    pickupIdx === i ? "border-[#002089] bg-[#EAF8FF]" : "border-[#e2d5c3] hover:border-[#002089]"
+                    pickupIdx === i ? "border-[#002089] bg-[#D6F0FB]" : "border-[#e2d5c3] hover:border-[#002089]"
                   }`}
                 >
                   <div>

@@ -56,7 +56,7 @@ export function ResetRequest() {
         <AuthError message={error} />
 
         {sent && (
-          <p className="text-[13px] leading-relaxed text-[#00508a] bg-[#EAF8FF] rounded-xl px-3.5 py-2.5">
+          <p className="text-[13px] leading-relaxed text-[#00508a] bg-[#D6F0FB] rounded-xl px-3.5 py-2.5">
             Si un compte existe pour cette adresse, le lien est en route. Il expire dans une heure.
           </p>
         )}

@@ -166,7 +166,7 @@ export function PanelFavoritesPage() {
                 key={listing.id}
                 className="flex flex-col overflow-hidden rounded-2xl border border-[#e2d5c3] bg-white"
               >
-                <div className="relative h-36 bg-[#EAF8FF]">
+                <div className="relative h-36 bg-[#D6F0FB]">
                   {listing.img ? (
                     <img src={listing.img} alt={listing.name} className="h-full w-full object-cover" />
                   ) : (

@@ -22,7 +22,7 @@ const OPTIONS = [
     body: "Retrouvez vos réservations, vos voyages et vos favoris.",
     cta: "Espace voyageur",
     accent: "#002089",
-    tint: "#EAF8FF",
+    tint: "#D6F0FB",
     tintText: "#00508a",
   },
   {
@@ -33,14 +33,14 @@ const OPTIONS = [
     body: "Gérez vos annonces, vos réservations, vos tarifs et vos revenus.",
     cta: "Espace partenaire",
     accent: "#e76f2e",
-    tint: "#DAF5FE",
+    tint: "#E9F9FE",
     tintText: "#7a6355",
   },
 ];
 
 export function ChooseAccount() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#DAF5FE] px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#E9F9FE] px-4 py-10">
       <Link to="/" className="mb-8 flex items-center gap-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e76f2e]">
           <span className="font-display text-base font-black leading-none text-white">P</span>

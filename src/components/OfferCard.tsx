@@ -44,7 +44,7 @@ export function OfferCard({
 
   return (
     <article className="snap-start shrink-0 w-[268px] bg-white rounded-2xl overflow-hidden border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.08)] transition-all duration-300 flex flex-col">
-      <div className="relative h-36 bg-[#EAF8FF] flex items-center justify-center">
+      <div className="relative h-36 bg-[#D6F0FB] flex items-center justify-center">
         <Link
           to={to}
           aria-label={`Voir l'offre ${offer.name}`}

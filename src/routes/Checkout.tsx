@@ -305,7 +305,7 @@ export function Checkout() {
                 )}
 
                 {!createAccount && (
-                  <p className="mt-3 text-xs text-[#7a6355] bg-[#DAF5FE] rounded-xl p-3 leading-relaxed">
+                  <p className="mt-3 text-xs text-[#7a6355] bg-[#E9F9FE] rounded-xl p-3 leading-relaxed">
                     Sans compte, la réservation part quand même et la référence vous est envoyée par
                     courriel. Si vous créez un compte plus tard avec cette adresse, elle s'y ajoutera
                     toute seule.
@@ -333,7 +333,7 @@ export function Checkout() {
                   key={m.id}
                   onClick={() => setMethod(m.id)}
                   className={`p-4 rounded-xl border-2 text-left transition-colors ${
-                    method === m.id ? "border-[#002089] bg-[#EAF8FF]" : "border-[#e2d5c3] hover:border-[#002089]"
+                    method === m.id ? "border-[#002089] bg-[#D6F0FB]" : "border-[#e2d5c3] hover:border-[#002089]"
                   }`}
                 >
                   <p className="font-semibold text-sm text-[#3E2C23]">{m.label}</p>
@@ -391,7 +391,7 @@ export function Checkout() {
                 gateway ignores them: only the number decides, so every outcome
                 is reachable without memorising a second field. */}
             {demo === true ? (
-              <div className="mt-4 bg-[#DAF5FE] rounded-xl p-4">
+              <div className="mt-4 bg-[#E9F9FE] rounded-xl p-4">
                 <p className="text-[13px] font-bold text-[#3E2C23]">
                   Mode démonstration — aucun argent ne circule
                 </p>
@@ -415,7 +415,7 @@ export function Checkout() {
                 </ul>
               </div>
             ) : (
-              <p className="text-xs text-[#7a6355] mt-4 bg-[#DAF5FE] rounded-xl p-3 leading-relaxed">
+              <p className="text-xs text-[#7a6355] mt-4 bg-[#E9F9FE] rounded-xl p-3 leading-relaxed">
                 Passerelle de paiement à confirmer — section 6.1 du spec. Aucun débit réel n'est
                 effectué.
               </p>

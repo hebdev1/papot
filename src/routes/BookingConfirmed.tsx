@@ -99,7 +99,7 @@ export function BookingConfirmed() {
         </div>
       </section>
 
-      <section className="bg-[#EAF8FF] rounded-2xl p-6 mt-5">
+      <section className="bg-[#D6F0FB] rounded-2xl p-6 mt-5">
         <p className="font-display font-bold text-[#002089]">Ce qui vous attend avant le départ</p>
         <p className="text-[13px] text-[#00508a] leading-relaxed mt-2">
           L'hôte vous envoie l'itinéraire d'accès 48 h avant. Le loueur demandera une photo de votre permis. Le

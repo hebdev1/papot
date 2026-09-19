@@ -36,7 +36,7 @@ const checkbox = (on: boolean) =>
 
 const row = (on: boolean) =>
   `w-full flex items-center gap-2.5 text-sm px-3 py-2 rounded-lg transition-all text-left ${
-    on ? "bg-[#002089] text-white font-semibold" : "text-[#3E2C23] hover:bg-[#DAF5FE]"
+    on ? "bg-[#002089] text-white font-semibold" : "text-[#3E2C23] hover:bg-[#E9F9FE]"
   }`;
 
 /** Canvas 1a — /search. The Vols tab has no inventory, so it reports as empty. */

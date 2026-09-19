@@ -28,7 +28,7 @@ export function StayCard({
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.08)] transition-all duration-300 flex flex-col lg:flex-row group">
-      <div className="relative lg:w-64 shrink-0 bg-[#EAF8FF] min-h-[180px] flex items-center justify-center">
+      <div className="relative lg:w-64 shrink-0 bg-[#D6F0FB] min-h-[180px] flex items-center justify-center">
         {listing.img ? (
           <img
             src={listing.img}

@@ -113,7 +113,7 @@ export function PanelHome() {
               to={to}
               className="flex min-h-[92px] w-[150px] shrink-0 snap-start flex-col justify-between rounded-2xl border border-[#e2d5c3] bg-white p-4 transition-all hover:border-[#002089] hover:shadow-md sm:w-auto"
             >
-              <span className="grid h-9 w-9 place-content-center rounded-xl bg-[#EAF8FF] text-[#002089]">
+              <span className="grid h-9 w-9 place-content-center rounded-xl bg-[#D6F0FB] text-[#002089]">
                 <Icon className="h-[18px] w-[18px]" aria-hidden />
               </span>
               <span className="mt-3 text-sm font-semibold leading-tight text-[#3E2C23]">{label}</span>
@@ -150,7 +150,7 @@ function NextUpCard({ item, reference }: { item: BookingItem; reference: string 
   return (
     <article className="overflow-hidden rounded-2xl border border-[#e2d5c3] bg-white shadow-sm">
       <div className="flex flex-col sm:flex-row">
-        <div className="relative h-44 shrink-0 bg-[#EAF8FF] sm:h-auto sm:w-56">
+        <div className="relative h-44 shrink-0 bg-[#D6F0FB] sm:h-auto sm:w-56">
           {item.img ? (
             <img src={item.img} alt={item.title} className="h-full w-full object-cover" />
           ) : (

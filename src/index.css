@@ -6,18 +6,20 @@
   --color-papot-teal:   #6ad7fb;
   --color-papot-orange: #e76f2e;
   /* The ground the whole public site sits on: the brand teal taken down to a
-     25% tint on white, so the page reads as the same colour family as the
-     logo and the accents rather than as a second, unrelated warm world. */
-  --color-papot-sky:    #DAF5FE;
+     15% tint on white, so the page reads as the same colour family as the
+     logo and the accents rather than as a second, unrelated warm world.
+     --color-secondary below is the tile that sits on it; it has to stay
+     clearly deeper than this, or a placeholder on the page disappears. */
+  --color-papot-sky:    #E9F9FE;
   --color-papot-brown:  #3E2C23;
 
-  --color-background:         #DAF5FE;
+  --color-background:         #E9F9FE;
   --color-foreground:         #3E2C23;
   --color-card:               #ffffff;
   --color-card-foreground:    #3E2C23;
   --color-primary:            #002089;
   --color-primary-foreground: #ffffff;
-  --color-secondary:          #EAF8FF;
+  --color-secondary:          #D6F0FB;
   --color-secondary-foreground: #002089;
   --color-muted:              #C5E9F8;
   --color-muted-foreground:   #7a6355;
@@ -46,14 +48,14 @@ html, body, #root {
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: #DAF5FE;
+  background-color: #E9F9FE;
   color: #3E2C23;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #DAF5FE; }
+::-webkit-scrollbar-track { background: #E9F9FE; }
 ::-webkit-scrollbar-thumb { background: #6ad7fb; border-radius: 4px; }
 
 .font-display { font-family: 'Outfit', system-ui, sans-serif; }

@@ -49,11 +49,11 @@ export function CheckEmail() {
         </Link>
       }
     >
-      <div className="w-14 h-14 rounded-full bg-[#EAF8FF] text-[#002089] flex items-center justify-center text-2xl font-bold">
+      <div className="w-14 h-14 rounded-full bg-[#D6F0FB] text-[#002089] flex items-center justify-center text-2xl font-bold">
         ✓
       </div>
 
-      <div className="p-4 rounded-xl bg-[#EAF8FF] flex flex-col gap-1.5">
+      <div className="p-4 rounded-xl bg-[#D6F0FB] flex flex-col gap-1.5">
         <span className="text-[13px] font-bold text-[#002089]">Rien reçu ?</span>
         <span className="text-[13px] leading-relaxed text-[#00508a]">
           Le message arrive en général sous deux minutes. Regardez dans les indésirables.
