@@ -11,7 +11,7 @@ export function DestinationCard({ dest }: { dest: DestinationRow }) {
   return (
     <Link
       to={to}
-      className={`snap-start shrink-0 group relative rounded-2xl overflow-hidden bg-[#F0E5D2] border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.12)] transition-all duration-300 ${
+      className={`snap-start shrink-0 group relative rounded-2xl overflow-hidden bg-[#C5E9F8] border border-[#e2d5c3] hover:shadow-xl hover:shadow-[rgba(0,32,137,0.12)] transition-all duration-300 ${
         featured ? "w-[420px] h-[280px]" : "w-[232px] h-[280px]"
       }`}
     >

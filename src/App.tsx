@@ -154,7 +154,7 @@ function Shell() {
   }
 
   return (
-    <div className="min-h-full bg-[#F5E9D8] flex flex-col">
+    <div className="min-h-full bg-[#DAF5FE] flex flex-col">
       <Header onPartner={() => setPartnerOpen(true)} />
       <div className="flex-1">
         <Routes>

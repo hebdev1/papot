@@ -135,8 +135,8 @@ export function PanelMessages() {
         body="Les messages des établissements et du support apparaîtront ici."
       />
       <Note>
-        Nécessite <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">conversations</code> et
-        <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">messages</code>, avec le contexte
+        Nécessite <code className="mx-1 rounded bg-[#DAF5FE] px-1.5 py-0.5 text-[12px]">conversations</code> et
+        <code className="mx-1 rounded bg-[#DAF5FE] px-1.5 py-0.5 text-[12px]">messages</code>, avec le contexte
         de réservation attaché.
       </Note>
     </>
@@ -149,7 +149,7 @@ export function PanelNotifications() {
       <PageHeader title="Notifications" subtitle="Réservations, paiements, messages." />
       <EmptyState icon={Bell} title="Rien de neuf" body="Vos alertes apparaîtront ici." />
       <Note>
-        Nécessite une table <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">notifications</code>
+        Nécessite une table <code className="mx-1 rounded bg-[#DAF5FE] px-1.5 py-0.5 text-[12px]">notifications</code>
         et des déclencheurs sur les réservations et paiements.
       </Note>
     </>
@@ -185,7 +185,7 @@ export function PanelReviews() {
       )}
       <Note>
         Le formulaire (notes par critère selon le service, photos) nécessite une table
-        <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">reviews</code>.
+        <code className="mx-1 rounded bg-[#DAF5FE] px-1.5 py-0.5 text-[12px]">reviews</code>.
       </Note>
     </>
   );
@@ -211,7 +211,7 @@ export function PanelSupport() {
           </button>
         ))}
       </div>
-      <Note>Les tickets nécessitent une table <code className="mx-1 rounded bg-[#F5E9D8] px-1.5 py-0.5 text-[12px]">support_tickets</code>.</Note>
+      <Note>Les tickets nécessitent une table <code className="mx-1 rounded bg-[#DAF5FE] px-1.5 py-0.5 text-[12px]">support_tickets</code>.</Note>
     </>
   );
 }
@@ -285,7 +285,7 @@ export function PanelProfile() {
 /** Honest note about what is not built yet, rather than a fake screen. */
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-6 rounded-xl bg-[#F5E9D8] px-4 py-3 text-[12.5px] leading-relaxed text-[#7a6355]">
+    <p className="mt-6 rounded-xl bg-[#DAF5FE] px-4 py-3 text-[12.5px] leading-relaxed text-[#7a6355]">
       {children}
     </p>
   );

@@ -305,7 +305,7 @@ export function Checkout() {
                 )}
 
                 {!createAccount && (
-                  <p className="mt-3 text-xs text-[#7a6355] bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
+                  <p className="mt-3 text-xs text-[#7a6355] bg-[#DAF5FE] rounded-xl p-3 leading-relaxed">
                     Sans compte, la réservation part quand même et la référence vous est envoyée par
                     courriel. Si vous créez un compte plus tard avec cette adresse, elle s'y ajoutera
                     toute seule.
@@ -391,7 +391,7 @@ export function Checkout() {
                 gateway ignores them: only the number decides, so every outcome
                 is reachable without memorising a second field. */}
             {demo === true ? (
-              <div className="mt-4 bg-[#F5E9D8] rounded-xl p-4">
+              <div className="mt-4 bg-[#DAF5FE] rounded-xl p-4">
                 <p className="text-[13px] font-bold text-[#3E2C23]">
                   Mode démonstration — aucun argent ne circule
                 </p>
@@ -415,7 +415,7 @@ export function Checkout() {
                 </ul>
               </div>
             ) : (
-              <p className="text-xs text-[#7a6355] mt-4 bg-[#F5E9D8] rounded-xl p-3 leading-relaxed">
+              <p className="text-xs text-[#7a6355] mt-4 bg-[#DAF5FE] rounded-xl p-3 leading-relaxed">
                 Passerelle de paiement à confirmer — section 6.1 du spec. Aucun débit réel n'est
                 effectué.
               </p>

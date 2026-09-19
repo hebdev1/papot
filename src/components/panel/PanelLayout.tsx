@@ -120,7 +120,7 @@ function DesktopSidebar({ open, setOpen }: { open: boolean; setOpen: (v: boolean
               `flex h-11 items-center rounded-xl transition-colors ${
                 isActive
                   ? "bg-[#EAF8FF] font-semibold text-[#002089]"
-                  : "text-[#7a6355] hover:bg-[#F5E9D8] hover:text-[#002089]"
+                  : "text-[#7a6355] hover:bg-[#DAF5FE] hover:text-[#002089]"
               }`
             }
           >
@@ -141,7 +141,7 @@ function DesktopSidebar({ open, setOpen }: { open: boolean; setOpen: (v: boolean
             key={label}
             to={to}
             title={open ? undefined : label}
-            className="flex h-10 items-center rounded-xl text-[#7a6355] transition-colors hover:bg-[#F5E9D8] hover:text-[#002089]"
+            className="flex h-10 items-center rounded-xl text-[#7a6355] transition-colors hover:bg-[#DAF5FE] hover:text-[#002089]"
           >
             <span className="grid h-full w-[56px] shrink-0 place-content-center">
               <Icon className="h-[18px] w-[18px]" aria-hidden />
@@ -163,7 +163,7 @@ function DesktopSidebar({ open, setOpen }: { open: boolean; setOpen: (v: boolean
         <button
           onClick={() => setOpen(!open)}
           aria-label={open ? "Réduire le menu" : "Agrandir le menu"}
-          className="flex h-10 w-full items-center rounded-xl text-[#7a6355] transition-colors hover:bg-[#F5E9D8]"
+          className="flex h-10 w-full items-center rounded-xl text-[#7a6355] transition-colors hover:bg-[#DAF5FE]"
         >
           <span className="grid h-full w-[56px] shrink-0 place-content-center">
             <ChevronsRight

@@ -906,7 +906,7 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                   key={c}
                   onClick={() => setCat(c)}
                   className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    activeCat === c ? "bg-[#002089] text-white" : "bg-[#F5E9D8] text-[#3E2C23]"
+                    activeCat === c ? "bg-[#002089] text-white" : "bg-[#DAF5FE] text-[#3E2C23]"
                   }`}
                 >
                   {c}

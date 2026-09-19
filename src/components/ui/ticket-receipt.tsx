@@ -156,7 +156,7 @@ export const TicketReceipt = React.forwardRef<HTMLDivElement, TicketReceiptProps
       title = "Paiement reçu",
       subtitle = "Votre reçu, à garder.",
       celebrate = false,
-      notchClass = "bg-[#F5E9D8]",
+      notchClass = "bg-[#DAF5FE]",
       ...props
     },
     ref,
@@ -229,7 +229,7 @@ export const TicketReceipt = React.forwardRef<HTMLDivElement, TicketReceiptProps
               <p className="text-sm font-medium text-[#3E2C23]">{when}</p>
             </div>
 
-            <div className="flex items-center gap-3 rounded-xl bg-[#F5E9D8] p-4">
+            <div className="flex items-center gap-3 rounded-xl bg-[#DAF5FE] p-4">
               <Glyph className="h-5 w-5 shrink-0 text-[#002089]" aria-hidden />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[#3E2C23]">{payerName}</p>

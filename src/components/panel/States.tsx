@@ -16,7 +16,7 @@ export function EmptyState({
 }) {
   return (
     <div className="rounded-2xl border border-[#e2d5c3] bg-white px-6 py-14 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F5E9D8] text-[#7a6355]">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#DAF5FE] text-[#7a6355]">
         <Icon className="h-6 w-6" aria-hidden />
       </div>
       <p className="font-display text-lg font-bold text-[#3E2C23]">{title}</p>

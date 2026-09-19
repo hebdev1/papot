@@ -10,7 +10,7 @@ import { Component, type ReactNode } from "react";
  */
 
 const shell =
-  "min-h-screen flex items-center justify-center bg-[#F5E9D8] px-4 " +
+  "min-h-screen flex items-center justify-center bg-[#DAF5FE] px-4 " +
   "font-[system-ui,sans-serif] text-[#3E2C23]";
 
 const card = "w-full max-w-lg rounded-2xl border border-[#e2d5c3] bg-white p-7 text-center";
@@ -32,7 +32,7 @@ export function ConfigErrorScreen({ detail }: { detail: string }) {
         <h1 className="text-xl font-bold">PAPOT n'est pas configuré</h1>
         <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-[#7a6355]">{detail}</p>
 
-        <div className="mt-5 rounded-xl bg-[#F5E9D8] px-4 py-3 text-left">
+        <div className="mt-5 rounded-xl bg-[#DAF5FE] px-4 py-3 text-left">
           <p className="text-[12px] font-bold uppercase tracking-wider text-[#7a6355]">
             Pour un déploiement Vercel
           </p>
@@ -106,7 +106,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
             <summary className="cursor-pointer text-[12.5px] font-semibold text-[#7a6355]">
               Détail technique
             </summary>
-            <pre className="mt-2 overflow-x-auto rounded-lg bg-[#F5E9D8] px-3 py-2 text-[11.5px] leading-relaxed text-[#3E2C23]">
+            <pre className="mt-2 overflow-x-auto rounded-lg bg-[#DAF5FE] px-3 py-2 text-[11.5px] leading-relaxed text-[#3E2C23]">
               {this.state.error.message}
             </pre>
           </details>

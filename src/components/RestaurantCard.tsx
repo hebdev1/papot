@@ -67,13 +67,13 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
               <Link
                 key={s}
                 to={`/checkout/${listing.id}?slot=${encodeURIComponent(s)}`}
-                className="text-xs font-semibold text-[#002089] border border-[#e2d5c3] hover:border-[#002089] hover:bg-[#F5E9D8] px-2.5 py-1.5 rounded-lg transition-colors"
+                className="text-xs font-semibold text-[#002089] border border-[#e2d5c3] hover:border-[#002089] hover:bg-[#DAF5FE] px-2.5 py-1.5 rounded-lg transition-colors"
               >
                 {s}
               </Link>
             ))}
             {a.full && (
-              <span className="text-xs font-semibold text-[#7a6355] bg-[#F5E9D8] px-2.5 py-1.5 rounded-lg">
+              <span className="text-xs font-semibold text-[#7a6355] bg-[#DAF5FE] px-2.5 py-1.5 rounded-lg">
                 Complet
               </span>
             )}

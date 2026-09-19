@@ -22,8 +22,8 @@ export function AuthLayout({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#EFE5D6] flex items-center justify-center p-4 lg:p-8">
-      <div className="w-full max-w-4xl bg-[#F5E9D8] rounded-2xl overflow-hidden shadow-[0_10px_28px_rgba(62,44,35,.16)] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#C5E9F8] flex items-center justify-center p-4 lg:p-8">
+      <div className="w-full max-w-4xl bg-[#DAF5FE] rounded-2xl overflow-hidden shadow-[0_10px_28px_rgba(62,44,35,.16)] flex flex-col md:flex-row">
         <aside className="md:w-[346px] shrink-0 bg-[#002089] flex flex-col">
           <div className="px-7 pt-7 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[10px] bg-[#e76f2e] flex items-center justify-center">

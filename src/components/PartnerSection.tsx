@@ -59,7 +59,7 @@ export function PartnerSection({ onOpen }: { onOpen: () => void }) {
           <button
             key={type.id}
             onClick={onOpen}
-            className="group relative rounded-2xl overflow-hidden text-left h-64 bg-[#F0E5D2] hover:shadow-2xl hover:shadow-[rgba(0,32,137,0.15)] transition-all duration-300"
+            className="group relative rounded-2xl overflow-hidden text-left h-64 bg-[#C5E9F8] hover:shadow-2xl hover:shadow-[rgba(0,32,137,0.15)] transition-all duration-300"
           >
             <img src={type.img} alt={type.label} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,32,137,0.85)] via-[rgba(0,32,137,0.3)] to-transparent"/>

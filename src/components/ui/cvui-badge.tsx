@@ -44,7 +44,7 @@ const VARIANTS = {
   secondary: {
     solid: "bg-[#3E2C23] text-white",
     outline: "border-2 border-[#e2d5c3] text-[#7a6355]",
-    subtle: "bg-[#F5E9D8] text-[#7a6355]",
+    subtle: "bg-[#DAF5FE] text-[#7a6355]",
   },
   success: {
     solid: "bg-[#15803d] text-white",
@@ -71,7 +71,7 @@ const VARIANTS = {
 /** Hover tint per variant, so a solid badge darkens rather than turning grey. */
 const HOVER = {
   primary: { solid: "hover:bg-[#001b6e]", outline: "hover:bg-[#EAF8FF]", subtle: "hover:bg-[#d8f0fb]" },
-  secondary: { solid: "hover:bg-[#2e1f18]", outline: "hover:bg-[#F5E9D8]", subtle: "hover:bg-[#eeddc6]" },
+  secondary: { solid: "hover:bg-[#2e1f18]", outline: "hover:bg-[#DAF5FE]", subtle: "hover:bg-[#eeddc6]" },
   success: { solid: "hover:bg-[#126c34]", outline: "hover:bg-green-50", subtle: "hover:bg-green-100" },
   warning: { solid: "hover:bg-amber-600", outline: "hover:bg-amber-50", subtle: "hover:bg-amber-100" },
   error: { solid: "hover:bg-[#961f19]", outline: "hover:bg-red-50", subtle: "hover:bg-red-100" },

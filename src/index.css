@@ -5,10 +5,13 @@
   --color-papot-blue:   #002089;
   --color-papot-teal:   #6ad7fb;
   --color-papot-orange: #e76f2e;
-  --color-papot-cream:  #F5E9D8;
+  /* The ground the whole public site sits on: the brand teal taken down to a
+     25% tint on white, so the page reads as the same colour family as the
+     logo and the accents rather than as a second, unrelated warm world. */
+  --color-papot-sky:    #DAF5FE;
   --color-papot-brown:  #3E2C23;
 
-  --color-background:         #F5E9D8;
+  --color-background:         #DAF5FE;
   --color-foreground:         #3E2C23;
   --color-card:               #ffffff;
   --color-card-foreground:    #3E2C23;
@@ -16,7 +19,7 @@
   --color-primary-foreground: #ffffff;
   --color-secondary:          #EAF8FF;
   --color-secondary-foreground: #002089;
-  --color-muted:              #F0E5D2;
+  --color-muted:              #C5E9F8;
   --color-muted-foreground:   #7a6355;
   --color-accent:             #e76f2e;
   --color-accent-foreground:  #ffffff;
@@ -43,14 +46,14 @@ html, body, #root {
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: #F5E9D8;
+  background-color: #DAF5FE;
   color: #3E2C23;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #F5E9D8; }
+::-webkit-scrollbar-track { background: #DAF5FE; }
 ::-webkit-scrollbar-thumb { background: #6ad7fb; border-radius: 4px; }
 
 .font-display { font-family: 'Outfit', system-ui, sans-serif; }
