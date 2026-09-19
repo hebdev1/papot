@@ -25,3 +25,8 @@ logs/
 
 # Local design-hook cache, not project source
 .impeccable/
+
+# The supplied originals. 3.7 MB of 1920 px JPEGs that the site never serves:
+# what it serves is public/photos/, resized from these and versioned. The
+# originals stay on disk, out of the history every clone has to carry.
+image/

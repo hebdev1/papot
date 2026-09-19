@@ -26,7 +26,8 @@ export function ResetRequest() {
   return (
     <AuthLayout
       title="Mot de passe oublié"
-      photo="Côte des Arcadins"
+      photo="Un coucher de soleil sur la mer"
+      img="/photos/plage-coucher-de-soleil.jpg"
       subtitle="Indiquez votre courriel. Nous vous envoyons un lien de réinitialisation valable une heure."
       footer={
         <Link to="/login" className="text-[13px] font-semibold text-[#002089]">
@@ -92,7 +93,8 @@ export function ResetNew() {
   return (
     <AuthLayout
       title="Nouveau mot de passe"
-      photo="Port-Salut"
+      photo="Le bord de mer"
+      img="/photos/plage.jpg"
       subtitle="Choisissez un mot de passe pour votre compte."
       footer={
         <p className="text-xs leading-relaxed text-[#7a6355]">

@@ -36,7 +36,8 @@ export function CheckEmail() {
   return (
     <AuthLayout
       title="Vérifiez votre courriel"
-      photo="Labadie"
+      photo="Une plage de sable blanc"
+      img="/photos/plage-sable-blanc.jpg"
       subtitle={
         email
           ? `Nous avons envoyé un lien de confirmation à ${email}. Cliquez dessus pour activer votre compte.`

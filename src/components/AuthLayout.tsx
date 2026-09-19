@@ -8,14 +8,18 @@ export function AuthLayout({
   title,
   subtitle,
   photo,
+  img,
   pitch,
   children,
   footer,
 }: {
   title: string;
   subtitle: string;
-  /** Destination named on each artboard: 2a Île-à-Vache, 2b Cap-Haïtien, … */
+  /** What the panel photo shows. It is the image's alt text, and the caption
+      shown in its place while no file has been supplied for it. */
   photo: string;
+  /** The file, when there is one. */
+  img?: string;
   /** Blue-panel copy. Defaults to 2a's; 2b overrides it with its own pitch. */
   pitch?: React.ReactNode;
   children: React.ReactNode;
@@ -34,9 +38,15 @@ export function AuthLayout({
             </Link>
           </div>
 
-          <div className="flex-1 mt-6 bg-[#EAF8FF] min-h-[140px] flex items-center justify-center text-center px-5 text-[12.5px] text-[#00508a]">
-            photo — {photo}
-            <br />à fournir
+          <div className="relative flex-1 mt-6 min-h-[140px] overflow-hidden">
+            {img ? (
+              <img src={img} alt={photo} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span className="absolute inset-0 bg-[#EAF8FF] flex items-center justify-center text-center px-5 text-[12.5px] text-[#00508a]">
+                photo — {photo}
+                <br />à fournir
+              </span>
+            )}
           </div>
 
           <div className="px-7 py-7 flex flex-col gap-2">

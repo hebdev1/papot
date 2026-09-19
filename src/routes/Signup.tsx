@@ -83,7 +83,8 @@ export function Signup() {
   return (
     <AuthLayout
       title="Créer un compte"
-      photo="Cap-Haïtien"
+      photo="La Citadelle Laferrière, dans le Nord"
+      img="/photos/citadelle-laferriere.jpg"
       subtitle="Un seul compte pour l'hébergement, la voiture et la table."
       pitch={
         <>

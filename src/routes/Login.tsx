@@ -55,7 +55,8 @@ export function Login() {
   return (
     <AuthLayout
       title="Bon retour"
-      photo="Île-à-Vache"
+      photo="Labadie, dans le Nord"
+      img="/photos/labadee.jpg"
       subtitle="Connectez-vous pour retrouver vos réservations."
       footer={
         <div className="mt-auto p-3.5 rounded-xl bg-[#EAF8FF] text-[13px] leading-relaxed text-[#00508a]">

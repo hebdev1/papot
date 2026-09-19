@@ -20,7 +20,7 @@ const PARTNER_TYPES = [
     label: "Maison d'h\u00f4tes",
     description:
       "Chambres d'h\u00f4tes, B&B, villas priv\u00e9es \u2014 accueillez des voyageurs dans votre espace.",
-    img: "https://images.unsplash.com/photo-1783835541391-f632e3393397?w=600&h=400&fit=crop&auto=format",
+    img: "/photos/chambre.jpg",
   },
   {
     id: "restaurant",
