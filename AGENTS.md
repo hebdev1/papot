@@ -219,6 +219,45 @@ partner, all in one transaction. A refusal writes nothing. The switch is the
 `demo_payments` platform setting, so it goes off from `/admin/parametres`
 without a deploy.
 
+## Security
+
+Audited end to end. What held, and what did not:
+
+**The database layer held.** Every table has RLS with policies, `anon` has no
+INSERT/UPDATE/DELETE grant anywhere, all 92 `SECURITY DEFINER` functions pin
+`search_path`, and all 6 views are `security_invoker`. No table is reachable
+around its policies.
+
+**The price was not held.** `create_booking` took `amount` from the payload for
+everything that was not a paquet, so a 500 $ suite could be bought for 1 $ by
+editing one number. `quote_booking_item()` now rebuilds every tariff from the
+catalogue and `create_booking` calls it; the payload's `amount` is read by
+nothing. **The browser names options, never prices** — a vehicle sends
+`with_driver` and `pickup`, and the fee for each is looked up here. When adding
+a priced option, add it to that function, not to the payload.
+
+**Every console function was callable by a stranger.** Each refused them
+internally, and that check is the control — but the model rested on nobody ever
+forgetting the first line of a new function. `anon` has since lost EXECUTE on
+all 50 console actions. Six predicates keep it deliberately: `admin_can`,
+`partner_can`, `is_staff`, `is_partner_member`, `my_partner_ids` and
+`partner_me` are called from inside RLS policies, and a policy that cannot call
+its predicate raises instead of returning false — revoking them breaks every
+anonymous read of the catalogue.
+
+**A new `SECURITY DEFINER` function needs both**: its own `admin_can()` /
+`partner_can()` check, and no grant to `anon`. One without the other is half a
+lock.
+
+The HTTP headers live in `public/.htaccess` and only exist once that file is
+uploaded — see Deployment. `script-src` is `'self'` with no `'unsafe-inline'`
+because the build has no inline script; `style-src` must allow inline because
+React writes `style` attributes and the receipt injects keyframes.
+
+Still open, and deliberately not changed here: leaked-password protection is
+disabled in the Supabase dashboard (Authentication → Policies), which is a
+setting, not code.
+
 ## Dependencies
 
 - Runtime: React 19, React DOM 19, and `@supabase/supabase-js`

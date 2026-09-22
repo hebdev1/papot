@@ -1160,6 +1160,9 @@ function CarDetail({ listing, a, rate, cart, navigate, dates, setDates }: any) {
       starts_on: dates.checkin,
       ends_on: dates.checkout,
       start_time: "09:00:00",
+      // Named, not priced: the server reads these to rebuild the tariff.
+      with_driver: withDriver,
+      pickup: pickups[pickupIdx]?.name ?? null,
     });
     navigate(`/checkout/${listing.id}`);
   };

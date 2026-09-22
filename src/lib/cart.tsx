@@ -24,6 +24,14 @@ export type CartItem = {
   ends_on?: string | null;
   start_time?: string | null;
   party?: number | null;
+  /**
+   * The options a traveller chose on a vehicle. `create_booking` rebuilds the
+   * tariff from the catalogue, so it needs to know a driver was taken and which
+   * pickup point - it reads these, and never the `amount` beside them. Sending
+   * the choice rather than its cost is what makes the figure unforgeable.
+   */
+  with_driver?: boolean | null;
+  pickup?: string | null;
 };
 
 type CartValue = {

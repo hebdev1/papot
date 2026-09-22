@@ -171,13 +171,17 @@ export function Checkout() {
           unit_id: i.unit_id ?? null,
           title: i.title,
           detail: i.detail,
-          amount: i.amount,
           package_id: i.package_id ?? null,
           // Structured dates let the customer panel compute countdowns.
           starts_on: i.starts_on ?? null,
           ends_on: i.ends_on ?? null,
           start_time: i.start_time ?? null,
           party: i.party ?? null,
+          // The options the traveller chose, which the server prices itself.
+          // No `amount` is sent: it would be read by nothing and would only
+          // suggest the browser still has a say in what things cost.
+          with_driver: i.with_driver ?? null,
+          pickup: i.pickup ?? null,
         })),
       },
     });
