@@ -5603,7 +5603,10 @@ export type Database = {
             }
             Returns: number
           }
-      get_booking: { Args: { p_reference: string }; Returns: Json }
+      get_booking: {
+        Args: { p_email?: string; p_reference: string }
+        Returns: Json
+      }
       haiti_today: { Args: never; Returns: string }
       is_partner_member: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
@@ -5707,6 +5710,17 @@ export type Database = {
       }
       place_food_order: { Args: { p_payload: Json }; Returns: Json }
       place_key: { Args: { t: string }; Returns: string }
+      quote_booking_item: {
+        Args: {
+          p_from: string
+          p_kind: Database["public"]["Enums"]["listing_kind"]
+          p_listing: string
+          p_options?: Json
+          p_to: string
+          p_unit: string
+        }
+        Returns: number
+      }
       reassign_reservation_table: {
         Args: { p_item: string; p_table: string }
         Returns: string

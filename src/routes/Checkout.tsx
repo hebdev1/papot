@@ -198,6 +198,15 @@ export function Checkout() {
 
     const reference = (data as { reference: string }).reference;
     clear();
+    // A booking is now readable only by its owner, or by whoever knows both
+    // the reference and the address. A guest has no account, so the address is
+    // kept here for the confirmation page to present. sessionStorage: it dies
+    // with the tab, and it never travels in the URL.
+    try {
+      sessionStorage.setItem(`papot.booking.${reference}`, email.trim().toLowerCase());
+    } catch {
+      /* private browsing, blocked storage - the page will simply ask */
+    }
     navigate(`/booking/${reference}/confirmed`);
   };
 

@@ -245,6 +245,15 @@ all 50 console actions. Six predicates keep it deliberately: `admin_can`,
 its predicate raises instead of returning false — revoking them breaks every
 anonymous read of the catalogue.
 
+**A reference is not a password.** `get_booking` asked for nothing but a
+booking reference and returned the traveller's name, email, telephone, total and
+travel dates — past RLS, with no account. References are `PPT-<year>-<4 digits>`,
+so nine thousand requests harvested the whole customer list, and travel dates
+say when a house is empty. It now needs the reference *and* the email, unless
+the caller is the signed-in owner. Anything else keyed only on a short,
+human-readable identifier needs the same second factor; `track_food_order`
+already had one.
+
 **A new `SECURITY DEFINER` function needs both**: its own `admin_can()` /
 `partner_can()` check, and no grant to `anon`. One without the other is half a
 lock.

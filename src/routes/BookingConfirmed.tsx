@@ -36,21 +36,91 @@ export function BookingConfirmed() {
     };
   }, [booking]);
 
+  /**
+   * A reference used to be enough to read a booking — name, address, telephone
+   * and travel dates — and references are four digits. It now takes the
+   * reference and the address, unless the reader is signed in as the owner.
+   *
+   * Checkout leaves the address here for the visitor it just served. Anyone
+   * arriving later, from the email, is asked for it.
+   */
+  const [askedEmail, setAskedEmail] = useState("");
+  const [needEmail, setNeedEmail] = useState(false);
+  const [wrongEmail, setWrongEmail] = useState(false);
+
+  const load = (email: string | null) => {
+    if (!id) return;
+    setLoading(true);
+    void supabase
+      .rpc("get_booking", { p_reference: id, ...(email ? { p_email: email } : {}) })
+      .then(({ data, error }) => {
+        if (error) console.error("Failed to load booking:", error);
+        const found = (data as unknown as Booking) ?? null;
+        setBooking(found);
+        setLoading(false);
+        // Signed-in owners need no address; everyone else is asked once.
+        if (!found) {
+          setNeedEmail(true);
+          setWrongEmail(!!email);
+        }
+      });
+  };
+
   useEffect(() => {
     if (!id) return;
-    let cancelled = false;
-    supabase.rpc("get_booking", { p_reference: id }).then(({ data, error }) => {
-      if (cancelled) return;
-      if (error) console.error("Failed to load booking:", error);
-      setBooking((data as unknown as Booking) ?? null);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+    let remembered: string | null = null;
+    try {
+      remembered = sessionStorage.getItem(`papot.booking.${id}`);
+    } catch {
+      /* storage can be blocked; the form below covers it */
+    }
+    load(remembered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id]);
 
   if (loading) return <main className="max-w-3xl mx-auto px-4 py-16 text-center text-[#7a6355]">Chargement…</main>;
+
+  if (!booking && needEmail)
+    return (
+      <main className="max-w-md mx-auto px-4 py-8 lg:py-10">
+        <h1 className="font-display text-2xl font-bold text-[#002089]">Votre réservation</h1>
+        <p className="text-[#7a6355] mt-2 leading-relaxed">
+          Pour afficher la réservation {id}, indiquez le courriel avec lequel elle a été faite.
+        </p>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            setNeedEmail(false);
+            load(askedEmail.trim().toLowerCase());
+          }}
+          className="mt-5 flex flex-col gap-3"
+        >
+          <input
+            type="email"
+            required
+            value={askedEmail}
+            onChange={e => setAskedEmail(e.target.value)}
+            placeholder="vous@exemple.com"
+            aria-label="Courriel de la réservation"
+            className="w-full px-4 py-3 rounded-xl border-2 border-[#e2d5c3] focus:border-[#6ad7fb] outline-none text-[#3E2C23]"
+          />
+          {wrongEmail && (
+            <p className="text-[13px] font-semibold text-[#b3261e]">
+              Cette référence et ce courriel ne vont pas ensemble.
+            </p>
+          )}
+          <button
+            type="submit"
+            className="bg-[#e76f2e] hover:bg-[#d05e20] text-white font-bold py-3 rounded-xl transition-colors"
+          >
+            Afficher
+          </button>
+        </form>
+        <Link to="/" className="inline-block mt-5 text-[#002089] font-semibold underline">
+          Retour à l'accueil
+        </Link>
+      </main>
+    );
 
   if (!booking)
     return (
