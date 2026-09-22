@@ -34,7 +34,13 @@ export function CarCard({
           className="absolute inset-0 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#002089]"
         >
           {listing.img ? (
-            <img src={listing.img} alt={listing.name} className="absolute inset-0 w-full h-full object-cover" />
+            <img
+              src={listing.img}
+              alt={listing.name}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           ) : (
             <span className="text-xs text-[#00508a]">photo — à fournir</span>
           )}

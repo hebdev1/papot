@@ -33,6 +33,8 @@ export function StayCard({
           <img
             src={listing.img}
             alt={listing.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover absolute inset-0 group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

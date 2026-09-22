@@ -33,3 +33,57 @@
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 </IfModule>
+
+
+# ── En-têtes de sécurité ────────────────────────────────────────────────────
+#
+# Hostinger n'en envoyait aucun. Le seul présent, `upgrade-insecure-requests`,
+# est un faux ami : c'est une directive CSP qui force HTTP vers HTTPS, et rien
+# d'autre. Un scanner la voyait et annonçait « CSP présente » alors qu'aucune
+# source n'était restreinte.
+#
+# La liste ci-dessous a été relevée sur le site en fonctionnement, pas devinée :
+# le seul script est le bundle, les polices viennent de Google, les données de
+# Supabase, et les dernières photos de stock d'Unsplash. Le jour où l'une de ces
+# origines change, la règle correspondante doit changer avec elle — sinon la
+# ressource est bloquée et la page casse en silence.
+<IfModule mod_headers.c>
+
+  # Le navigateur ne charge de script que depuis le site lui-même. C'est la
+  # directive qui compte : sans elle, une injection réussie peut charger
+  # n'importe quel code. Aucun script en ligne n'existe dans le build, donc
+  # 'unsafe-inline' n'est pas nécessaire ici.
+  #
+  # style-src doit en revanche l'accepter : React écrit des attributs `style`
+  # (les confettis, les pastilles d'aperçu) et le reçu de paiement pose une
+  # balise <style> pour ses keyframes. CSP bloque les deux sans cette exception.
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com https://sqkbtygodsomekizhhyj.supabase.co; connect-src 'self' https://sqkbtygodsomekizhhyj.supabase.co wss://sqkbtygodsomekizhhyj.supabase.co; upgrade-insecure-requests"
+
+  # Sans ceci, n'importe qui peut placer PAPOT dans une iframe invisible et
+  # faire cliquer un visiteur sur « Payer » sans qu'il le voie. `frame-ancestors`
+  # ci-dessus fait le travail pour les navigateurs modernes ; celui-ci couvre
+  # les anciens, qui l'ignorent.
+  Header always set X-Frame-Options "DENY"
+
+  # Empêche le navigateur de deviner un type MIME : un fichier servi en
+  # text/plain ne sera pas exécuté parce qu'il ressemble à du JavaScript.
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Une référence externe ne reçoit que l'origine, jamais le chemin : une URL
+  # comme /booking/<id>/confirmed ne fuit pas vers un site tiers.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Le site ne demande ni position, ni caméra, ni micro. Le dire ferme aussi
+  # ces accès à tout ce qui serait injecté dans la page.
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=(), usb=()"
+
+  # HSTS : le navigateur refuse le HTTP pour ce domaine pendant un an.
+  #
+  # Volontairement sans `includeSubDomains` ni `preload`. `includeSubDomains`
+  # casserait tout sous-domaine qui ne serait pas en HTTPS, et `preload` inscrit
+  # le domaine dans une liste intégrée aux navigateurs, d'où il est très long à
+  # retirer. À renforcer une fois que tous les sous-domaines sont vérifiés en
+  # HTTPS — pas avant.
+  Header always set Strict-Transport-Security "max-age=31536000"
+
+</IfModule>

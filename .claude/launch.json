@@ -4,8 +4,27 @@
     {
       "name": "papot",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["pnpm@10", "dev", "--port", "5199", "--strictPort"],
+      "runtimeArgs": [
+        "pnpm@10",
+        "dev",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
       "port": 5199,
+      "autoPort": false
+    },
+    {
+      "name": "papot-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "pnpm@10",
+        "preview",
+        "--port",
+        "4199",
+        "--strictPort"
+      ],
+      "port": 4199,
       "autoPort": false
     }
   ]

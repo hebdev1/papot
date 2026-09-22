@@ -31,6 +31,8 @@ export function DestinationCard({ dest }: { dest: DestinationRow }) {
         <img
           src={dest.img}
           alt={city}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
       ) : (
