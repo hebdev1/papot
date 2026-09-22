@@ -106,8 +106,15 @@ export function StayCard({
                 Autres dates
               </Link>
             ) : (
+              /* Both buttons lead to the fiche, and that is deliberate. A card
+                 has no room type, no dates and no party: sending "Réserver"
+                 straight to /checkout landed on "Votre panier est vide",
+                 because nothing had been put in it. The fiche is where those
+                 are chosen and where availability is checked. The button keeps
+                 its weight - it is still the primary action - it just stops
+                 promising a step it cannot complete. */
               <Link
-                to={`/checkout/${listing.id}`}
+                to={to}
                 className="bg-[#e76f2e] hover:bg-[#d05e20] text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm shadow-md shadow-[rgba(231,111,46,0.3)]"
               >
                 Réserver

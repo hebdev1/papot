@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
 import { Badge } from "../components/ui/cvui-badge";
@@ -494,6 +494,12 @@ type Availability = {
 
 function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
   const food = useFoodCart();
+  const [params] = useSearchParams();
+  /* A slot chip on a card carries the créneau the traveller tapped. It is
+     applied once, on arrival, and only if it is genuinely free for this party -
+     the rule below, that a créneau free for two may not be free for six, still
+     decides. Without this the chip would be a promise the fiche forgets. */
+  const wantedSlot = useRef<string | null>(params.get("slot"));
   const [tab, setTab] = useState<"table" | "private">("table");
   const [date, setDate] = useState<string>(todayInHaiti());
   const [slot, setSlot] = useState<string | null>(null);
@@ -516,9 +522,21 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
       .rpc("restaurant_availability", { p_listing: listing.id, p_date: date, p_party: party })
       .then(({ data, error }) => {
         if (!live) return;
-        setAvail(
-          error ? { open: false, reason: "inconnu", slots: [] } : (data as unknown as Availability),
-        );
+        const answer = error
+          ? ({ open: false, reason: "inconnu", slots: [] } as Availability)
+          : (data as unknown as Availability);
+        setAvail(answer);
+        /* The card's chips come from `attrs` and are static, while these come
+           from the restaurant's real hours and free tables - so the créneau
+           tapped may not be on offer. Then nothing is preselected and the
+           traveller chooses from what is actually free. */
+        if (wantedSlot.current) {
+          const free = (answer.slots ?? []).find(
+            x => x.time === wantedSlot.current && x.available,
+          );
+          if (free) setSlot(free.time);
+        }
+        wantedSlot.current = null;
         setLoadingSlots(false);
       });
     return () => {

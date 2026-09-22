@@ -76,8 +76,10 @@ export function CarCard({
             <p className="font-display text-xl font-bold text-[#3E2C23]">{formatUsd(listing.price)}</p>
             <p className="text-[11px] text-[#7a6355]">par jour · ≈ {formatHtg(listing.price, rate)}</p>
           </div>
+          {/* The fiche, like the photo above: a vehicle is booked with dates,
+              a pickup point and a driver option, none of which a card holds. */}
           <Link
-            to={`/checkout/${listing.id}`}
+            to={`/p/${listing.id}`}
             className="bg-[#e76f2e] hover:bg-[#d05e20] text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-[rgba(231,111,46,0.3)] shrink-0"
           >
             Réserver

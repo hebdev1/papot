@@ -66,7 +66,7 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
             {slots.map(s => (
               <Link
                 key={s}
-                to={`/checkout/${listing.id}?slot=${encodeURIComponent(s)}`}
+                to={`/p/${listing.id}?slot=${encodeURIComponent(s)}`}
                 className="text-xs font-semibold text-[#002089] border border-[#e2d5c3] hover:border-[#002089] hover:bg-[#E9F9FE] px-2.5 py-1.5 rounded-lg transition-colors"
               >
                 {s}
