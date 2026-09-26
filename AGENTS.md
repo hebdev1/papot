@@ -245,6 +245,16 @@ all 50 console actions. Six predicates keep it deliberately: `admin_can`,
 its predicate raises instead of returning false — revoking them breaks every
 anonymous read of the catalogue.
 
+**Booking is not an entry point.** `create_booking` was granted to `anon`, so
+it could be called on its own: no card, no account, no gateway — and it returned
+a `confirmed` booking with zero rows in `payments`. Worse than the free
+reservation, the line holds inventory, so a loop over dates and listings fills
+every calendar on the platform and the business stops selling. The lock that
+prevents double-selling is exactly what gives that its teeth. It is now
+reachable only through a payment function: `demo_checkout` today, a real gateway
+later, both SECURITY DEFINER and owned by `postgres` so they call it as the
+owner. **Any future gateway goes in the same place — never re-grant this.**
+
 **A reference is not a password.** `get_booking` asked for nothing but a
 booking reference and returned the traveller's name, email, telephone, total and
 travel dates — past RLS, with no account. References are `PPT-<year>-<4 digits>`,
