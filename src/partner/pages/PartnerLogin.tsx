@@ -104,7 +104,13 @@ export function PartnerLogin() {
             </Link>
             <br />
             Pas encore partenaire ?{" "}
-            <Link to="/" className="font-semibold text-[#002089] hover:underline">
+            {/* `?partner=1` is what the public shell watches to open the
+                application wizard. It is a modal held in that shell's state,
+                and this page is a separate lazily-mounted application, so a
+                link is the only way across — pointing at "/" landed on the home
+                page with nothing opened. `/login` already used this; this page
+                was the one that did not. */}
+            <Link to="/?partner=1" className="font-semibold text-[#002089] hover:underline">
               Proposez votre établissement
             </Link>
           </p>
