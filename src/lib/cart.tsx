@@ -2,11 +2,21 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Enums } from "../types/database";
 
 /**
- * Canvas 1e: "Même panier, un seul paiement." A trip can hold a stay, a car and
- * a table at once, so the cart is keyed by kind — adding a second stay replaces
- * the first rather than stacking, which matches the single-trip summary drawn.
+ * "Même panier, un seul paiement."
+ *
+ * The cart used to be keyed by métier: one stay, one car, one table, and adding
+ * a second of any kind quietly replaced the first. That is fine for a trip with
+ * one of each and wrong the moment someone books two dinners, or a car in the
+ * north and another in the south — the first line vanished with no message.
+ *
+ * A line is now identified by what it actually is: the métier, the annonce, the
+ * room type and the moment. Booking the same thing twice updates that line;
+ * booking something else adds one. `id` is only a handle for React and for the
+ * remove button.
  */
 export type CartItem = {
+  /** Assigned on add. Not sent to the server, which reprices from the line. */
+  id?: string;
   kind: Enums<"listing_kind">;
   listing_id: string;
   unit_id?: string | null;
@@ -37,8 +47,9 @@ export type CartItem = {
 type CartValue = {
   items: CartItem[];
   total: number;
+  count: number;
   add: (item: CartItem) => void;
-  remove: (kind: CartItem["kind"]) => void;
+  remove: (id: string) => void;
   clear: () => void;
 };
 
@@ -47,16 +58,27 @@ const STORAGE_KEY = "papot.cart.v1";
 const CartContext = createContext<CartValue>({
   items: [],
   total: 0,
+  count: 0,
   add: () => {},
   remove: () => {},
   clear: () => {},
 });
 
+/**
+ * What makes two lines the same purchase. Two tables at the same restaurant on
+ * different evenings differ by `starts_on`; the same table added twice does
+ * not, so the second add refreshes the first instead of duplicating it.
+ */
+const identity = (i: CartItem) =>
+  [i.kind, i.listing_id, i.unit_id ?? "", i.package_id ?? "", i.starts_on ?? "", i.start_time ?? ""].join("|");
+
 function readStored(): CartItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // A cart saved before lines had handles still has to be removable.
+    return parsed.map((i: CartItem) => (i.id ? i : { ...i, id: crypto.randomUUID() }));
   } catch {
     return [];
   }
@@ -74,11 +96,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items]);
 
   const add = useCallback((item: CartItem) => {
-    setItems(prev => [...prev.filter(i => i.kind !== item.kind), item]);
+    const line: CartItem = { ...item, id: item.id ?? crypto.randomUUID() };
+    setItems(prev => {
+      const at = prev.findIndex(i => identity(i) === identity(line));
+      if (at === -1) return [...prev, line];
+      // Same purchase, revisited: keep its place in the list and its handle, so
+      // the cart does not reshuffle under someone who only changed an option.
+      const next = [...prev];
+      next[at] = { ...line, id: prev[at].id };
+      return next;
+    });
   }, []);
 
-  const remove = useCallback((kind: CartItem["kind"]) => {
-    setItems(prev => prev.filter(i => i.kind !== kind));
+  const remove = useCallback((id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
   }, []);
 
   const clear = useCallback(() => setItems([]), []);
@@ -87,6 +118,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       total: items.reduce((sum, i) => sum + i.amount, 0),
+      count: items.length,
       add,
       remove,
       clear,

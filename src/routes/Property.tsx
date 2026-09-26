@@ -9,6 +9,7 @@ import { formatDateRange, nightsBetween, useCart, type CartItem } from "../lib/c
 import { useFoodCart } from "../lib/foodCart";
 import { GuestsPicker } from "../components/GuestsPicker";
 import { StayDatesPicker } from "../components/StayDatesPicker";
+import { AddToTrip } from "../components/AddToTrip";
 import { formatGuests, partySize, readGuests, type Guests } from "../lib/guests";
 import { readStayDates, type StayDates } from "../lib/stayDates";
 import { availabilityNote, useStayAvailability, useUnitsAvailability } from "../lib/availability";
@@ -419,19 +420,7 @@ function StayDetail({ listing, a, units, rate, cart, navigate, dates, setDates }
             </p>
           </div>
 
-          <div className="bg-[#D6F0FB] rounded-2xl p-5">
-            <p className="font-display font-bold text-[#002089]">Ajouter à ce séjour</p>
-            <p className="text-[13px] text-[#00508a] leading-relaxed mt-1.5">
-              Une voiture avec retrait à l'aéroport, ou une table pour votre première soirée. Même panier, un seul
-              paiement.
-            </p>
-            <button
-              onClick={() => navigate("/search?kind=car")}
-              className="mt-3 text-sm font-semibold text-[#002089] underline"
-            >
-              Parcourir
-            </button>
-          </div>
+          <AddToTrip current="stay" dates={dates} />
         </aside>
       </div>
     </>
@@ -1112,6 +1101,10 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
               </p>
             )}
           </div>
+
+          {/* No dates carried: a table is booked for one evening, not a window,
+              so the stay search would inherit a range that means nothing here. */}
+          <AddToTrip current="restaurant" className="mt-4" />
         </aside>
       </div>
 
@@ -1290,6 +1283,8 @@ function CarDetail({ listing, a, rate, cart, navigate, dates, setDates }: any) {
                 : `Caution de ${a.deposit} $ préautorisée, non débitée`}
             </p>
           </div>
+
+          <AddToTrip current="car" dates={dates} className="mt-4" />
         </aside>
       </div>
     </>

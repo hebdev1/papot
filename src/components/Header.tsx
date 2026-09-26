@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import { useAuth } from "../lib/auth";
+import { useCart } from "../lib/cart";
+import { ShoppingBag } from "lucide-react";
 
 /* Canvas 1a: Hébergements · Voitures · Restaurants · Vols, then
    Devenir partenaire / Se connecter / S'inscrire. */
@@ -14,6 +16,7 @@ const NAV = [
 
 export function Header({ onPartner }: { onPartner?: () => void }) {
   const { user } = useAuth();
+  const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname, search } = useLocation();
 
@@ -67,6 +70,20 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
               Devenir partenaire
             </button>
           )}
+          {/* A cart nobody can find is not a cart. It appears only when there
+              is something in it, so an empty header stays quiet. */}
+          {count > 0 && (
+            <Link
+              to="/panier"
+              aria-label={`Panier, ${count} prestation${count > 1 ? "s" : ""}`}
+              className="relative flex items-center gap-2 text-sm text-white font-semibold px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <ShoppingBag className="h-4 w-4" aria-hidden />
+              <span className="grid min-w-[18px] h-[18px] place-content-center rounded-full bg-[#e76f2e] px-1 text-[11px] font-bold leading-none tabular-nums">
+                {count}
+              </span>
+            </Link>
+          )}
           {user ? (
             <Link
               to="/compte"
@@ -91,6 +108,19 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
             </>
           )}
         </div>
+
+        {count > 0 && (
+          <Link
+            to="/panier"
+            aria-label={`Panier, ${count} prestation${count > 1 ? "s" : ""}`}
+            className="md:hidden relative ml-auto mr-1 flex h-11 w-11 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/10"
+          >
+            <ShoppingBag className="h-5 w-5" aria-hidden />
+            <span className="absolute right-1 top-1 grid min-w-[17px] h-[17px] place-content-center rounded-full bg-[#e76f2e] px-1 text-[10px] font-bold leading-none tabular-nums">
+              {count}
+            </span>
+          </Link>
+        )}
 
         {/* Mobile: one 44px target that opens everything. */}
         <button
@@ -137,6 +167,15 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
           </nav>
 
           <div className="mt-2 flex flex-col gap-2 border-t border-white/15 pt-3">
+            {count > 0 && (
+              <Link
+                to="/panier"
+                className="min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-[15px] font-semibold text-white"
+              >
+                <ShoppingBag className="h-4 w-4" aria-hidden />
+                Votre panier · {count}
+              </Link>
+            )}
             {onPartner && (
               <button
                 onClick={() => {
