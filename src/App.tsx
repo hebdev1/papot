@@ -17,6 +17,7 @@ import { CheckEmail } from "./routes/CheckEmail";
 import { ChooseAccount } from "./routes/ChooseAccount";
 import { Property } from "./routes/Property";
 import { Cart } from "./routes/Cart";
+import { GuidePage } from "./routes/Guide";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
 import { FoodCheckout, OrderTracking } from "./routes/FoodOrder";
@@ -163,6 +164,7 @@ function Shell() {
           <Route path="/planifier" element={<Plan />} />
           <Route path="/search" element={<Search />} />
           <Route path="/p/:id" element={<Property />} />
+          <Route path="/aide" element={<GuidePage />} />
           <Route path="/panier" element={<Cart />} />
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/booking/:id/confirmed" element={<BookingConfirmed />} />

@@ -15,6 +15,7 @@ import { PageHeader } from "../../components/panel/PanelLayout";
 import { EmptyState } from "../../components/panel/States";
 import { StatusBadge } from "../../components/panel/Badges";
 import { useAuth } from "../../lib/auth";
+import { Guide } from "../Guide";
 import { formatUsd } from "../../lib/currency";
 import { bookingIsPast, bookingIsUpcoming, formatRange, useMyBookings } from "../../lib/panel";
 import { supabase } from "../../lib/supabase";
@@ -191,27 +192,22 @@ export function PanelReviews() {
   );
 }
 
+/**
+ * Eight buttons that did nothing, above a note written for a developer —
+ * "les tickets nécessitent une table support_tickets" — shown to travellers.
+ * The table exists; what does not is any way for a customer to open a ticket,
+ * so the buttons could not have worked. The guide replaces them with what the
+ * platform can actually do, and the same page answers at /aide without an
+ * account, since that is when people ask how it works.
+ */
 export function PanelSupport() {
-  const TOPICS = [
-    "Problème de réservation", "Problème de paiement", "Annulation", "Remboursement",
-    "Problème avec l'établissement", "Problème de véhicule", "Réservation de restaurant",
-    "Problème de compte",
-  ];
   return (
     <>
-      <PageHeader title="Comment pouvons-nous aider ?" />
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        {TOPICS.map(t => (
-          <button
-            key={t}
-            className="flex items-center gap-3 rounded-2xl border border-[#e2d5c3] bg-white p-4 text-left text-sm font-medium text-[#3E2C23] transition-colors hover:border-[#002089]"
-          >
-            <LifeBuoy className="h-4 w-4 shrink-0 text-[#002089]" aria-hidden />
-            {t}
-          </button>
-        ))}
-      </div>
-      <Note>Les tickets nécessitent une table <code className="mx-1 rounded bg-[#E9F9FE] px-1.5 py-0.5 text-[12px]">support_tickets</code>.</Note>
+      <PageHeader
+        title="Comment ça marche"
+        subtitle="Chercher, réserver, payer, suivre — et inscrire un établissement."
+      />
+      <Guide />
     </>
   );
 }

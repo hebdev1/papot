@@ -237,7 +237,11 @@ export function Checkout() {
             <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Votre voyage</h2>
             <div className="flex flex-col gap-3">
               {items.map(i => (
-                <div key={i.kind} className="flex items-start justify-between gap-4 pb-3 border-b border-[#e2d5c3] last:border-0 last:pb-0">
+                /* Keyed by the line, not the métier. The cart used to hold one
+                   line per kind, so `i.kind` was unique by construction; it can
+                   now hold two dinners on two evenings, and React was dropping
+                   one of them. */
+                <div key={i.id ?? i.kind} className="flex items-start justify-between gap-4 pb-3 border-b border-[#e2d5c3] last:border-0 last:pb-0">
                   <div>
                     <p className="font-display font-bold text-[#3E2C23]">{i.title}</p>
                     <p className="text-xs text-[#7a6355] mt-0.5">{i.detail}</p>
