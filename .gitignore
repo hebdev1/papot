@@ -6,6 +6,10 @@ build/
 # …sauf l'origine canonique : publique, et un build correct ne doit pas dependre
 # d'une variable que quelqu'un doit penser a definir.
 !.env.production
+# The template, which carries no value — only the names and what each is for.
+# Without this line `.env*` above would swallow it and nobody cloning the
+# repository would ever know which variables the project needs.
+!.env.example
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo
