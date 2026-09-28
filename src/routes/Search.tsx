@@ -55,6 +55,17 @@ export function Search() {
 
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  /**
+   * Set when the request never came back at all.
+   *
+   * `{ data, error }` covers what PostgREST answers; it does not cover the
+   * request failing to leave — offline, DNS, a blocked origin. That throws,
+   * and with nothing catching it the effect died halfway: `setListings` was
+   * never reached, `loaded` stayed false, and the page went on showing the
+   * *previous* search under the new one's heading. Thirteen hébergements
+   * listed as the answer to a restaurant search is worse than an error.
+   */
+  const [failed, setFailed] = useState(false);
   const [maxPrice, setMaxPrice] = useState(300);
   const [types, setTypes] = useState<string[]>([]);
   const [essentials, setEssentials] = useState<string[]>([]);
@@ -81,42 +92,65 @@ export function Search() {
     }
     let cancelled = false;
     setLoaded(false);
+    setFailed(false);
     (async () => {
-      const { data, error } = await supabase
-        .from("listings")
-        .select("*")
-        .eq("published", true)
-        .eq("kind", kind)
-        .order("position");
-      if (cancelled) return;
-      if (error) console.error("Search failed:", error);
-      const rows = data ?? [];
-      setListings(rows);
-
-      if (kind === "restaurant" && rows.length) {
-        const { data: rd, error: rdErr } = await supabase.from("restaurant_details").select("*");
+      try {
+        const { data, error } = await supabase
+          .from("listings")
+          .select("*")
+          .eq("published", true)
+          .eq("kind", kind)
+          .order("position");
         if (cancelled) return;
-        if (rdErr) console.error("Restaurant details failed:", rdErr);
-        const byId: Record<string, RestaurantDetail> = {};
-        (rd ?? []).forEach(d => {
-          byId[d.listing_id] = d;
-        });
-        setRestoDetails(byId);
-      }
+        if (error) {
+          // supabase-js does not throw on a transport failure: it hands back
+          // `{ data: null, error: { message: "TypeError: Failed to fetch" } }`,
+          // which the old code logged and walked past. That is the branch that
+          // left the previous search on screen under the new one's heading —
+          // thirteen hébergements answering a restaurant search. Say so
+          // instead, and clear what is no longer an answer to anything.
+          console.error("Search failed:", error);
+          setListings([]);
+          setFailed(true);
+          setLoaded(true);
+          return;
+        }
+        const rows = data ?? [];
+        setListings(rows);
 
-      if (kind === "car" && rows.length) {
-        const { data: cd, error: cdErr } = await supabase.from("car_details").select("*");
+        if (kind === "restaurant" && rows.length) {
+          const { data: rd, error: rdErr } = await supabase.from("restaurant_details").select("*");
+          if (cancelled) return;
+          if (rdErr) console.error("Restaurant details failed:", rdErr);
+          const byId: Record<string, RestaurantDetail> = {};
+          (rd ?? []).forEach(d => {
+            byId[d.listing_id] = d;
+          });
+          setRestoDetails(byId);
+        }
+
+        if (kind === "car" && rows.length) {
+          const { data: cd, error: cdErr } = await supabase.from("car_details").select("*");
+          if (cancelled) return;
+          if (cdErr) console.error("Car details failed:", cdErr);
+          const byId: Record<string, CarDetail> = {};
+          (cd ?? []).forEach(d => {
+            byId[d.listing_id] = d;
+          });
+          setCarDetails(byId);
+          const prices = rows.map(r => Number(r.price));
+          setCarFilters(emptyCarFilters(Math.ceil(Math.max(...prices))));
+        }
+        setLoaded(true);
+      } catch (err) {
         if (cancelled) return;
-        if (cdErr) console.error("Car details failed:", cdErr);
-        const byId: Record<string, CarDetail> = {};
-        (cd ?? []).forEach(d => {
-          byId[d.listing_id] = d;
-        });
-        setCarDetails(byId);
-        const prices = rows.map(r => Number(r.price));
-        setCarFilters(emptyCarFilters(Math.ceil(Math.max(...prices))));
+        console.error("Search request failed:", err);
+        // Clear the old results before saying so: leaving them on screen is
+        // exactly the failure this catch exists for.
+        setListings([]);
+        setFailed(true);
+        setLoaded(true);
       }
-      setLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -306,6 +340,19 @@ export function Search() {
             />
           ) : !loaded ? (
             <p className="text-sm text-[#7a6355]">Chargement…</p>
+          ) : failed ? (
+            <EmptyState
+              title="La recherche n'a pas abouti"
+              body="Nous n'avons pas pu joindre PAPOT. Vérifiez votre connexion, puis réessayez."
+              action={
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 bg-[#e76f2e] hover:bg-[#d05e20] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                >
+                  Réessayer
+                </button>
+              }
+            />
           ) : results.length === 0 ? (
             <EmptyState
               title="Aucun résultat"

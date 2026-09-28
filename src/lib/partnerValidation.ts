@@ -120,7 +120,23 @@ export function validateStep(
       break;
     }
 
-    // welcome / policies / review / submit collect no data.
+    case "review": {
+      // The review is the last gate, and it has to be a real one. Every other
+      // step is checked as you leave it, but a restored draft lands straight on
+      // the step it was left at — and photos and documents are `File` objects,
+      // which do not survive the tab closing. A partner coming back therefore
+      // arrives at the review with both gone and, until this case existed,
+      // walked into a submission the database refuses.
+      const keys = [
+        "account", "profile", "location", "details", "amenities", "inventory",
+        ...(partnerType === "restaurant" || partnerType === "car" ? ["schedule"] : []),
+        "photos", "policies", "verification", "payout",
+      ];
+      for (const k of keys) missing.push(...validateStep(k, partnerType, s));
+      break;
+    }
+
+    // welcome / policies / submit collect no data.
     default:
       break;
   }

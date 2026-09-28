@@ -1092,7 +1092,32 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                 {slot ? "Confirmer la table" : "Choisissez un créneau"}
               </button>
             ) : (
-              <button className={`${cta} mt-5`}>Demander une privatisation</button>
+              // No table takes a privatisation request — there is no such
+              // table in the schema, no messaging backend, and `private_options`
+              // is a read-only price list. The button therefore did nothing at
+              // all. A courriel to the platform is the one channel that exists
+              // and actually delivers, so it is the one offered, with the
+              // restaurant and the party size already filled in.
+              <a
+                href={`mailto:support@papot.ht?subject=${encodeURIComponent(
+                  `Demande de privatisation — ${listing.name}`,
+                )}&body=${encodeURIComponent(
+                  `Bonjour,
+
+Je souhaite privatiser un espace chez ${listing.name}.
+
+` +
+                    `Date souhaitée : ${date}
+Nombre de personnes : ${party}
+` +
+                    `Espace souhaité : 
+
+Merci de me confirmer la disponibilité et le tarif.`,
+                )}`}
+                className={`${cta} mt-5 block text-center`}
+              >
+                Écrire pour privatiser
+              </a>
             )}
 
             {cart.items.some((i: any) => i.kind === "stay") && (

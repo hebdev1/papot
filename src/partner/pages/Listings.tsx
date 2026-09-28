@@ -347,9 +347,14 @@ export function ListingForm() {
     };
 
     setBusy(true);
+    // `partner_id` is only meaningful when the row is created. Sending it on an
+    // update asks for a write privilege the partner does not need, and the
+    // column is revoked from `authenticated` precisely so an annonce cannot be
+    // moved to another business from the browser.
+    const { partner_id: _owner, ...patch } = payload;
     const { error } = isNew
       ? await table("listings").insert(payload)
-      : await table("listings").update(payload).eq("id", id!);
+      : await table("listings").update(patch).eq("id", id!);
     setBusy(false);
 
     if (error) {

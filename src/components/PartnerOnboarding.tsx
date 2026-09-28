@@ -559,26 +559,16 @@ function StepLocation({ data, onChange }: { data: Record<string, string>; onChan
         <Field label="Adresse ligne 2" id="addr2" placeholder="Apt. 3B, Bâtiment C" value={data.addr2 || ""} onChange={v => onChange("addr2", v)} />
         <Field label="Repère à proximité" id="landmark" placeholder="En face de la pharmacie centrale" value={data.landmark || ""} onChange={v => onChange("landmark", v)} />
       </div>
-      {/* Map placeholder */}
-      <div className="relative bg-[#e8f4e8] rounded-2xl overflow-hidden h-52 mb-4 border border-[#e2d5c3] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-[#002089] flex items-center justify-center mx-auto mb-3 text-white">
-            <Ico.MapPin />
-          </div>
-          <p className="text-sm font-semibold text-[#3E2C23]">Carte interactive</p>
-          <p className="text-xs text-[#7a6355]">Cliquez pour placer une épingle</p>
-        </div>
-        {/* Fake grid overlay */}
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "linear-gradient(#002089 1px,transparent 1px),linear-gradient(90deg,#002089 1px,transparent 1px)", backgroundSize: "40px 40px" }}/>
-      </div>
-      <div className="flex flex-wrap gap-2 mb-6">
-        {["Rechercher l'adresse", "Utiliser ma position", "Placer une épingle", "Confirmer la position"].map(a => (
-          <button key={a} className="border border-[#e2d5c3] hover:border-[#002089] text-[#7a6355] hover:text-[#002089] text-xs font-semibold px-3 py-2 rounded-lg transition-colors">
-            {a}
-          </button>
-        ))}
-      </div>
+      {/* There was a "Carte interactive" panel here — a green rectangle with a
+          grid drawn over it, captioned "Cliquez pour placer une épingle" — and
+          four buttons under it: Rechercher l'adresse, Utiliser ma position,
+          Placer une épingle, Confirmer la position. None of the five did
+          anything: no map library is loaded, and no table in the schema has a
+          latitude or a longitude, so a pin had nowhere to be stored. It is
+          removed rather than mocked, because a partner who "confirmed" a
+          position would believe their location had been recorded. The address
+          fields above and the access notes below are what PAPOT actually
+          keeps, and what a traveller is actually shown. */}
       <Field label="Instructions d'accès / Notes de localisation" id="arrivalNotes" type="textarea"
         placeholder="Ex : Nous sommes situés deux rues après l'église principale, à côté de la pharmacie."
         value={data.arrivalNotes || ""} onChange={v => onChange("arrivalNotes", v)}
@@ -731,8 +721,11 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
   const [addingRoom, setAddingRoom] = useState(false);
   const [addingVehicle, setAddingVehicle] = useState(false);
   const [newRoom, setNewRoom] = useState<Partial<RoomItem>>({});
+  // null = the form is adding; an id = it is editing that room. The pencil
+  // beside each room had no handler at all, so a typo in a price could only
+  // be corrected by deleting the room and retyping all six fields.
+  const [editingRoom, setEditingRoom] = useState<number | null>(null);
   const [newVehicle, setNewVehicle] = useState<Partial<VehicleItem>>({});
-  const [menuChoice, setMenuChoice] = useState("");
 
   if (partnerType === "hotel" || partnerType === "guesthouse") return (
     <div>
@@ -759,14 +752,18 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
             <p className="font-display font-bold text-[#3E2C23]">{r.price} $<span className="text-xs font-normal text-[#7a6355]">/nuit</span></p>
           </div>
           <div className="flex gap-1 shrink-0">
-            <button className="p-2 rounded-lg hover:bg-[#E9F9FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
+            <button type="button" title="Modifier cette chambre"
+              onClick={() => { setNewRoom(r); setEditingRoom(r.id); setAddingRoom(true); }}
+              className="p-2 rounded-lg hover:bg-[#E9F9FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
             <button onClick={() => setRooms(rooms.filter(x => x.id !== r.id))} className="p-2 rounded-lg hover:bg-red-50 text-[#7a6355] hover:text-red-500 transition-colors"><Ico.Trash /></button>
           </div>
         </div>
       ))}
       {addingRoom && (
         <div className="bg-white border-2 border-[#6ad7fb] rounded-xl p-5 mb-4">
-          <p className="font-display font-bold text-[#3E2C23] mb-4">Nouveau type de chambre</p>
+          <p className="font-display font-bold text-[#3E2C23] mb-4">
+            {editingRoom === null ? "Nouveau type de chambre" : "Modifier le type de chambre"}
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <Field label="Nom" id="rName" placeholder="Suite Deluxe" value={newRoom.name || ""} onChange={v => setNewRoom(p => ({ ...p, name: v }))} />
             <SelectField label="Type" id="rType" options={["Chambre simple", "Chambre double", "Suite", "Suite familiale", "Studio", "Chambre supérieure", "Dortoir"]} value={newRoom.type || ""} onChange={v => setNewRoom(p => ({ ...p, type: v }))} />
@@ -776,9 +773,22 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
             <Field label="Unités disponibles" id="rUnits" type="number" placeholder="5" value={newRoom.units || ""} onChange={v => setNewRoom(p => ({ ...p, units: v }))} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setAddingRoom(false)} className="border-2 border-[#e2d5c3] px-4 py-2 rounded-xl text-sm text-[#7a6355] font-semibold">Annuler</button>
-            <button onClick={() => { if (newRoom.name) { setRooms([...rooms, { id: Date.now(), name: newRoom.name!, type: newRoom.type || "", capacity: newRoom.capacity || "", beds: newRoom.beds || "", price: newRoom.price || "", units: newRoom.units || "" }]); setNewRoom({}); setAddingRoom(false); } }}
-              className="bg-[#002089] text-white px-6 py-2 rounded-xl text-sm font-bold">Ajouter</button>
+            <button type="button" onClick={() => { setAddingRoom(false); setNewRoom({}); setEditingRoom(null); }}
+              className="border-2 border-[#e2d5c3] px-4 py-2 rounded-xl text-sm text-[#7a6355] font-semibold">Annuler</button>
+            <button type="button" disabled={!newRoom.name}
+              onClick={() => {
+                if (!newRoom.name) return;
+                const row: RoomItem = {
+                  id: editingRoom ?? Date.now(),
+                  name: newRoom.name, type: newRoom.type || "", capacity: newRoom.capacity || "",
+                  beds: newRoom.beds || "", price: newRoom.price || "", units: newRoom.units || "",
+                };
+                setRooms(editingRoom === null ? [...rooms, row] : rooms.map(x => (x.id === editingRoom ? row : x)));
+                setNewRoom({}); setEditingRoom(null); setAddingRoom(false);
+              }}
+              className="bg-[#002089] text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-40">
+              {editingRoom === null ? "Ajouter" : "Enregistrer"}
+            </button>
           </div>
         </div>
       )}
@@ -841,48 +851,44 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
 
   if (partnerType === "restaurant") return (
     <div>
-      <SectionTitle title="Menu & Configuration de la salle" />
-      <div className="mb-8">
-        <p className="font-semibold text-[#3E2C23] mb-3">Comment souhaitez-vous gérer votre menu ?</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[["upload", "📄", "Importer un menu existant", "Téléchargez un PDF ou une image de votre menu."], ["build", "✏️", "Créer un menu en ligne", "Construisez votre menu numérique plat par plat."]].map(([val, emoji, lbl, sub]) => (
-            <button key={val} onClick={() => setMenuChoice(val)}
-              className={`p-5 rounded-xl border-2 text-left transition-all ${menuChoice === val ? "border-[#e76f2e] bg-[#fff5f0]" : "border-[#e2d5c3] hover:border-[#6ad7fb]"}`}>
-              <span className="text-2xl block mb-2">{emoji}</span>
-              <p className={`font-semibold text-sm ${menuChoice === val ? "text-[#e76f2e]" : "text-[#3E2C23]"}`}>{lbl}</p>
-              <p className="text-xs text-[#7a6355] mt-1">{sub}</p>
-            </button>
-          ))}
-        </div>
-        {menuChoice === "upload" && (
-          <div className="mt-4">
-            <UploadZone label="Télécharger votre menu" hint="PDF, JPG, PNG · Max 20 Mo" />
-          </div>
-        )}
-        {menuChoice === "build" && (
-          <div className="mt-4 bg-white border border-[#e2d5c3] rounded-xl p-5">
-            <p className="font-semibold text-[#3E2C23] mb-4">Ajouter un plat</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Catégorie" id="cat" placeholder="Entrées, Plats, Desserts…" value={data.menuCat || ""} onChange={v => onChange("menuCat", v)} />
-              <Field label="Nom du plat" id="dish" placeholder="Poulet créole" value={data.menuDish || ""} onChange={v => onChange("menuDish", v)} />
-              <Field label="Description" id="dishDesc" placeholder="Servi avec riz et légumes…" value={data.menuDishDesc || ""} onChange={v => onChange("menuDishDesc", v)} />
-              <Field label="Prix ($ US)" id="dishPrice" type="number" placeholder="18" value={data.menuDishPrice || ""} onChange={v => onChange("menuDishPrice", v)} />
-            </div>
-          </div>
-        )}
+      <SectionTitle title="Menu et salle"
+        subtitle="Ces deux réglages se font depuis votre tableau de bord, une fois le dossier approuvé." />
+      {/* What stood here: two cards, "Importer un menu existant" and "Créer un
+          menu en ligne". The first opened an UploadZone with no `onFiles`, so
+          the chosen file was read and discarded. The second showed one set of
+          fields — catégorie, plat, description, prix — with no button to add
+          the dish and no second row; they wrote to `formData.menuCat` and
+          friends, which `buildPayload` does not read, so they never left the
+          browser. A restaurateur could type their whole menu into it and lose
+          all of it at submit.
+
+          The real menu builder already exists at /partenaire/menu, backed by
+          `menu_items`, with portions, options and formules beside it. Pointing
+          at it is the honest version of this step. */}
+      <div className="bg-[#E9F9FE] border border-[#e2d5c3] rounded-xl p-4 mb-4">
+        <p className="font-semibold text-[#3E2C23] text-sm">Votre menu</p>
+        <p className="text-xs text-[#7a6355] mt-1 leading-relaxed">
+          Plats, catégories, portions et formules s'ajoutent dans « Menu » sur votre
+          tableau de bord. Vous gardez la main dessus en permanence : un prix change,
+          vous le changez, et la fiche suit le jour même. Rien à préparer ici.
+        </p>
       </div>
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-semibold text-[#3E2C23]">Zones & Tables</p>
-          <button className="text-xs text-[#e76f2e] font-bold border border-[#e76f2e] px-3 py-1.5 rounded-lg hover:bg-[#fff5f0] transition-colors">+ Ajouter une zone</button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {["Salle principale", "Terrasse", "Jardin", "VIP"].map(zone => (
-            <div key={zone} className="bg-[#E9F9FE] rounded-xl p-3 text-center border border-[#e2d5c3]">
-              <p className="text-sm font-semibold text-[#3E2C23]">{zone}</p>
-              <p className="text-xs text-[#7a6355]">4 tables</p>
-            </div>
-          ))}
+        {/* "Zones & Tables" used to live here: four hardcoded cards — Salle
+            principale, Terrasse, Jardin, VIP — each claiming "4 tables", and a
+            "+ Ajouter une zone" button with no handler. None of it was the
+            partner's own data, the wizard collects no zone, and
+            `build_partner_listings` creates no `restaurant_areas` row, so
+            whatever was shown here could never reach the database. The real
+            screen exists and is reached after approval. */}
+        <div className="bg-[#E9F9FE] border border-[#e2d5c3] rounded-xl p-4">
+          <p className="font-semibold text-[#3E2C23] text-sm">Salles et tables</p>
+          <p className="text-xs text-[#7a6355] mt-1 leading-relaxed">
+            Vos salles, terrasses et tables se configurent depuis votre tableau de bord,
+            dans « Salles et tables », dès que votre dossier est approuvé. Le plan de
+            salle sert à placer chaque réservation, il se règle donc une fois votre
+            établissement en ligne.
+          </p>
         </div>
       </div>
     </div>
@@ -1164,24 +1170,51 @@ function StepPayout({ data, onChange }: { data: Record<string, string>; onChange
   );
 }
 
-function StepReview({ partnerType }: { partnerType: PartnerType }) {
-  const sections = [
-    { label: "Informations sur l'entreprise", status: "complete", pct: 100 },
-    { label: "Localisation", status: "complete", pct: 100 },
-    { label: "Détails de l'activité", status: "complete", pct: 100 },
-    { label: "Équipements", status: "complete", pct: 100 },
-    { label: "Services & Inventaire", status: "complete", pct: 100 },
-    { label: "Photos", status: "partial", pct: 80 },
-    { label: "Politiques", status: "complete", pct: 100 },
-    { label: "Vérification", status: "pending", pct: 0 },
-    { label: "Informations de paiement", status: "complete", pct: 100 },
-  ];
-  const overall = Math.round(sections.reduce((a, s) => a + s.pct, 0) / sections.length);
-  const statusConfig = {
-    complete: { label: "Complet", variant: "success" as const },
-    partial: { label: "Partiel", variant: "warning" as const },
-    pending: { label: "En attente", variant: "secondary" as const },
+/**
+ * The review screen told a story it had never checked.
+ *
+ * Its nine sections were a literal array: "Complet 100 %" eight times, "Photos"
+ * permanently at 80 %, "Vérification" permanently at 0 %. The ring therefore
+ * read 87 % whatever the partner had actually filled in, and the one screen
+ * whose entire job is to report the state of the file was the only screen that
+ * never looked at it. A partner who had uploaded every document was still told
+ * the vérification was pending; one who had skipped nothing still saw 87 %.
+ *
+ * `validateStep` already knows what each step requires — the wizard locks
+ * Continue with it — so the review asks the same question and the two can never
+ * disagree. What is missing is named, and the edit button goes to the step that
+ * collects it instead of doing nothing.
+ */
+function StepReview({ partnerType, state, steps, onEdit }: {
+  partnerType: PartnerType;
+  state: WizardState;
+  steps: StepKey[];
+  onEdit: (step: number) => void;
+}) {
+  // Only the steps that collect something. welcome, type, review, submit and
+  // success have nothing to report on.
+  const REVIEWED: Partial<Record<StepKey, string>> = {
+    account: "Compte & contact",
+    profile: "Informations sur l'entreprise",
+    location: "Localisation",
+    details: "Détails de l'activité",
+    amenities: "Équipements",
+    inventory: "Services & inventaire",
+    schedule: "Horaires & options",
+    photos: "Photos",
+    policies: "Politiques",
+    verification: "Vérification",
+    payout: "Informations de paiement",
   };
+
+  const sections = steps
+    .map((key, index) => ({ key, index, label: REVIEWED[key] }))
+    .filter((s): s is { key: StepKey; index: number; label: string } => !!s.label)
+    .map(s => ({ ...s, missing: validateStep(s.key, partnerType, state) }));
+
+  const done = sections.filter(s => s.missing.length === 0).length;
+  const overall = sections.length ? Math.round((done / sections.length) * 100) : 0;
+
   return (
     <div>
       <SectionTitle title="Révision avant soumission" subtitle="Vérifiez toutes les informations avant de soumettre votre dossier." />
@@ -1197,37 +1230,46 @@ function StepReview({ partnerType }: { partnerType: PartnerType }) {
           </div>
         </div>
         <div>
-          <p className="text-white font-display font-bold text-xl">Complété à {overall}%</p>
+          <p className="text-white font-display font-bold text-xl">
+            {done} section{done > 1 ? "s" : ""} sur {sections.length} complétée{done > 1 ? "s" : ""}
+          </p>
           <p className="text-[#6ad7fb] text-sm mt-1">
-            {overall === 100 ? "Parfait ! Votre dossier est prêt pour soumission." : "Complétez les sections manquantes pour maximiser vos chances d'approbation."}
+            {overall === 100
+              ? "Parfait ! Votre dossier est prêt pour soumission."
+              : "Reprenez les sections signalées ci-dessous : le formulaire ne pourra pas être envoyé tant qu'il en manque."}
           </p>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {sections.map(s => {
-          const cfg = statusConfig[s.status as keyof typeof statusConfig];
+          const ok = s.missing.length === 0;
           return (
-            <div key={s.label} className="bg-white border border-[#e2d5c3] rounded-xl p-4 flex items-center justify-between gap-3">
+            <div key={s.key} className="bg-white border border-[#e2d5c3] rounded-xl p-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#3E2C23] truncate">{s.label}</p>
-                <Badge label={cfg.label} variant={cfg.variant} appearance="subtle" size="small" animate={false} />
+                <Badge
+                  label={ok ? "Complet" : "À compléter"}
+                  variant={ok ? "success" : "warning"}
+                  appearance="subtle" size="small" animate={false}
+                />
+                {!ok && (
+                  <p className="text-xs text-[#7a6355] mt-1.5 leading-snug">
+                    Manque : {s.missing.join(", ")}
+                  </p>
+                )}
               </div>
-              <button className="shrink-0 text-xs text-[#002089] font-semibold border border-[#e2d5c3] px-2 py-1 rounded-lg hover:border-[#002089] transition-colors">
+              <button type="button" onClick={() => onEdit(s.index)}
+                title={`Modifier : ${s.label}`}
+                className="shrink-0 text-xs text-[#002089] font-semibold border border-[#e2d5c3] px-2 py-1 rounded-lg hover:border-[#002089] transition-colors">
                 <Ico.Edit />
               </button>
             </div>
           );
         })}
       </div>
-      <div className="mt-6 bg-[#E9F9FE] rounded-xl p-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-semibold text-[#3E2C23]">Aperçu de votre annonce</p>
-          <p className="text-xs text-[#7a6355]">Voyez comment votre établissement apparaîtra aux clients.</p>
-        </div>
-        <button className="border-2 border-[#002089] text-[#002089] font-bold px-5 py-2 rounded-xl text-sm hover:bg-[#002089] hover:text-white transition-colors flex items-center gap-2">
-          <Ico.Eye /> Aperçu client
-        </button>
-      </div>
+      {/* No "aperçu client" button here: the annonce does not exist yet. It is
+          built by `build_partner_listings` when an administrator accepts the
+          dossier, so there is nothing to preview and the button showed nothing. */}
     </div>
   );
 }
@@ -1352,9 +1394,13 @@ function WizardShell({
                 ? "Non enregistré"
                 : "Brouillon gardé"}
           </span>
-          <button className="hidden sm:block text-xs text-[#6ad7fb] hover:text-white font-medium transition-colors">
+          {/* Opens beside the wizard rather than over it: the draft survives
+              either way now, but nobody should have to lose their place to
+              read how the vetting works. */}
+          <a href="/aide" target="_blank" rel="noreferrer"
+            className="hidden sm:block text-xs text-[#6ad7fb] hover:text-white font-medium transition-colors">
             Aide
-          </button>
+          </a>
           <button onClick={onExit}
             className="flex items-center gap-1.5 border border-[#6ad7fb]/30 text-[#6ad7fb] hover:text-white hover:border-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
             <Ico.X /> Quitter
@@ -1639,7 +1685,13 @@ export default function PartnerOnboardingWizard({
           />
         );
       case "payout":       return <StepPayout data={formData} onChange={updateForm} />;
-      case "review":       return <StepReview partnerType={partnerType} />;
+      case "review":
+        return (
+          <StepReview
+            partnerType={partnerType} state={state} steps={steps}
+            onEdit={i => setState(p => ({ ...p, step: i }))}
+          />
+        );
       case "submit":
         return (
           <>
