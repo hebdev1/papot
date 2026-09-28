@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { supabase } from "../lib/supabase";
 import { emailReturnUrl } from "../lib/authRedirect";
@@ -17,10 +17,64 @@ export type WizardState = {
   hours: Record<string, { open: boolean; from: string; to: string }>;
   rooms: RoomItem[];
   vehicles: VehicleItem[];
-  autosaveStatus: "saved" | "saving";
+  /** "unsaved" is real: storage can be blocked, and then nothing is kept. */
+  autosaveStatus: "saved" | "saving" | "unsaved";
   photos: File[];
   documents: Record<string, File>;
 };
+
+/**
+ * The draft, kept between visits.
+ *
+ * The wizard displayed "Enregistré" from its very first render — `autosaveStatus`
+ * was initialised to "saved" and never assigned again — and offered a
+ * "Enregistrer et quitter" button with no handler. Nothing was saved anywhere:
+ * the state lived in `useState`, and Supabase was only touched at submit. An
+ * hotelier who filled fifteen steps, closed the tab and came back found an
+ * empty form, having been told twice that their work was safe.
+ *
+ * Fifteen steps is too much to lose, so the promise is made true rather than
+ * removed. localStorage, because at this point in the flow there is no account
+ * to hang a server-side draft on.
+ *
+ * Photos and documents are `File` objects and cannot be serialised. They are
+ * left out and the wizard says so, which is better than appearing to keep them
+ * and silently dropping them at submit.
+ */
+const DRAFT_KEY = "papot.partner.draft.v1";
+
+type DraftState = Omit<WizardState, "photos" | "documents" | "autosaveStatus">;
+
+function readDraft(): DraftState | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return d && typeof d === "object" && typeof d.step === "number" ? (d as DraftState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(s: WizardState) {
+  try {
+    const { photos: _p, documents: _d, autosaveStatus: _a, ...keep } = s;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(keep));
+    return true;
+  } catch {
+    // Private browsing, or the quota is full. The caller shows "non enregistré"
+    // rather than claiming a save that did not happen.
+    return false;
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* nothing to do: the draft simply outlives its usefulness */
+  }
+}
 
 type RoomItem = { id: number; name: string; type: string; capacity: string; beds: string; price: string; units: string };
 type VehicleItem = { id: number; make: string; model: string; year: string; type: string; seats: string; transmission: string };
@@ -1258,11 +1312,13 @@ function StepSuccess({ onDashboard, onPreview, onAdd }: { onDashboard: () => voi
 function WizardShell({
   step, totalSteps, stepName, onExit, onBack, onContinue,
   continueLabel, canContinue, autosave, isFirstStep, isLastStep, missing = [], children,
+  onSaveAndExit,
 }: {
   step: number; totalSteps: number; stepName: string;
   onExit: () => void; onBack: () => void; onContinue: () => void;
   continueLabel: string; canContinue: boolean;
-  autosave: "saved" | "saving"; isFirstStep: boolean; isLastStep: boolean;
+  autosave: "saved" | "saving" | "unsaved"; isFirstStep: boolean; isLastStep: boolean;
+  onSaveAndExit: () => void;
   missing?: string[];
   children: React.ReactNode;
 }) {
@@ -1290,7 +1346,11 @@ function WizardShell({
         <div className="flex items-center gap-3">
           <span className="hidden sm:flex items-center gap-1.5 text-xs text-[#6ad7fb]">
             <Ico.Save />
-            {autosave === "saving" ? "Enregistrement…" : "Enregistré"}
+            {autosave === "saving"
+              ? "Enregistrement…"
+              : autosave === "unsaved"
+                ? "Non enregistré"
+                : "Brouillon gardé"}
           </span>
           <button className="hidden sm:block text-xs text-[#6ad7fb] hover:text-white font-medium transition-colors">
             Aide
@@ -1326,7 +1386,10 @@ function WizardShell({
                 <Ico.ArrowLeft /> Retour
               </button>
             )}
-            <button className="hidden sm:block text-xs text-[#b0a090] hover:text-[#7a6355] transition-colors">
+            <button
+              onClick={onSaveAndExit}
+              className="hidden sm:block text-xs text-[#b0a090] hover:text-[#7a6355] transition-colors"
+            >
               Enregistrer et quitter
             </button>
           </div>
@@ -1380,19 +1443,42 @@ export default function PartnerOnboardingWizard({
   onClose: () => void;
   onDashboard?: (type: PartnerType) => void;
 }) {
-  const [state, setState] = useState<WizardState>({
-    step: 0,
+  // The draft is read once, synchronously, so the first paint already shows the
+  // restored answers rather than an empty form that fills in a tick later.
+  const [state, setState] = useState<WizardState>(() => {
+    const draft = readDraft();
+    return draft
+      ? { ...draft, autosaveStatus: "saved" as const, photos: [], documents: {} }
+      : ({
+          step: 0,
     partnerType: null,
     formData: {},
     amenities: [],
     hours: DEFAULT_HOURS,
     rooms: [],
     vehicles: [],
-    autosaveStatus: "saved",
-    photos: [],
-    documents: {},
+          autosaveStatus: "saved",
+          photos: [],
+          documents: {},
+        } as WizardState);
   });
   const [submitting, setSubmitting] = useState(false);
+  const [restored] = useState(() => readDraft() !== null);
+
+  // Every change to the answers is written back. `step` is included on purpose:
+  // coming back to the step you left is most of what "reprendre" means.
+  useEffect(() => {
+    if (state.step === 0 && !state.partnerType) return; // nothing worth keeping yet
+    const ok = writeDraft(state);
+    setState(prev =>
+      prev.autosaveStatus === (ok ? "saved" : "unsaved")
+        ? prev
+        : { ...prev, autosaveStatus: ok ? "saved" : "unsaved" },
+    );
+  }, [
+    state.step, state.partnerType, state.formData, state.amenities,
+    state.hours, state.rooms, state.vehicles,
+  ]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const updateForm = (k: string, v: string) =>
@@ -1486,6 +1572,8 @@ export default function PartnerOnboardingWizard({
         p_payload: { ...buildPayload(partnerType, state), photos: paths, documents },
       });
       if (error) throw error;
+      // Sent and accepted: the draft has done its job and must not reappear.
+      clearDraft();
 
       go(1); // success
     } catch (err) {
@@ -1568,12 +1656,13 @@ export default function PartnerOnboardingWizard({
           <StepSuccess
             onDashboard={() => (onDashboard ? onDashboard(partnerType) : onClose())}
             onPreview={onClose}
-            onAdd={() =>
+            onAdd={() => {
+              clearDraft();
               setState({
                 step: 0, partnerType: null, formData: {}, amenities: [],
                 hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved", photos: [], documents: {},
-              })
-            }
+              });
+            }}
           />
         );
     }
@@ -1585,6 +1674,10 @@ export default function PartnerOnboardingWizard({
       totalSteps={countedTotal}
       stepName={STEP_LABEL[current]}
       onExit={onClose}
+      onSaveAndExit={() => {
+        writeDraft(state);
+        onClose();
+      }}
       onBack={() => go(-1)}
       onContinue={current === "submit" ? submit : () => go(1)}
       continueLabel={
@@ -1596,6 +1689,15 @@ export default function PartnerOnboardingWizard({
       isLastStep={isSuccess}
       missing={missing}
     >
+      {/* Said once, on return. Photos and documents are File objects that
+          cannot be serialised, so they are genuinely gone — telling the
+          applicant is better than letting them discover it at submit. */}
+      {restored && state.step > 0 && (
+        <p className="mb-5 rounded-xl bg-[#D6F0FB] px-4 py-3 text-[13px] leading-relaxed text-[#00508a]">
+          Nous avons retrouvé votre brouillon et vous avons remis à l'étape où vous étiez. Les
+          photos et documents ne sont pas conservés entre deux visites : il faudra les rajouter.
+        </p>
+      )}
       {renderStep()}
     </WizardShell>
   );

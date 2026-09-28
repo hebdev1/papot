@@ -118,10 +118,6 @@ export function PanelPayments() {
         </div>
       )}
 
-      <Note>
-        Moyens de paiement enregistrés, remboursements et factures PDF nécessitent la passerelle de
-        paiement (section 6.1 du spec), encore à confirmer.
-      </Note>
     </>
   );
 }
@@ -135,11 +131,6 @@ export function PanelMessages() {
         title="Aucun message"
         body="Les messages des établissements et du support apparaîtront ici."
       />
-      <Note>
-        Nécessite <code className="mx-1 rounded bg-[#E9F9FE] px-1.5 py-0.5 text-[12px]">conversations</code> et
-        <code className="mx-1 rounded bg-[#E9F9FE] px-1.5 py-0.5 text-[12px]">messages</code>, avec le contexte
-        de réservation attaché.
-      </Note>
     </>
   );
 }
@@ -149,10 +140,6 @@ export function PanelNotifications() {
     <>
       <PageHeader title="Notifications" subtitle="Réservations, paiements, messages." />
       <EmptyState icon={Bell} title="Rien de neuf" body="Vos alertes apparaîtront ici." />
-      <Note>
-        Nécessite une table <code className="mx-1 rounded bg-[#E9F9FE] px-1.5 py-0.5 text-[12px]">notifications</code>
-        et des déclencheurs sur les réservations et paiements.
-      </Note>
     </>
   );
 }
@@ -177,17 +164,16 @@ export function PanelReviews() {
               <p className="font-display font-bold text-[#3E2C23]">
                 Comment s'est passé votre séjour à {b.items[0]?.title} ?
               </p>
-              <button className="mt-3 rounded-xl bg-[#e76f2e] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#d05e20]">
-                Écrire un avis
-              </button>
+              {/* No review form exists yet, and a button that does nothing is
+                  worse than none: it reads as broken rather than unbuilt. The
+                  line says what is true until the form is written. */}
+              <p className="mt-2 text-[13px] text-[#7a6355]">
+                La notation ouvrira bientôt. Votre séjour reste listé ici en attendant.
+              </p>
             </div>
           ))}
         </div>
       )}
-      <Note>
-        Le formulaire (notes par critère selon le service, photos) nécessite une table
-        <code className="mx-1 rounded bg-[#E9F9FE] px-1.5 py-0.5 text-[12px]">reviews</code>.
-      </Note>
     </>
   );
 }
@@ -279,10 +265,3 @@ export function PanelProfile() {
 }
 
 /** Honest note about what is not built yet, rather than a fake screen. */
-function Note({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mt-6 rounded-xl bg-[#E9F9FE] px-4 py-3 text-[12.5px] leading-relaxed text-[#7a6355]">
-      {children}
-    </p>
-  );
-}
