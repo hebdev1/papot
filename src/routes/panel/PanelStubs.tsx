@@ -212,44 +212,32 @@ export function PanelSupport() {
  * mimed.
  */
 export function PanelProfile() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile, displayName, saveProfile } = useAuth();
   const [full_name, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // The form is seeded from the shared profile rather than fetching its own
+  // copy, so it cannot disagree with the header two inches above it.
+  const loaded = profile !== null;
   useEffect(() => {
-    if (!user) return;
-    let live = true;
-    void supabase
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!live) return;
-        setFullName(data?.full_name ?? (user.user_metadata?.full_name as string) ?? "");
-        setPhone(data?.phone ?? "");
-        setLoaded(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [user]);
+    if (!profile) return;
+    setFullName(profile.full_name ?? "");
+    setPhone(profile.phone ?? "");
+  }, [profile]);
 
   const save = async () => {
-    if (!user) return;
     setSaving(true);
     setError(null);
-    const { error: err } = await supabase
-      .from("profiles")
-      .update({ full_name: full_name.trim() || null, phone: phone.trim() || null })
-      .eq("id", user.id);
+    const { error: err } = await saveProfile({
+      full_name: full_name.trim() || null,
+      phone: phone.trim() || null,
+    });
     setSaving(false);
     if (err) {
-      setError("L'enregistrement a échoué. Vérifiez votre connexion et réessayez.");
+      setError(err);
       return;
     }
     setSaved(true);
@@ -275,11 +263,11 @@ export function PanelProfile() {
 
       <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[#e2d5c3] bg-white p-5">
         <span className="grid h-14 w-14 shrink-0 place-content-center rounded-full bg-[#002089] text-lg font-bold text-white">
-          {(full_name?.[0] || user?.email?.[0] || "?").toUpperCase()}
+          {(displayName[0] ?? "?").toUpperCase()}
         </span>
         <div className="min-w-0">
           <p className="truncate font-display text-lg font-bold text-[#3E2C23]">
-            {full_name || user?.email?.split("@")[0]}
+            {displayName}
           </p>
           <p className="truncate text-[13px] text-[#7a6355]">{user?.email}</p>
         </div>

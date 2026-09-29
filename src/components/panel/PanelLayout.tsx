@@ -179,8 +179,9 @@ function DesktopSidebar({ open, setOpen }: { open: boolean; setOpen: (v: boolean
 }
 
 function PanelHeader() {
-  const { user } = useAuth();
-  const email = user?.email ?? "";
+  // The initial came from the email, so renaming yourself changed nothing here
+  // and a "marie.joseph@…" who calls herself Rose still saw an M.
+  const { displayName } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#e2d5c3] bg-[#FBF7F0]/90 backdrop-blur">
@@ -206,7 +207,7 @@ function PanelHeader() {
           aria-label="Profil"
           className="grid h-10 w-10 shrink-0 place-content-center rounded-full bg-[#002089] text-sm font-bold text-white"
         >
-          {(email[0] ?? "?").toUpperCase()}
+          {(displayName[0] ?? "?").toUpperCase()}
         </Link>
       </div>
     </header>

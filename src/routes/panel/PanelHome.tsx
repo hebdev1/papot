@@ -31,14 +31,13 @@ const QUICK = [
  * nothing booked, preparation when something is coming up, reviews afterwards.
  */
 export function PanelHome() {
-  const { user } = useAuth();
+  const { displayName } = useAuth();
   const { bookings, loading, error, reload } = useMyBookings();
 
-  const firstName =
-    bookings[0]?.first_name ||
-    (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
-    user?.email?.split("@")[0] ||
-    "";
+  // The profile wins over the name on a booking: a booking carries the
+  // traveller's name, which is not always the account holder's, and the person
+  // who just renamed themselves in the settings expects to be greeted by it.
+  const firstName = displayName.split(" ")[0] || bookings[0]?.first_name || "";
 
   const next = nextUpItem(bookings);
   const awaitingReview = bookings.filter(bookingIsPast).slice(0, 1);
