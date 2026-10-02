@@ -171,13 +171,32 @@ export function MenuOptions() {
   const saveGroup = async () => {
     if (!restaurant) return;
     if (!group.name.trim()) return setError("Donnez un nom à la question.");
+
+    // `modifier_groups` carries the same three rules as `meal_groups`, and the
+    // form could contradict them: « Un seul choix » with un maximum de 3, or un
+    // minimum au-dessus du maximum. The database refuses both, in English, with
+    // a constraint name. « Un seul choix » *means* a maximum of one, so the
+    // field follows the type instead of arguing with it; the ordering is said
+    // in French before the write rather than discovered after it.
+    const min = Math.max(0, Math.trunc(Number(group.min_select)) || 0);
+    const max =
+      group.selection === "single" ? 1 : Math.max(1, Math.trunc(Number(group.max_select)) || 1);
+    if (min > max) {
+      return setError(
+        `Le minimum (${min}) dépasse le maximum (${max}). Baissez le minimum ou augmentez le maximum.`,
+      );
+    }
+    if (group.required && min < 1) {
+      return setError("Une question obligatoire demande au moins un choix : mettez le minimum à 1.");
+    }
+
     const payload = {
       listing_id: restaurant.id,
       name: group.name.trim(),
       selection: group.selection,
       required: group.required,
-      min_select: Number(group.min_select) || 0,
-      max_select: Number(group.max_select) || 1,
+      min_select: min,
+      max_select: max,
       active: group.active,
       position: groups.rows.length,
     };
@@ -496,7 +515,17 @@ export function MenuOptions() {
           </div>
           <div>
             <label className={labelClass} htmlFor="g-sel">Type de choix</label>
-            <select id="g-sel" value={group.selection} onChange={e => setGroup(g => ({ ...g, selection: e.target.value }))} className={selectClass}>
+            <select id="g-sel" value={group.selection}
+              onChange={e =>
+                setGroup(g => ({
+                  ...g,
+                  selection: e.target.value,
+                  // Choosing « un seul choix » sets the maximum it implies, so
+                  // the box never shows a number the type forbids.
+                  max_select: e.target.value === "single" ? "1" : g.max_select,
+                }))
+              }
+              className={selectClass}>
               <option value="single">Un seul choix</option>
               <option value="multiple">Plusieurs choix</option>
               <option value="quantity">Choix avec quantité</option>
@@ -504,7 +533,16 @@ export function MenuOptions() {
           </div>
           <div>
             <label className={labelClass} htmlFor="g-max">Maximum</label>
-            <input id="g-max" value={group.max_select} onChange={e => setGroup(g => ({ ...g, max_select: e.target.value }))} inputMode="numeric" className={inputClass} />
+            <input id="g-max"
+              value={group.selection === "single" ? "1" : group.max_select}
+              disabled={group.selection === "single"}
+              onChange={e => setGroup(g => ({ ...g, max_select: e.target.value }))}
+              inputMode="numeric" className={cn(inputClass, "disabled:opacity-60")} />
+            {group.selection === "single" && (
+              <p className="mt-1 text-[12px] text-admin-ink-3">
+                « Un seul choix » veut dire un maximum de 1.
+              </p>
+            )}
           </div>
           <div>
             <label className={labelClass} htmlFor="g-min">Minimum</label>

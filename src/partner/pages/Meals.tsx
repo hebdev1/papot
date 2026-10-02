@@ -48,6 +48,40 @@ type Option = {
 type Fixed = { id: string; template_id: string; item_id: string; quantity: number; position: number };
 type Dish = { id: string; name: string };
 
+/**
+ * Keep an étape inside the three rules `meal_groups` carries, before the write.
+ *
+ * The screen asks three things — obligatoire, min, max — and never mentions
+ * `selection`, which every étape is created with as `'single'`. So typing 2 in
+ * the max box produced `selection='single', max_select=2`, and the database
+ * refused it: `new row for relation "meal_groups" violates check constraint
+ * "meal_single_picks_one"`. A restaurateur read that sentence, in English, with
+ * a constraint name in it.
+ *
+ * `selection` is not a fourth question to ask. It *is* the maximum: one choice
+ * is `single`, several is `multiple`. So it follows the number instead of
+ * being asked about, and the two neighbouring rules — `max >= min`, and an
+ * étape obligatoire needs `min >= 1` — are settled in the same place.
+ *
+ * Which of min and max gives way depends on which one was just edited: raising
+ * the minimum pushes the maximum up, lowering the maximum pulls the minimum
+ * down. Respecting the field under the cursor is the difference between a form
+ * that helps and one that fights back.
+ */
+function coherent(g: Group, patch: Partial<Group>): Partial<Group> {
+  const next = { ...g, ...patch };
+  const whole = (n: number, floor: number) => Math.max(floor, Math.trunc(n) || floor);
+
+  let min = whole(next.min_select, 0);
+  let max = whole(next.max_select, 1);
+
+  if (next.required) min = Math.max(1, min);
+  if (patch.max_select !== undefined) min = Math.min(min, max);
+  else max = Math.max(max, min);
+
+  return { ...patch, min_select: min, max_select: max, selection: max > 1 ? "multiple" : "single" };
+}
+
 const CATEGORIES = [
   "Protéine", "Riz / Base", "Pâtes", "Légumes", "Salade", "Banane", "Pomme de terre",
   "Pain", "Sauce", "Garniture", "Extra", "Dessert", "Boisson", "Autre",
@@ -228,7 +262,11 @@ export function Meals() {
   };
 
   const patchGroup = (g: Group, patch: Partial<Group>) =>
-    run(() => table("meal_groups").update(patch).eq("id", g.id) as Promise<{ error: unknown }>, groups.reload);
+    run(
+      () =>
+        table("meal_groups").update(coherent(g, patch)).eq("id", g.id) as Promise<{ error: unknown }>,
+      groups.reload,
+    );
 
   const [optDraft, setOptDraft] = useState<Record<string, { ref: string; price: string }>>({});
   const oAt = (id: string) => optDraft[id] ?? { ref: "", price: "0" };

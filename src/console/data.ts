@@ -72,6 +72,40 @@ export type TableResult<T> = {
 };
 
 /** Turn a Postgres error into something an operator can act on. */
+/**
+ * Check constraints a console screen can actually trip, said in French.
+ *
+ * Keyed by constraint name because that is what PostgreSQL puts in the message.
+ * A rule absent from here still gets a sentence a person can read — it just
+ * cannot name the field.
+ */
+const CHECK_RULES: Record<string, string> = {
+  meal_single_picks_one:
+    "Une étape « un seul choix » ne peut pas avoir un maximum supérieur à 1.",
+  single_picks_one: "Une question « un seul choix » ne peut pas avoir un maximum supérieur à 1.",
+  meal_group_range_ordered: "Le minimum ne peut pas dépasser le maximum.",
+  group_range_ordered: "Le minimum ne peut pas dépasser le maximum.",
+  meal_required_needs_one: "Une étape obligatoire demande au moins un choix (minimum 1).",
+  required_needs_one: "Une question obligatoire demande au moins un choix (minimum 1).",
+  meal_group_min_positive: "Le maximum doit être d'au moins 1 et le minimum ne peut pas être négatif.",
+  group_min_positive: "Le maximum doit être d'au moins 1 et le minimum ne peut pas être négatif.",
+  option_is_one_thing: "Un choix porte soit sur un composant, soit sur un plat — pas les deux.",
+  fixed_quantity_positive: "La quantité incluse doit être comprise entre 1 et 20.",
+  template_price_positive: "Le prix de base ne peut pas être négatif.",
+  menu_discount_is_lower: "Le prix promotionnel doit être inférieur au prix normal.",
+  menu_price_positive: "Le prix ne peut pas être négatif.",
+  menu_prep_sane: "Le temps de préparation doit être compris entre 1 et 480 minutes.",
+  menu_window_ordered: "L'heure de fin doit être après l'heure de début.",
+  menu_window_paired: "Indiquez les deux heures de disponibilité, ou aucune.",
+  guest_range_ordered: "Le nombre maximum de convives ne peut pas être inférieur au minimum.",
+  min_guests_positive: "Une table accueille au moins un convive.",
+  partner_packages_window_check: "La date de fin doit être après la date de début.",
+  partner_discounts_check2: "La date de fin doit être après la date de début.",
+  partner_discounts_percent_check: "Le pourcentage doit être compris entre 0 et 100.",
+  package_lines_quantity_check: "La quantité d'une ligne doit être d'au moins 1.",
+  listing_units_units_check: "Un type de chambre compte au moins une unité.",
+};
+
 export function friendlyError(error: { message?: string; code?: string } | null): string {
   if (!error) return "";
   const msg = error.message ?? "";
@@ -81,7 +115,19 @@ export function friendlyError(error: { message?: string; code?: string } | null)
       : "Vous n'avez pas la permission d'effectuer cette action.";
   }
   if (error.code === "P0002") return msg || "Élément introuvable.";
-  if (error.code === "23514") return msg || "Cette action ne respecte pas une règle de la plateforme.";
+  // A check-constraint violation is the one error whose text is never meant for
+  // a person: PostgreSQL says `new row for relation "meal_groups" violates
+  // check constraint "meal_single_picks_one"`, in English, with a constraint
+  // name in it, and that sentence reached a restaurateur. The named rules get a
+  // French sentence; anything else gets the generic one, never the raw text.
+  // (42501 and P0002 keep `msg` because those messages are written by the
+  // project's own functions, in French, for exactly this purpose.)
+  if (error.code === "23514") {
+    const rule = Object.keys(CHECK_RULES).find(name => msg.includes(name));
+    return rule
+      ? CHECK_RULES[rule]
+      : "Cette combinaison de valeurs n'est pas permise. Vérifiez les nombres saisis.";
+  }
   if (error.code === "23505") return "Cette valeur existe déjà.";
   if (msg.includes("Failed to fetch")) return "Connexion impossible. Vérifiez votre réseau.";
   return msg || "L'action a échoué.";
