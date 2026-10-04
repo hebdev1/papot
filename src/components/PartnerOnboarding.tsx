@@ -1614,10 +1614,28 @@ export default function PartnerOnboardingWizard({
         documents.push({ type: code, path });
       }
 
-      const { error } = await supabase.rpc("submit_partner_application", {
+      const { data: created, error } = await supabase.rpc("submit_partner_application", {
         p_payload: { ...buildPayload(partnerType, state), photos: paths, documents },
       });
       if (error) throw error;
+
+      // L'accusé de réception que l'écran de succès promet.
+      //
+      // `send-partner-confirmation` est déployée et fonctionne depuis des
+      // semaines, et rien ne l'appelait : la promesse était faite, le courriel
+      // ne partait pas. La RPC renvoyait déjà l'identifiant, que le client
+      // jetait.
+      //
+      // En oubli volontaire, comme pour une commande : la candidature est
+      // enregistrée, et un courriel qui échoue ne doit pas faire croire le
+      // contraire. La fonction ne reçoit que l'identifiant et écrit à
+      // l'adresse portée par la ligne.
+      const applicationId = (created as { id?: string } | null)?.id;
+      if (applicationId) {
+        void supabase.functions
+          .invoke("send-partner-confirmation", { body: { id: applicationId } })
+          .catch(e => console.error("Confirmation email failed:", e));
+      }
       // Sent and accepted: the draft has done its job and must not reappear.
       clearDraft();
 

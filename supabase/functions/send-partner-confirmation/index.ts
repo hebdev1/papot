@@ -60,7 +60,7 @@ Deno.serve(async req => {
 
   const { data: app, error } = await supabase
     .from("partner_applications")
-    .select("id, type, first_name, email, details, created_at, confirmation_sent_at")
+    .select("id, type, first_name, email, business_name, created_at, confirmation_sent_at")
     .eq("id", id)
     .is("confirmation_sent_at", null)
     .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
@@ -75,10 +75,12 @@ Deno.serve(async req => {
   }
 
   const label = TYPE_LABELS[app.type] ?? app.type;
-  const business =
-    (app.details as Record<string, string> | null)?.name ??
-    (app.details as Record<string, string> | null)?.company ??
-    label;
+  // `details` n'existe plus sur cette table : le nom du commerce vit dans
+  // `business_name` depuis que le formulaire a ete refait. La fonction
+  // demandait toujours l'ancienne colonne, PostgREST refusait la requete, et
+  // elle rendait 500 a chaque appel -- silencieusement, puisque rien ne
+  // l'appelait.
+  const business = app.business_name ?? label;
 
   const html = `<!doctype html>
 <html lang="fr">
