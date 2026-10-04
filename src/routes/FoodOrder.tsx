@@ -220,7 +220,22 @@ export function FoodCheckout() {
       return;
     }
 
-    const reference = (data as { reference: string }).reference;
+    const { id, reference } = data as { id: string; reference: string };
+
+    // L'accusé de réception, en oubli volontaire.
+    //
+    // Sans compte, l'URL de confirmation est la seule copie qu'un invité
+    // possède : fermer l'onglet perdait la commande. La fonction edge ne
+    // reçoit que l'identifiant et écrit à l'adresse qui est sur la ligne, donc
+    // elle ne peut pas servir à écrire à quelqu'un d'autre.
+    //
+    // Rien ne dépend du résultat, et c'est le point : la cuisine a déjà la
+    // commande. Un courriel qui échoue -- clé absente, fournisseur en panne --
+    // ne doit pas faire croire que la commande a échoué.
+    void supabase.functions
+      .invoke("send-order-confirmation", { body: { id } })
+      .catch(e => console.error("Confirmation email failed:", e));
+
     cart.clear();
     navigate(`/commande/${reference}?tel=${encodeURIComponent(phone.trim())}`);
   };

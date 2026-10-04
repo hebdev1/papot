@@ -4375,6 +4375,7 @@ export type Database = {
         Row: {
           address: string | null
           address_notes: string | null
+          confirmation_sent_at: string | null
           created_at: string
           currency: string
           customer_email: string | null
@@ -4405,6 +4406,7 @@ export type Database = {
         Insert: {
           address?: string | null
           address_notes?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -4435,6 +4437,7 @@ export type Database = {
         Update: {
           address?: string | null
           address_notes?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
