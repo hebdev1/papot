@@ -28,6 +28,7 @@ import { PanelLayout } from "./components/panel/PanelLayout";
 import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
 import { PanelFoodOrders } from "./routes/panel/PanelFoodOrders";
+import { PanelSecurity } from "./routes/panel/PanelSecurity";
 import { PanelBookingDetail } from "./routes/panel/PanelBookingDetail";
 import {
   PanelMessages, PanelNotifications, PanelPayments,
@@ -136,6 +137,7 @@ function Shell() {
             <Route path="notifications" element={<PanelNotifications />} />
             <Route path="aide" element={<PanelSupport />} />
             <Route path="profil" element={<PanelProfile />} />
+            <Route path="securite" element={<PanelSecurity />} />
             <Route path="parametres" element={<PanelProfile />} />
             <Route path="recherche" element={<Navigate to="/search?kind=stay" replace />} />
             <Route path="*" element={<Navigate to="/compte" replace />} />

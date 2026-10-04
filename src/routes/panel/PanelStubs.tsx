@@ -252,7 +252,7 @@ export function PanelProfile() {
   const LINKS = [
     { to: "/compte/paiements", label: "Moyens de paiement" },
     { to: "/compte/notifications", label: "Notifications" },
-    { to: "/reset-password", label: "Sécurité — changer le mot de passe" },
+    { to: "/compte/securite", label: "Sécurité — changer le mot de passe" },
     { to: "/confidentialite", label: "Confidentialité" },
     { to: "/conditions", label: "Conditions générales" },
   ];
