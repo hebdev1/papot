@@ -529,6 +529,16 @@ export function FoodCheckout() {
               <p className="mt-4 text-xs text-[#7a6355]">Choisissez votre zone de livraison.</p>
             )}
 
+            {/* Le bouton est désactivé par quatre termes et trois seulement
+                disaient pourquoi. Sans celui-ci, un restaurant sans aucun mode
+                de retrait laissait un bouton mort et muet : rien à cliquer,
+                rien à lire, rien à corriger. */}
+            {!mode && (
+              <p className="mt-4 text-xs text-[#b3261e] bg-[#fdecea] border border-[#f5c2bd] rounded-xl px-3 py-2.5">
+                Ce restaurant n'a indiqué aucun mode de retrait. Contactez-le directement.
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={busy || belowMinimum || !mode || needsZone}

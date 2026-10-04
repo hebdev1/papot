@@ -903,10 +903,10 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
           )}
 
           <section className={card}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`${h2} mb-0`}>Carte</h2>
-              <span className="text-xs font-semibold text-[#002089] underline">Carte PDF</span>
-            </div>
+            {/* Il y avait « Carte PDF » ici : un <span> souligné en bleu, qui a
+                tout d'un lien et n'en est pas un — aucun PDF n'existe nulle
+                part dans le projet. La carte lisible est celle d'en dessous. */}
+            <h2 className={`${h2} mb-4`}>Carte</h2>
             <div className="flex gap-2 mb-4">
               {categories.map(c => (
                 <button
