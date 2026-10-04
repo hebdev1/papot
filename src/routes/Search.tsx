@@ -11,7 +11,14 @@ import { placeKey } from "../lib/placeKey";
 import { attrsOf, type ListingRow } from "../lib/listings";
 import type { Enums } from "../types/database";
 import { CarFilters, carMatches, emptyCarFilters, type CarDetail, type CarFilterState } from "../components/CarFilters";
-import { RestaurantFilters, restaurantMatches, emptyRestaurantFilters, type RestaurantDetail, type RestaurantFilterState } from "../components/RestaurantFilters";
+import {
+  RestaurantFilters,
+  restaurantMatches,
+  emptyRestaurantFilters,
+  type RestaurantDetail,
+  type RestaurantFilterState,
+  type RestaurantOrdering,
+} from "../components/RestaurantFilters";
 
 type Kind = Enums<"listing_kind">;
 
@@ -75,6 +82,7 @@ export function Search() {
   const [carFilters, setCarFilters] = useState<CarFilterState>(() => emptyCarFilters(300));
   const [restoDetails, setRestoDetails] = useState<Record<string, RestaurantDetail>>({});
   const [restoFilters, setRestoFilters] = useState<RestaurantFilterState>(emptyRestaurantFilters);
+  const [restoOrdering, setRestoOrdering] = useState<Record<string, RestaurantOrdering>>({});
 
   const checkin = params.get("checkin");
   const checkout = params.get("checkout");
@@ -127,6 +135,21 @@ export function Search() {
             byId[d.listing_id] = d;
           });
           setRestoDetails(byId);
+
+          // Ce qui se commande, et comment. Jamais lu ici jusqu'à présent.
+          const { data: rs, error: rsErr } = await supabase
+            .from("restaurant_settings")
+            .select("listing_id, accept_online_orders, allow_delivery");
+          if (cancelled) return;
+          if (rsErr) console.error("Restaurant settings failed:", rsErr);
+          const ordering: Record<string, RestaurantOrdering> = {};
+          (rs ?? []).forEach(o => {
+            ordering[o.listing_id] = {
+              accept_online_orders: o.accept_online_orders,
+              allow_delivery: o.allow_delivery,
+            };
+          });
+          setRestoOrdering(ordering);
         }
 
         if (kind === "car" && rows.length) {
@@ -189,7 +212,7 @@ export function Search() {
         const d = restoDetails[l.id];
         const haystack = placeKey(`${l.city} ${l.location} ${l.name} ${d?.cuisine ?? ""}`);
         if (q && !haystack.includes(q)) return false;
-        return restaurantMatches(l, d, restoFilters);
+        return restaurantMatches(l, d, restoFilters, restoOrdering[l.id]);
       }
       if (q && !placeKey(`${l.city} ${l.location} ${l.name}`).includes(q)) return false;
       if (l.price > maxPrice) return false;
@@ -203,7 +226,7 @@ export function Search() {
     if (sort === "rating")
       out = [...out].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
     return out;
-  }, [listings, where, kind, maxPrice, types, essentials, cancellation, sort, carDetails, carFilters, restoDetails, restoFilters]);
+  }, [listings, where, kind, maxPrice, types, essentials, cancellation, sort, carDetails, carFilters, restoDetails, restoFilters, restoOrdering]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
@@ -378,7 +401,7 @@ export function Search() {
                 kind === "car" ? (
                   <CarCard key={l.id} listing={l} rate={rate} detail={carDetails[l.id]} />
                 ) : (
-                  <RestaurantCard key={l.id} listing={l} />
+                  <RestaurantCard key={l.id} listing={l} ordering={restoOrdering[l.id]} />
                 ),
               )}
             </div>

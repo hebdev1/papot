@@ -3,7 +3,8 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import { useAuth } from "../lib/auth";
 import { useCart } from "../lib/cart";
-import { ShoppingBag } from "lucide-react";
+import { useFoodCart } from "../lib/foodCart";
+import { ShoppingBag, UtensilsCrossed } from "lucide-react";
 
 /* Canvas 1a: Hébergements · Voitures · Restaurants · Vols, then
    Devenir partenaire / Se connecter / S'inscrire. */
@@ -17,6 +18,7 @@ const NAV = [
 export function Header({ onPartner }: { onPartner?: () => void }) {
   const { user } = useAuth();
   const { count } = useCart();
+  const food = useFoodCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname, search } = useLocation();
 
@@ -69,6 +71,24 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
             >
               Devenir partenaire
             </button>
+          )}
+          {/* Le même raisonnement que pour le panier voyage, appliqué au
+              panier repas : il survivait en localStorage et devenait invisible
+              dès qu'on quittait la fiche du restaurant. On ne pouvait y
+              revenir qu'en retrouvant ce restaurant-là. Le nom est stocké dans
+              le panier exactement pour cette pastille. */}
+          {food.count > 0 && food.listingId && (
+            <Link
+              to={`/commander/${food.listingId}`}
+              aria-label={`Commande en cours chez ${food.listingName ?? "un restaurant"}, ${food.count} article${food.count > 1 ? "s" : ""}`}
+              title={food.listingName ?? undefined}
+              className="relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              <UtensilsCrossed className="h-4 w-4" aria-hidden />
+              <span className="grid h-[18px] min-w-[18px] place-content-center rounded-full bg-[#e76f2e] px-1 text-[11px] font-bold leading-none tabular-nums">
+                {food.count}
+              </span>
+            </Link>
           )}
           {/* A cart nobody can find is not a cart. It appears only when there
               is something in it, so an empty header stays quiet. */}

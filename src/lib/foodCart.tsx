@@ -9,8 +9,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
  * two together would force every cart screen to know about both.
  */
 
+/**
+ * Les cinq genres que la contrainte `customization_kind_known` autorise.
+ *
+ * Le type n'en déclarait que deux, alors que la base en accepte cinq et que
+ * la page de suivi sait déjà écrire « Sans X » et « Extra X ». Aucun écran ne
+ * pouvait en produire : les deux constructeurs passaient `customizations: []`
+ * en dur. « Sans oignon » est pourtant la phrase la plus courante d'un
+ * client de restaurant.
+ */
 export type FoodCustomization = {
-  kind: "allergy" | "note";
+  kind: "remove" | "extra" | "option" | "allergy" | "note";
   label: string;
 };
 

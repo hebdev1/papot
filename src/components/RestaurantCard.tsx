@@ -4,7 +4,13 @@ import { Badge } from "./ui/cvui-badge";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 
 /** Canvas 3a — restaurant card with tonight's slots. */
-export function RestaurantCard({ listing }: { listing: ListingRow }) {
+export function RestaurantCard({
+  listing,
+  ordering,
+}: {
+  listing: ListingRow;
+  ordering?: { accept_online_orders: boolean; allow_delivery: boolean };
+}) {
   const a = attrsOf(listing);
   const slots = a.slots ?? [];
 
@@ -59,6 +65,17 @@ export function RestaurantCard({ listing }: { listing: ListingRow }) {
             <span className="font-semibold text-[#3E2C23]">{a.price_band}</span> · {listing.reviews} avis
           </p>
         </div>
+
+        {/* Dire ce qu'on peut faire d'ici : la commande vient d'être ouverte
+            sur tout le catalogue et la carte n'en montrait rien. */}
+        {ordering?.accept_online_orders && (
+          <div className="flex flex-wrap gap-1.5">
+            <Badge label="Commande en ligne" variant="success" appearance="subtle" size="small" animate={false} />
+            {ordering.allow_delivery && (
+              <Badge label="Livraison" variant="info" appearance="subtle" size="small" animate={false} />
+            )}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-1.5">
           {listing.amenities.map(am => (

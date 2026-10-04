@@ -5575,6 +5575,10 @@ export type Database = {
       }
       attach_items_to_trips: { Args: { p_booking: string }; Returns: undefined }
       build_partner_listings: { Args: { p_partner: string }; Returns: number }
+      cancel_food_order: {
+        Args: { p_phone?: string; p_reason?: string; p_reference: string }
+        Returns: string
+      }
       claim_my_purchases: { Args: never; Returns: Json }
       claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }

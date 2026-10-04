@@ -4,6 +4,19 @@ import type { Tables } from "../types/database";
 
 export type RestaurantDetail = Tables<"restaurant_details">;
 
+/**
+ * Ce qu'un restaurant accepte comme commande, pour la recherche.
+ *
+ * `restaurant_settings` n'était lu nulle part côté recherche : un
+ * restaurant qui livre et un qui ne prend aucune commande rendaient
+ * exactement la même carte. La commande vient d'être ouverte sur tout le
+ * catalogue et rien ne le disait.
+ */
+export type RestaurantOrdering = {
+  accept_online_orders: boolean;
+  allow_delivery: boolean;
+};
+
 export type RestaurantFilterState = {
   cuisines: string[];
   bands: string[];
@@ -14,6 +27,8 @@ export type RestaurantFilterState = {
   minRating: number | null;
   availableTonight: boolean;
   groupsOnly: boolean;
+  ordersOnline: boolean;
+  delivers: boolean;
 };
 
 export const emptyRestaurantFilters = (): RestaurantFilterState => ({
@@ -26,6 +41,8 @@ export const emptyRestaurantFilters = (): RestaurantFilterState => ({
   minRating: null,
   availableTonight: false,
   groupsOnly: false,
+  ordersOnline: false,
+  delivers: false,
 });
 
 const hasAll = (have: string[] | null | undefined, want: string[]) =>
@@ -35,8 +52,14 @@ export function restaurantMatches(
   listing: ListingRow,
   d: RestaurantDetail | undefined,
   f: RestaurantFilterState,
+  o?: RestaurantOrdering,
 ): boolean {
   const a = attrsOf(listing);
+
+  // Un restaurant dont on ignore les réglages ne passe pas un filtre qui
+  // porte sur eux : mieux vaut l'absence qu'une promesse non vérifiée.
+  if (f.ordersOnline && !o?.accept_online_orders) return false;
+  if (f.delivers && !(o?.accept_online_orders && o.allow_delivery)) return false;
 
   if (f.minRating !== null && (listing.rating ?? 0) < f.minRating) return false;
   // "Complet" in the canvas means no bookable slot tonight.
@@ -200,6 +223,20 @@ export function RestaurantFilters({
           >
             <span className={box(filters.availableTonight)}>{filters.availableTonight && <Icon.Check />}</span>
             Disponible ce soir
+          </button>
+          <button
+            onClick={() => setFilters(p => ({ ...p, ordersOnline: !p.ordersOnline }))}
+            className={rowBtn(filters.ordersOnline)}
+          >
+            <span className={box(filters.ordersOnline)}>{filters.ordersOnline && <Icon.Check />}</span>
+            Commande en ligne
+          </button>
+          <button
+            onClick={() => setFilters(p => ({ ...p, delivers: !p.delivers }))}
+            className={rowBtn(filters.delivers)}
+          >
+            <span className={box(filters.delivers)}>{filters.delivers && <Icon.Check />}</span>
+            Livraison
           </button>
         </div>
       </Group>

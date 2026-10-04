@@ -21,12 +21,13 @@ import { GuidePage } from "./routes/Guide";
 import { PrivacyPage, TermsPage } from "./routes/LegalPage";
 import { Checkout } from "./routes/Checkout";
 import { BookingConfirmed } from "./routes/BookingConfirmed";
-import { FoodCheckout, OrderTracking } from "./routes/FoodOrder";
+import { FoodCheckout, OrderLookup, OrderTracking } from "./routes/FoodOrder";
 import { Plan } from "./routes/Plan";
 import { AiBubble } from "./components/AiBubble";
 import { PanelLayout } from "./components/panel/PanelLayout";
 import { PanelHome } from "./routes/panel/PanelHome";
 import { PanelBookings } from "./routes/panel/PanelBookings";
+import { PanelFoodOrders } from "./routes/panel/PanelFoodOrders";
 import { PanelBookingDetail } from "./routes/panel/PanelBookingDetail";
 import {
   PanelMessages, PanelNotifications, PanelPayments,
@@ -126,6 +127,7 @@ function Shell() {
             <Route path="voyages" element={<PanelTripsPage />} />
             <Route path="voyages/:id" element={<PanelTripDetail />} />
             <Route path="reservations" element={<PanelBookings />} />
+            <Route path="commandes" element={<PanelFoodOrders />} />
             <Route path="reservations/:reference" element={<PanelBookingDetail />} />
             <Route path="favoris" element={<PanelFavoritesPage />} />
             <Route path="messages" element={<PanelMessages />} />
@@ -172,6 +174,7 @@ function Shell() {
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/booking/:id/confirmed" element={<BookingConfirmed />} />
           <Route path="/commander/:id" element={<FoodCheckout />} />
+          <Route path="/commande" element={<OrderLookup />} />
           <Route path="/commande/:reference" element={<OrderTracking />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -6,12 +6,12 @@ import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { attrsOf, formatRating, type ListingRow } from "../lib/listings";
 import { formatDateRange, nightsBetween, useCart, type CartItem } from "../lib/cart";
-import { useFoodCart } from "../lib/foodCart";
+import { useFoodCart, type FoodCustomization } from "../lib/foodCart";
 import { GuestsPicker } from "../components/GuestsPicker";
 import { StayDatesPicker } from "../components/StayDatesPicker";
 import { AddToTrip } from "../components/AddToTrip";
 import { formatGuests, partySize, readGuests, type Guests } from "../lib/guests";
-import { readStayDates, type StayDates } from "../lib/stayDates";
+import { nowInHaiti, readStayDates, type StayDates } from "../lib/stayDates";
 import { availabilityNote, useStayAvailability, useUnitsAvailability } from "../lib/availability";
 import type { Tables } from "../types/database";
 
@@ -21,6 +21,7 @@ type MenuItem = Tables<"menu_items"> & {
   menu_categories: { name: string; position: number } | null;
 };
 type PrivateOption = Tables<"private_options">;
+type RestaurantSettings = Tables<"restaurant_settings">;
 type Variation = { id: string; item_id: string; name: string; price: number; position: number };
 type OptionGroup = {
   id: string;
@@ -541,23 +542,31 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
 
   // Ordering is a separate opt-in from taking reservations, so the menu only
   // becomes clickable when the restaurant actually runs a kitchen queue.
-  const [ordering, setOrdering] = useState<{ on: boolean; min: number | null } | null>(null);
+  //
+  // La ligne entière, et non deux colonnes : le reste répond aux questions
+  // qu'on se pose *avant* de choisir un plat — est-ce qu'il livre, en combien
+  // de temps, à partir de combien. Le minimum, lui, ne s'affichait qu'une fois
+  // le panier non vide : on apprenait la règle après avoir joué.
+  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   useEffect(() => {
     let live = true;
     supabase
       .from("restaurant_settings")
-      .select("accept_online_orders, order_min_total")
+      .select("*")
       .eq("listing_id", listing.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!live) return;
-        const s = data as { accept_online_orders: boolean; order_min_total: number | null } | null;
-        setOrdering({ on: !!s?.accept_online_orders, min: s?.order_min_total ?? null });
+        setSettings((data as RestaurantSettings) ?? null);
       });
     return () => {
       live = false;
     };
   }, [listing.id]);
+
+  const ordering = settings
+    ? { on: !!settings.accept_online_orders, min: settings.order_min_total }
+    : null;
 
   const [switched, setSwitched] = useState(false);
   const [configuring, setConfiguring] = useState<string | null>(null);
@@ -690,6 +699,33 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
 
   const left = (id: string): number | null => (id in stock ? stock[id] : null);
   const isOut = (m: MenuItem) => m.sold_out || left(m.id) === 0;
+
+  /**
+   * Le plat est-il hors de son service, maintenant ?
+   *
+   * `available_weekdays` et `available_from`/`available_until` n'étaient
+   * appliqués que par le serveur : le bouton restait vif, on composait son
+   * panier, et le refus tombait au moment de payer — « X n'est pas servi ce
+   * jour-là », après la carte bancaire. La règle est la même que celle de
+   * `place_food_order`, y compris le détail qui compte : un tableau de jours
+   * **vide** veut dire tous les jours, pas aucun.
+   */
+  const offService = (m: MenuItem): string | null => {
+    const { weekday, time } = nowInHaiti();
+    const days = m.available_weekdays ?? [];
+    if (days.length > 0 && !days.includes(weekday)) {
+      const names = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+      const served = days.map(d => names[d]).filter(Boolean);
+      return served.length === 1 ? `Servi le ${served[0]}` : `Servi ${served.join(", ")}`;
+    }
+    if (m.available_from && m.available_until) {
+      const hhmm = (t: string) => t.slice(0, 5);
+      if (time < hhmm(m.available_from) || time > hhmm(m.available_until)) {
+        return `Servi de ${hhmm(m.available_from)} à ${hhmm(m.available_until)}`;
+      }
+    }
+    return null;
+  };
 
   const addToCart = (line: Parameters<typeof food.add>[1]) => {
     const outcome = food.add({ id: listing.id, name: listing.name }, line);
@@ -907,6 +943,40 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                 tout d'un lien et n'en est pas un — aucun PDF n'existe nulle
                 part dans le projet. La carte lisible est celle d'en dessous. */}
             <h2 className={`${h2} mb-4`}>Carte</h2>
+
+            {/* Les conditions avant les plats, pas après. Livre-t-il ? en
+                combien de temps ? à partir de quel montant ? Le minimum ne
+                s'affichait qu'une fois le panier non vide : on découvrait la
+                règle après avoir composé sa commande. */}
+            {settings?.accept_online_orders && (
+              <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl bg-[#E9F9FE] px-4 py-3 text-xs text-[#3E2C23]">
+                <span className="font-semibold">
+                  {[
+                    settings.allow_pickup && "À emporter",
+                    settings.allow_delivery && "Livraison",
+                    settings.allow_dine_in_orders && "Sur place",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                <span className="text-[#7a6355]">Prêt en ~{settings.order_prep_minutes} min</span>
+                {settings.order_min_total !== null && (
+                  <span className="text-[#7a6355]">
+                    Minimum {formatUsd(Number(settings.order_min_total))}
+                  </span>
+                )}
+                {settings.allow_delivery && settings.delivery_free_over !== null && (
+                  <span className="font-medium text-[#15803d]">
+                    Livraison offerte dès {formatUsd(Number(settings.delivery_free_over))}
+                  </span>
+                )}
+                {settings.order_max_advance_days > 0 && (
+                  <span className="text-[#7a6355]">
+                    Jusqu'à {settings.order_max_advance_days} j à l'avance
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex gap-2 mb-4">
               {categories.map(c => (
                 <button
@@ -923,14 +993,54 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
             <div className="flex flex-col gap-3">
               {menu
                 .filter((m: MenuItem) => m.menu_categories?.name === activeCat)
-                .map((m: MenuItem) => (
+                .map((m: MenuItem) => {
+                  const off = offService(m);
+                  const unavailable = isOut(m) || off !== null;
+                  return (
                   <div
                     key={m.id}
-                    className={`flex flex-wrap items-start justify-between gap-4 ${isOut(m) ? "opacity-55" : ""}`}
+                    className={`flex flex-wrap items-start justify-between gap-4 ${unavailable ? "opacity-55" : ""}`}
                   >
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[#3E2C23] text-sm">
+                    {/* La photo n'apparaît que si le restaurant en a posé une
+                        (il peut le faire depuis son écran Opérations). Aucun
+                        plat ne reçoit une image de banque : un plat sans photo
+                        s'affiche exactement comme avant. */}
+                    {m.image_url && (
+                      <img
+                        src={m.image_url}
+                        alt=""
+                        loading="lazy"
+                        className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      {/* Un <div>, pas un <p> : `Badge` rend un <div>, et un
+                          <div> dans un <p> est invalide — le navigateur ferme
+                          le paragraphe tout seul et React s'en plaint. Le
+                          défaut existait déjà pour les badges diététiques ;
+                          en ajouter deux ne faisait que l'aggraver. */}
+                      <div className="text-sm font-semibold text-[#3E2C23]">
                         {m.name}
+                        {m.chef_special && (
+                          <Badge
+                            label="Spécialité du chef"
+                            variant="primary"
+                            appearance="solid"
+                            size="small"
+                            animate={false}
+                            className="ml-2"
+                          />
+                        )}
+                        {m.popular && !m.chef_special && (
+                          <Badge
+                            label="Populaire"
+                            variant="info"
+                            appearance="subtle"
+                            size="small"
+                            animate={false}
+                            className="ml-2"
+                          />
+                        )}
                         {isOut(m) && (
                           <Badge
                             label="Épuisé"
@@ -952,9 +1062,17 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                             className="ml-2"
                           />
                         ))}
-                      </p>
+                      </div>
                       {m.detail && <p className="text-xs text-[#7a6355] mt-0.5">{m.detail}</p>}
-                      {!isOut(m) && left(m.id) !== null && (left(m.id) as number) <= 3 && (
+                      {off && (
+                        <p className="mt-1 text-[11px] font-semibold text-[#c9571a]">{off}</p>
+                      )}
+                      {m.prep_minutes !== null && !unavailable && (
+                        <p className="mt-1 text-[11px] text-[#7a6355]">
+                          Préparation ~{m.prep_minutes} min
+                        </p>
+                      )}
+                      {!unavailable && left(m.id) !== null && (left(m.id) as number) <= 3 && (
                         <p className="text-[11px] font-semibold text-[#c9571a] mt-1">
                           Plus que {left(m.id)}
                         </p>
@@ -985,12 +1103,18 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                         onClick={() => addDish(m)}
                         aria-expanded={needsChoosing(m) ? configuring === m.id : undefined}
                         disabled={
-                          isOut(m) ||
+                          unavailable ||
                           (sizesOf(m.id).length === 0 && m.price === null && m.discount_price === null)
                         }
                         className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-[#002089] text-[#002089] hover:bg-[#002089] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#002089] transition-colors"
                       >
-                        {isOut(m) ? "Épuisé" : needsChoosing(m) ? "Choisir" : "Ajouter"}
+                        {isOut(m)
+                          ? "Épuisé"
+                          : off
+                            ? "Hors service"
+                            : needsChoosing(m)
+                              ? "Choisir"
+                              : "Ajouter"}
                       </button>
                     )}
 
@@ -1005,7 +1129,8 @@ function RestaurantDetail({ listing, a, menu, privates, cart, navigate }: any) {
                       />
                     )}
                   </div>
-                ))}
+                  );
+                })}
             </div>
 
             {ordering?.on && food.listingId === listing.id && food.count > 0 && (
@@ -1535,6 +1660,35 @@ function Field({ label, value }: { label: string; value: string }) {
  * Nothing here is trusted: `place_food_order` reprices the whole line from the
  * menu. This exists so the customer sees the same number the kitchen will.
  */
+/** Le même compteur pour un plat et pour une formule. */
+function Stepper({
+  value,
+  onChange,
+  label,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  label: string;
+}) {
+  const btn =
+    "grid h-8 w-8 place-content-center rounded-lg border-2 border-[#e2d5c3] text-sm font-bold text-[#002089] transition-colors hover:border-[#002089] disabled:opacity-40";
+  return (
+    <span className="flex items-center gap-1.5">
+      <button type="button" onClick={() => onChange(Math.max(1, value - 1))} disabled={value <= 1}
+        aria-label={`Un de moins — ${label}`} className={btn}>
+        −
+      </button>
+      <span className="w-6 text-center text-sm font-bold tabular-nums text-[#3E2C23]" aria-live="polite">
+        {value}
+      </span>
+      <button type="button" onClick={() => onChange(Math.min(99, value + 1))} disabled={value >= 99}
+        aria-label={`Un de plus — ${label}`} className={btn}>
+        +
+      </button>
+    </span>
+  );
+}
+
 function DishConfigurator({
   dish,
   sizes,
@@ -1556,14 +1710,17 @@ function DishConfigurator({
     variation_id: string | null;
     variation_name: string | null;
     modifiers: { id: string; name: string; price_delta: number; quantity: number }[];
+    quantity: number;
     template_id: null;
     selections: never[];
-    customizations: { kind: "allergy" | "note"; label: string }[];
+    customizations: FoodCustomization[];
   }) => void;
 }) {
   const [size, setSize] = useState<string | null>(sizes[0]?.id ?? null);
   const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [note, setNote] = useState("");
+  const [qty, setQty] = useState(1);
+  const [without, setWithout] = useState("");
 
   const optionsOf = (groupId: string) => options.filter(o => o.group_id === groupId);
   const pickedIn = (groupId: string) => picked[groupId] ?? [];
@@ -1602,9 +1759,16 @@ function DishConfigurator({
         price_delta: Number(o.price_delta),
         quantity: 1,
       })),
+      quantity: qty,
       template_id: null,
+      // Chaque mention est une ligne à part, parce que la cuisine les lit une
+      // par une sur le ticket : « Sans oignon », « Sans coriandre ».
+      customizations: without
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(label => ({ kind: "remove" as const, label })),
       selections: [],
-      customizations: [],
     });
   };
 
@@ -1676,7 +1840,21 @@ function DishConfigurator({
         </fieldset>
       ))}
 
-      <label htmlFor={`cfg-note-${dish.id}`} className="text-[11px] uppercase tracking-wide text-[#7a6355] font-semibold">
+      <label htmlFor={`cfg-without-${dish.id}`} className="text-[11px] font-semibold uppercase tracking-wide text-[#7a6355]">
+        Sans…
+      </label>
+      <input
+        id={`cfg-without-${dish.id}`}
+        value={without}
+        onChange={e => setWithout(e.target.value)}
+        placeholder="oignon, coriandre"
+        className="mt-1 w-full rounded-lg border border-[#e2d5c3] px-3 py-2 text-xs text-[#3E2C23] outline-none focus:border-[#002089]"
+      />
+      <p className="mt-1 text-[11px] text-[#b0a090]">
+        Séparez par des virgules. Le restaurant ne peut pas toujours tout retirer.
+      </p>
+
+      <label htmlFor={`cfg-note-${dish.id}`} className="mt-4 block text-[11px] font-semibold uppercase tracking-wide text-[#7a6355]">
         Instructions
       </label>
       <input
@@ -1684,7 +1862,7 @@ function DishConfigurator({
         value={note}
         onChange={e => setNote(e.target.value)}
         placeholder="Sauce à part, bien cuit…"
-        className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e2d5c3] text-xs text-[#3E2C23] outline-none focus:border-[#002089]"
+        className="mt-1 w-full rounded-lg border border-[#e2d5c3] px-3 py-2 text-xs text-[#3E2C23] outline-none focus:border-[#002089]"
       />
 
       {missing.length > 0 && (
@@ -1693,14 +1871,17 @@ function DishConfigurator({
         </p>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* Pour en vouloir trois il fallait ajouter, puis changer le nombre
+            dans le tunnel, sur une autre page. */}
+        <Stepper value={qty} onChange={setQty} label={dish.name} />
         <button
           type="button"
           onClick={submit}
           disabled={missing.length > 0}
-          className="flex-1 min-w-40 bg-[#e76f2e] hover:bg-[#d05e20] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          className="min-w-40 flex-1 rounded-xl bg-[#e76f2e] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#d05e20] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Ajouter — {formatUsd(unit)}
+          Ajouter — {formatUsd(unit * qty)}
         </button>
         <button
           type="button"
@@ -1739,13 +1920,15 @@ function MealBuilder({
     variation_id: null;
     variation_name: null;
     modifiers: never[];
+    quantity: number;
     selections: { option_id: string; name: string; price_delta: number; quantity: number }[];
-    customizations: { kind: "allergy" | "note"; label: string }[];
+    customizations: FoodCustomization[];
   }) => void;
 }) {
   const [picked, setPicked] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
+  const [qty, setQty] = useState(1);
 
   const optionsOf = (groupId: string) => options.filter(o => o.group_id === groupId);
   const qtyOf = (optionId: string) => picked[optionId] ?? 0;
@@ -1794,10 +1977,12 @@ function MealBuilder({
         price_delta: Number(o.price_delta),
         quantity: qtyOf(o.id),
       })),
+      quantity: qty,
       customizations: [],
     });
     setPicked({});
     setNote("");
+    setQty(1);
     setOpen(false);
   };
 
@@ -1907,14 +2092,18 @@ function MealBuilder({
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {/* La quantité existait pour chaque option *dans* l'assiette, et
+                pas pour l'assiette. Deux formules identiques demandaient deux
+                passages. */}
+            <Stepper value={qty} onChange={setQty} label={template.name} />
             <button
               type="button"
               onClick={submit}
               disabled={missing.length > 0}
-              className="flex-1 min-w-40 bg-[#e76f2e] hover:bg-[#d05e20] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              className="min-w-40 flex-1 rounded-xl bg-[#e76f2e] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#d05e20] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Ajouter — {formatUsd(unit)}
+              Ajouter — {formatUsd(unit * qty)}
             </button>
             <button
               type="button"

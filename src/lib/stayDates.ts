@@ -22,6 +22,35 @@
 export const todayInHaiti = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Port-au-Prince" }).format(new Date());
 
+/**
+ * L'heure et le jour, à Port-au-Prince.
+ *
+ * Un restaurant sert son petit-déjeuner selon sa pendule, pas selon celle du
+ * navigateur : un client qui consulte depuis Montréal ou Paris ne doit pas
+ * voir un plat « servi le matin » grisé parce qu'il est 21 h chez lui.
+ *
+ * Le jour est numéroté comme `place_food_order` le numérote --
+ * `extract(isodow) - 1`, donc lundi = 0 et dimanche = 6 -- parce que c'est ce
+ * numéro-là qui est comparé à `menu_items.available_weekdays`. Les deux
+ * doivent compter pareil, sinon l'écran et la base ne parlent pas du même
+ * mardi.
+ */
+export function nowInHaiti(): { weekday: number; time: string } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Port-au-Prince",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? "";
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return {
+    weekday: Math.max(0, days.indexOf(get("weekday"))),
+    time: `${get("hour")}:${get("minute")}`,
+  };
+}
+
 export type StayDates = { checkin: string; checkout: string };
 
 export const MAX_NIGHTS = 90;

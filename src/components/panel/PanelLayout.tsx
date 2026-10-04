@@ -17,6 +17,7 @@ import {
   Star,
   Luggage,
   User,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 
@@ -35,6 +36,7 @@ const NAV = [
   { to: "/compte", label: "Accueil", Icon: Home, end: true },
   { to: "/compte/voyages", label: "Mes voyages", Icon: Luggage },
   { to: "/compte/reservations", label: "Réservations", Icon: Calendar },
+  { to: "/compte/commandes", label: "Mes commandes", Icon: UtensilsCrossed },
   { to: "/compte/favoris", label: "Favoris", Icon: Heart },
   { to: "/compte/messages", label: "Messages", Icon: MessageCircle },
   { to: "/compte/paiements", label: "Paiements", Icon: CreditCard },

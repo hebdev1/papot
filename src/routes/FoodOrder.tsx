@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatUsd } from "../lib/currency";
@@ -12,6 +12,7 @@ type Settings = {
   allow_pickup: boolean;
   allow_delivery: boolean;
   order_prep_minutes: number;
+  order_max_advance_days: number;
   order_min_total: number | string | null;
   delivery_eta_minutes: number;
   delivery_free_over: number | string | null;
@@ -45,6 +46,13 @@ const PAY_LABEL: Record<string, string> = {
   natcash: "NatCash",
   card: "Carte",
 };
+
+/**
+ * `datetime-local` veut `AAAA-MM-JJTHH:MM` dans l'heure du navigateur --
+ * `toISOString()` donnerait de l'UTC et décalerait les bornes.
+ */
+const localInput = (d: Date) =>
+  new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 
 const card = "bg-white rounded-2xl border border-[#e2d5c3] p-6";
 const label = "text-[11px] uppercase tracking-wide text-[#7a6355] font-semibold";
@@ -312,7 +320,16 @@ export function FoodCheckout() {
                   <span className={`block text-sm font-bold ${mode === m ? "text-[#e76f2e]" : "text-[#3E2C23]"}`}>
                     {MODE_LABEL[m]}
                   </span>
-                  <span className="block text-xs text-[#7a6355] mt-0.5">{MODE_HINT[m]}</span>
+                  {/* `pickup_instructions` et `delivery_instructions` étaient
+                      chargés depuis la base puis remplacés à l'écran par
+                      MODE_HINT : les mots du restaurateur étaient lus, puis
+                      jetés. Il connaît son comptoir mieux que nous. La phrase
+                      générique ne sert que lorsqu'il n'a rien écrit. */}
+                  <span className="mt-0.5 block text-xs text-[#7a6355]">
+                    {(m === "pickup" ? settings.pickup_instructions : null) ??
+                      (m === "delivery" ? settings.delivery_instructions : null) ??
+                      MODE_HINT[m]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -343,14 +360,26 @@ export function FoodCheckout() {
             {when === "later" && (
               <div className="max-w-xs">
                 <label className={label} htmlFor="sched">Heure souhaitée</label>
+                {/* Le champ n'avait ni plancher ni plafond : on pouvait
+                    demander hier, ou dans trois mois, et le serveur refusait
+                    après coup. `order_max_advance_days` disait depuis le début
+                    jusqu'où ce restaurant accepte. */}
                 <input
                   id="sched"
                   type="datetime-local"
                   value={scheduled}
                   onChange={e => setScheduled(e.target.value)}
+                  min={localInput(new Date(Date.now() + settings.order_prep_minutes * 60_000))}
+                  max={localInput(
+                    new Date(Date.now() + settings.order_max_advance_days * 86_400_000),
+                  )}
                   className={input}
                   required
                 />
+                <p className="mt-1 text-xs text-[#7a6355]">
+                  Jusqu'à {settings.order_max_advance_days} jour
+                  {settings.order_max_advance_days > 1 ? "s" : ""} à l'avance.
+                </p>
               </div>
             )}
 
@@ -375,9 +404,17 @@ export function FoodCheckout() {
                         </option>
                       ))}
                     </select>
-                    {zone?.eta_minutes && settings && (
-                      <p className="text-xs text-[#7a6355] mt-1">
-                        Environ {settings.order_prep_minutes + zone.eta_minutes} minutes au total.
+                    {/* Une zone sans `eta_minutes` faisait disparaître
+                        l'estimation entière, alors que le serveur retombe sur
+                        `delivery_eta_minutes` :
+                        `coalesce(z.eta_minutes, s.delivery_eta_minutes, 45)`.
+                        On reprend le même repli plutôt que de ne rien dire. */}
+                    {zone && settings && (
+                      <p className="mt-1 text-xs text-[#7a6355]">
+                        Environ{" "}
+                        {settings.order_prep_minutes +
+                          (zone.eta_minutes ?? settings.delivery_eta_minutes ?? 45)}{" "}
+                        minutes au total.
                       </p>
                     )}
                   </div>
@@ -609,6 +646,72 @@ const STOPPED: Record<string, string> = {
   refunded: "Cette commande a été remboursée.",
 };
 
+/**
+ * La porte d'entrée du suivi, pour qui n'a plus le lien.
+ *
+ * Le formulaire référence+téléphone existait déjà, mais il vivait *dans*
+ * `/commande/:reference` : il fallait connaître l'adresse pour atteindre la
+ * porte qui devait vous la donner. Rien, nulle part dans le site, ne menait
+ * à une commande passée -- l'URL de confirmation était la seule copie, et
+ * fermer l'onglet la perdait.
+ *
+ * Ici on demande les deux et on redirige vers la page de suivi, qui refait
+ * la vérification pour de bon. Cet écran ne prouve rien tout seul.
+ */
+export function OrderLookup() {
+  const navigate = useNavigate();
+  const [reference, setReference] = useState("");
+  const [phone, setPhone] = useState("");
+
+  return (
+    <main className="max-w-md mx-auto px-4 py-8 lg:py-10">
+      <h1 className="font-display text-2xl font-bold text-[#3E2C23] mb-2">Suivre une commande</h1>
+      <p className="text-sm text-[#7a6355] mb-6">
+        La référence figure sur l'écran de confirmation, sous la forme CMD-2026-0000.
+      </p>
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          const ref = reference.trim().toUpperCase();
+          if (!ref || !phone.trim()) return;
+          navigate(`/commande/${encodeURIComponent(ref)}?tel=${encodeURIComponent(phone.trim())}`);
+        }}
+        className={card}
+      >
+        <label className={label} htmlFor="lookup-ref">Référence</label>
+        <input
+          id="lookup-ref"
+          value={reference}
+          onChange={e => setReference(e.target.value)}
+          placeholder="CMD-2026-0000"
+          className={input}
+          required
+        />
+        <label className={`${label} block mt-4`} htmlFor="lookup-tel">Téléphone</label>
+        <input
+          id="lookup-tel"
+          type="tel"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          placeholder="+509 0000 0000"
+          className={input}
+          required
+        />
+        <button type="submit" className={`${cta} mt-5`}>
+          Voir ma commande
+        </button>
+      </form>
+      <p className="text-xs text-[#7a6355] mt-4 leading-relaxed">
+        Le numéro demandé est celui laissé au restaurant : la référence seule ne suffit pas à
+        ouvrir une commande, la vôtre pas plus que celle d'un autre.
+      </p>
+    </main>
+  );
+}
+
+/** Rien ne bougera plus : inutile de continuer à demander. */
+const TERMINAL = new Set(["completed", "cancelled", "rejected", "refunded"]);
+
 export function OrderTracking() {
   const { reference } = useParams();
   const [params] = useSearchParams();
@@ -616,31 +719,92 @@ export function OrderTracking() {
   const [order, setOrder] = useState<Tracked | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [checkedAt, setCheckedAt] = useState<Date | null>(null);
 
-  const load = async (tel: string) => {
-    if (!reference || !tel.trim()) return;
-    setBusy(true);
-    setError(null);
-    const { data, error: err } = await supabase.rpc("track_food_order", {
-      p_reference: reference,
-      p_phone: tel.trim(),
-    });
-    setBusy(false);
-    if (err || !data) {
-      setOrder(null);
-      setError(err?.message?.replace(/^.*?:\s*/, "") ?? "Commande introuvable.");
-      return;
-    }
-    setOrder(data as unknown as Tracked);
-  };
+  /**
+   * `quiet` distingue les deux appels. Le premier, celui qu'on attend, a le
+   * droit de vider l'écran et d'afficher une erreur. Ceux du sondage n'ont
+   * pas ce droit : un réseau qui hoquette une fois ne doit pas effacer la
+   * commande qu'on est en train de regarder.
+   *
+   * Mémoïsée parce qu'un intervalle la capture : reconstruite à chaque
+   * rendu, elle relancerait le minuteur sans fin.
+   */
+  const load = useCallback(
+    async (tel: string, quiet = false) => {
+      if (!reference || !tel.trim()) return;
+      if (!quiet) {
+        setBusy(true);
+        setError(null);
+      }
+      const { data, error: err } = await supabase.rpc("track_food_order", {
+        p_reference: reference,
+        p_phone: tel.trim(),
+      });
+      if (!quiet) setBusy(false);
+      if (err || !data) {
+        if (quiet) return;
+        setOrder(null);
+        setError(err?.message?.replace(/^.*?:\s*/, "") ?? "Commande introuvable.");
+        return;
+      }
+      setOrder(data as unknown as Tracked);
+      setCheckedAt(new Date());
+    },
+    [reference],
+  );
 
   // A link from the checkout already carries the number, so the order shows
   // straight away; anyone arriving cold is asked for it.
   useEffect(() => {
     const tel = params.get("tel");
-    if (tel) load(tel);
+    if (tel) void load(tel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reference]);
+
+  /**
+   * La cuisine avance sans nous prévenir, alors on redemande.
+   *
+   * Un sondage et non le temps réel, et ce n'est pas un choix de confort : la
+   * publication `supabase_realtime` ne contient aucune table, et `anon` n'a
+   * aucune policy de lecture sur `restaurant_orders`. Un invité ne recevrait
+   * jamais rien. `track_food_order` est le seul chemin qu'il peut lire.
+   *
+   * On s'arrête dès que le statut ne peut plus changer, et on se tait quand
+   * l'onglet est caché -- sonder une page que personne ne regarde coûte à
+   * tout le monde et ne sert personne. Au retour, on redemande tout de suite.
+   */
+  const liveStatus = order && !TERMINAL.has(order.status) ? order.status : null;
+  useEffect(() => {
+    if (!liveStatus || !phone.trim()) return;
+    const ask = () => {
+      if (document.visibilityState === "visible") void load(phone, true);
+    };
+    const timer = window.setInterval(ask, 20_000);
+    document.addEventListener("visibilitychange", ask);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", ask);
+    };
+  }, [liveStatus, phone, load]);
+
+  const cancel = async () => {
+    if (!order) return;
+    setCancelling(true);
+    const { error: err } = await supabase.rpc("cancel_food_order", {
+      p_reference: order.reference,
+      p_phone: phone.trim(),
+    });
+    setCancelling(false);
+    setConfirmingCancel(false);
+    if (err) {
+      setError(err.message.replace(/^.*?:\s*/, ""));
+      return;
+    }
+    void load(phone, true);
+  };
 
   if (!order) {
     return (
@@ -676,7 +840,14 @@ export function OrderTracking() {
 
   const steps = order.fulfillment === "delivery" ? DELIVERY_STEPS : PICKUP_STEPS;
   const reached = new Set(order.history.map(h => h.status));
+  // L'heure de chaque étape voyageait déjà dans `history` et finissait à la
+  // poubelle avec le reste de la ligne. « Confirmée » sans heure ne dit pas
+  // si c'était il y a deux minutes ou il y a une heure.
+  const reachedAt = new Map(order.history.map(h => [h.status, h.at]));
   const stopped = STOPPED[order.status];
+  const live = !TERMINAL.has(order.status);
+  const hhmm = (iso: string) =>
+    new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 lg:py-10">
@@ -722,17 +893,88 @@ export function OrderTracking() {
                     <span className={`w-0.5 flex-1 min-h-7 ${done ? "bg-[#002089]" : "bg-[#e2d5c3]"}`} />
                   )}
                 </div>
-                <p
-                  className={`pb-6 text-sm ${
-                    current ? "font-bold text-[#002089]" : done ? "text-[#3E2C23]" : "text-[#b0a090]"
-                  }`}
-                >
-                  {text}
-                </p>
+                <div className="pb-6">
+                  <p
+                    className={`text-sm ${
+                      current ? "font-bold text-[#002089]" : done ? "text-[#3E2C23]" : "text-[#b0a090]"
+                    }`}
+                  >
+                    {text}
+                  </p>
+                  {done && reachedAt.get(key) && (
+                    <p className="text-xs text-[#7a6355] mt-0.5 tabular-nums">
+                      {hhmm(reachedAt.get(key) as string)}
+                    </p>
+                  )}
+                </div>
               </li>
             );
           })}
         </ol>
+      )}
+
+      {/* Tant que la cuisine peut encore bouger, la page se remet à jour
+          toute seule. On le dit, sinon un écran qui change sous les yeux
+          ressemble à un bug -- et on laisse un bouton pour ceux qui
+          n'attendront pas les vingt secondes. */}
+      {live && (
+        <div className="flex flex-wrap items-center gap-3 mb-6 text-xs text-[#7a6355]">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#15803d]" aria-hidden />
+            Suivi en direct
+            {checkedAt && <> · vérifié à {hhmm(checkedAt.toISOString())}</>}
+          </span>
+          <button
+            type="button"
+            onClick={() => void load(phone, true)}
+            className="font-semibold text-[#002089] hover:underline"
+          >
+            Actualiser
+          </button>
+        </div>
+      )}
+
+      {/* L'annulation n'existe que depuis « reçue » : une fois la cuisine
+          lancée, la portion est dépensée et c'est au téléphone que ça se
+          règle. La RPC applique la même règle, celle-ci ne fait que ne pas
+          proposer un bouton qui serait refusé. */}
+      {order.status === "received" && (
+        <div className="mb-6">
+          {confirmingCancel ? (
+            <div className="bg-[#fdecea] border border-[#f5c2bd] rounded-2xl px-5 py-4">
+              <p className="text-sm font-semibold text-[#3E2C23]">Annuler cette commande ?</p>
+              <p className="text-xs text-[#7a6355] mt-1">
+                Le restaurant en sera informé. C'est sans retour : il faudra recommander.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => void cancel()}
+                  disabled={cancelling}
+                  className="bg-[#b3261e] hover:bg-[#8f1e18] text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+                >
+                  {cancelling ? "Annulation…" : "Oui, annuler"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingCancel(false)}
+                  className="border-2 border-[#e2d5c3] text-[#3E2C23] font-semibold px-4 py-2 rounded-xl text-sm"
+                >
+                  Garder ma commande
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingCancel(true)}
+              className="text-sm font-semibold text-[#b3261e] hover:underline"
+            >
+              Annuler ma commande
+            </button>
+          )}
+          {error && <p className="mt-2 text-[13px] text-[#b3261e]">{error}</p>}
+        </div>
       )}
 
       <section className={card}>
