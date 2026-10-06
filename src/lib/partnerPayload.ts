@@ -50,8 +50,19 @@ const pick = (...vals: (string | undefined)[]) =>
 
 /** Which payout tab the partner actually filled in. */
 function payoutMethod(f: Record<string, string>): string | undefined {
+  // Le choix explicite de la personne quand il est connu. Sans lui, l'ordre des
+  // tests devinait : changer d'avis en cours de route laisse les deux jeux de
+  // champs derrière soi, et la banque étant testée en premier, un candidat
+  // Mobile Money était classé « bank ». L'onglet dit ce qu'elle a choisi.
+  if (f.payoutTab === "digital") return "mobile";
+  if (f.payoutTab === "bank") return "bank";
+  // Pas d'onglet enregistré : brouillon d'une version antérieure, ou personne
+  // qui n'a jamais quitté l'onglet par défaut. On retombe sur l'inférence.
+  //
+  // La branche `card` a disparu avec l'onglet « Carte débit » : on ne pousse
+  // pas des fonds vers un numéro de carte, et `validateStep` n'a jamais accepté
+  // une carte comme coordonnées de versement.
   if (f.accountNum || f.bankName || f.routing) return "bank";
-  if (f.cardNum || f.cardName) return "card";
   if (f.mobileNum || f.mobileService) return "mobile";
   return undefined;
 }
@@ -136,7 +147,7 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
 
     payout: {
       method: payoutMethod(f),
-      holder: pick(f.accountHolder, f.mobileHolder, f.cardName),
+      holder: pick(f.accountHolder, f.mobileHolder),
       bank: f.bankName,
       country: f.payCountry,
       currency: f.currency ? f.currency.slice(0, 3) : undefined,

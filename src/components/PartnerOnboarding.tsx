@@ -43,14 +43,150 @@ export type WizardState = {
  */
 const DRAFT_KEY = "papot.partner.draft.v1";
 
+/**
+ * Quatorze jours.
+ *
+ * Le dossier se remplit en quinze minutes et l'examen est annoncé sous 24 à 48
+ * heures, donc « je finis ce week-end » tient deux fois dans ce délai. Au-delà,
+ * un brouillon abandonné n'a plus rien à faire dans un navigateur peut-être
+ * partagé : il porte un nom, une adresse, un téléphone, une banque et le nom
+ * d'un titulaire de compte. `clearDraft()` ne tournait qu'après une soumission
+ * réussie — un dossier jamais terminé ne s'effaçait donc jamais.
+ */
+const DRAFT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * Ce qu'un brouillon a le droit de contenir.
+ *
+ * Une liste d'autorisation, pas d'interdiction. Un champ ajouté plus tard à une
+ * étape est exclu du disque jusqu'à ce que quelqu'un l'inscrive ici, ce qui est
+ * le bon sens de l'échec ; une liste d'interdiction échoue dans l'autre sens, et
+ * le prochain champ sensible part en localStorage dès la première frappe.
+ *
+ * `updateForm` est délibérément intact. Le mot de passe doit vivre en mémoire :
+ * `submit()` le passe à `supabase.auth.signUp`. La règle est qu'il n'atteigne
+ * jamais le disque, pas qu'il n'existe jamais.
+ *
+ * Volontairement absents, et pourquoi :
+ *   password, confirmPassword   des identifiants. Supabase Auth les détient ;
+ *                               nous, non, à aucun moment et nulle part.
+ *   accountNum, routing,        des instruments de paiement.
+ *   mobileNum                   `submit_partner_application` n'en garde que les
+ *                               quatre derniers chiffres, côté serveur, et c'est
+ *                               tout ce dont PAPOT a besoin. Un numéro complet
+ *                               en clair dans un navigateur était le seul
+ *                               endroit du parcours où il existait.
+ *   cardNum, cardName, cardExp  l'onglet « Carte débit » n'existe plus. Listés
+ *                               ici pour qu'un brouillon écrit par une version
+ *                               antérieure soit nettoyé à la lecture.
+ *
+ * Les clés marquées « dynamique » ne se trouvent pas en cherchant
+ * `onChange("…")` : elles sont construites à l'exécution depuis un tableau.
+ */
+const DRAFT_FIELDS = [
+  // Compte & contact — StepAccount
+  "firstName", "lastName", "email", "phone", "whatsapp", "language",
+
+  // Profil d'entreprise — StepBusinessProfile
+  "bizName", "legalName", "bizType", "yearEst", "bizPhone", "bizEmail",
+  "website", "bizWhatsapp", "shortDesc", "fullDesc",
+  // dynamique : la grille des réseaux sociaux
+  "instagram", "facebook", "tiktok",
+
+  // Localisation — StepLocation
+  "country", "state", "city", "commune", "neighborhood", "postalCode",
+  "addr1", "addr2", "landmark", "arrivalNotes",
+
+  // Détails — hôtel
+  "hotelName", "hotelType", "stars", "rooms", "floors", "capacity",
+  "yearOpen", "desc",
+  // Détails — maison d'hôtes
+  "ghName", "ghType", "ghRooms", "ghFloors", "ghCapacity", "bookingType", "ghDesc",
+  // Détails — location de voiture
+  "ownerType", "carCompany", "fleetSize", "carEmail", "carPhone", "carDesc",
+  // Détails — restaurant
+  "restName", "restType", "priceRange", "restYear", "restCapacity", "restPhone",
+  "cuisines", "restDesc",
+
+  // Horaires & réservations — restaurant
+  "minParty", "maxParty", "resDuration", "minNotice", "confirm", "cancelPolicy",
+
+  // Tarifs — location de voiture
+  "dailyRate", "weeklyRate", "monthlyRate", "deposit", "mileage", "extraMileage",
+  // dynamique : les cinq services proposés
+  "insurance", "airportPickup", "hotelDelivery", "homeDelivery", "diffReturn",
+
+  // dynamique : les huit identifiants du tableau `policies` — StepPolicies
+  "cancellation", "refund", "noshow", "pets", "smoking", "children",
+  "minage", "damage",
+
+  // Paiements — StepPayout, instruments exclus
+  "accountHolder", "bankName", "payCountry", "currency",
+  "mobileService", "mobileHolder",
+  // L'onglet choisi : ce n'est pas une donnée bancaire, c'est l'endroit où la
+  // personne était. Le garder est ce qui la ramène sur le bon formulaire.
+  "payoutTab",
+] as const;
+
+/**
+ * Le filtre, utilisé des deux côtés.
+ *
+ * Il itère la liste d'autorisation et non les clés de l'objet : une clé inconnue
+ * — d'un brouillon antérieur, ou réécrit à la main — est donc abandonnée par
+ * construction, à l'écriture comme à la lecture.
+ */
+const draftFields = (f: unknown): Record<string, string> => {
+  const src = (f ?? {}) as Record<string, unknown>;
+  const out: Record<string, string> = {};
+  for (const k of DRAFT_FIELDS) {
+    const v = src[k];
+    // Une chaîne vide se relit exactement comme une clé absente — partout les
+    // champs font `data.x || ""` — donc on ne l'écrit pas.
+    if (typeof v === "string" && v !== "") out[k] = v;
+  }
+  return out;
+};
+
+const PARTNER_TYPE_VALUES = ["hotel", "guesthouse", "car", "restaurant"] as const;
+
 type DraftState = Omit<WizardState, "photos" | "documents" | "autosaveStatus">;
+type StoredDraft = DraftState & { savedAt?: number };
 
 function readDraft(): DraftState | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
-    const d = JSON.parse(raw);
-    return d && typeof d === "object" && typeof d.step === "number" ? (d as DraftState) : null;
+    const d = JSON.parse(raw) as StoredDraft | null;
+    if (!d || typeof d !== "object" || typeof d.step !== "number") return null;
+
+    // `savedAt` absent = brouillon écrit par une version antérieure, dont on ne
+    // connaît pas l'âge. On le garde — perdre quinze étapes de saisie serait
+    // punir quelqu'un pour un bug qui n'est pas le sien — et le filtre ci-dessous
+    // le débarrasse de ce qu'il n'aurait jamais dû contenir. Le premier
+    // enregistrement automatique, qui tourne au montage, le réécrit propre et
+    // daté : c'est ce qui retire le mot de passe du disque, et pas seulement de
+    // l'état.
+    if (typeof d.savedAt === "number" && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+      clearDraft();
+      return null;
+    }
+
+    const type = d.partnerType as string | null;
+    return {
+      step: d.step,
+      partnerType: PARTNER_TYPE_VALUES.includes(type as never)
+        ? (type as DraftState["partnerType"])
+        : null,
+      // Le filtre côté lecture, et pas seulement côté écriture. Un brouillon
+      // déjà posé dans le navigateur de quelqu'un contient son mot de passe en
+      // clair : le recharger dans l'état le remettrait en circulation, et le
+      // réécrirait tel quel au prochain enregistrement.
+      formData: draftFields(d.formData),
+      amenities: Array.isArray(d.amenities) ? d.amenities : [],
+      hours: d.hours ?? DEFAULT_HOURS,
+      rooms: Array.isArray(d.rooms) ? d.rooms : [],
+      vehicles: Array.isArray(d.vehicles) ? d.vehicles : [],
+    };
   } catch {
     return null;
   }
@@ -58,7 +194,21 @@ function readDraft(): DraftState | null {
 
 function writeDraft(s: WizardState) {
   try {
-    const { photos: _p, documents: _d, autosaveStatus: _a, ...keep } = s;
+    // Construit champ par champ plutôt que par un `...reste` : c'est ce qui
+    // garantit qu'une clé ajoutée à `WizardState` demain ne s'écrive pas toute
+    // seule sur le disque.
+    const keep: StoredDraft = {
+      step: s.step,
+      partnerType: s.partnerType,
+      formData: draftFields(s.formData),
+      amenities: s.amenities,
+      hours: s.hours,
+      rooms: s.rooms,
+      vehicles: s.vehicles,
+      // Repoussé à chaque enregistrement : le délai court depuis la dernière
+      // activité, pas depuis la première, ce qui est le sens de « reprendre ».
+      savedAt: Date.now(),
+    };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(keep));
     return true;
   } catch {
@@ -478,7 +628,7 @@ function StepAccount({ data, onChange }: { data: Record<string, string>; onChang
   const [checks, setChecks] = useState({ terms: false, agreement: false, notifs: false });
   return (
     <div>
-      <SectionTitle title="Compte & Coordonnées" subtitle="Créez votre compte partenaire. Ces informations sont privées et utilisées uniquement pour gérer votre accès." />
+      <SectionTitle title="Compte & Coordonnées" subtitle="Créez votre compte partenaire. Ces informations servent à gérer votre accès ; elles ne sont pas affichées sur votre fiche." />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <Field label="Prénom" id="firstName" placeholder="Marie" value={data.firstName || ""} onChange={v => onChange("firstName", v)} required />
         <Field label="Nom" id="lastName" placeholder="Dupont" value={data.lastName || ""} onChange={v => onChange("lastName", v)} required />
@@ -489,7 +639,12 @@ function StepAccount({ data, onChange }: { data: Record<string, string>; onChang
         <Field label="Mot de passe" id="password" type="password" placeholder="••••••••" value={data.password || ""} onChange={v => onChange("password", v)} required hint="8 caractères minimum" />
         <Field label="Confirmer le mot de passe" id="confirmPassword" type="password" placeholder="••••••••" value={data.confirmPassword || ""} onChange={v => onChange("confirmPassword", v)} required />
       </div>
-      <InfoBox>Vos coordonnées sont privées et ne seront jamais affichées publiquement.</InfoBox>
+      <InfoBox>
+        Vos coordonnées servent à gérer votre accès et ne sont pas affichées sur
+        votre fiche publique. Le mot de passe part directement à Supabase Auth :
+        PAPOT ne le stocke pas, et il n'est jamais écrit dans le brouillon de ce
+        formulaire.
+      </InfoBox>
       <div className="space-y-3 mt-5">
         {[
           { key: "terms" as const, label: "J'accepte les Conditions générales d'utilisation." },
@@ -1126,16 +1281,48 @@ function StepVerification({ partnerType, docs, onDoc }: {
 }
 
 function StepPayout({ data, onChange }: { data: Record<string, string>; onChange: (k: string, v: string) => void }) {
-  const [method, setMethod] = useState("bank");
+  /**
+   * L'onglet choisi vit dans le dossier, pas dans l'écran.
+   *
+   * Il était en `useState` local, donc perdu à chaque Retour et à chaque
+   * reprise de brouillon : un candidat Mobile Money revenait sur l'onglet
+   * « Compte bancaire », vide, pendant que ses champs mobiles — toujours
+   * remplis — l'attendaient sur un onglet qu'il ne regardait pas. Le numéro,
+   * lui, n'est délibérément plus conservé (c'est un instrument de paiement),
+   * ce qui rendait l'écran encore plus déroutant : la bannière lui demandait
+   * de le ressaisir, sur le mauvais onglet.
+   */
+  const method = data.payoutTab || "bank";
+  const setMethod = (v: string) => onChange("payoutTab", v);
   return (
     <div>
       <SectionTitle title="Paiements & Virements" subtitle="Indiquez-nous où envoyer vos revenus." />
-      <div className="bg-[#002089] rounded-xl px-5 py-4 flex items-center gap-3 mb-6">
-        <Ico.Lock />
-        <p className="text-[#6ad7fb] text-sm font-medium">Vos informations financières sont cryptées et jamais affichées publiquement.</p>
+      {/* « Cryptées » était faux sur le seul chemin de stockage que ces champs
+          atteignaient : du JSON en clair dans localStorage, à chaque frappe. Et
+          « jamais affichées publiquement » répondait à une question que personne
+          ne pose. Ce qui compte, c'est ce que PAPOT garde et ce qu'il jette. */}
+      <div className="bg-[#002089] rounded-xl px-5 py-4 flex items-start gap-3 mb-6">
+        <span className="shrink-0 mt-0.5 text-[#6ad7fb]"><Ico.Lock /></span>
+        <p className="text-[#6ad7fb] text-sm font-medium leading-relaxed">
+          PAPOT ne garde pas votre numéro de compte : seuls les quatre derniers
+          chiffres sont enregistrés, avec le nom du titulaire et la banque. Le
+          numéro complet n'est pas conservé dans le brouillon de ce formulaire —
+          il faudra le ressaisir si vous revenez plus tard.
+        </p>
       </div>
+      {/* L'onglet « Carte débit » était là, avec trois champs : numéro, nom, date
+          d'expiration. Il ne pouvait pas satisfaire sa propre étape —
+          `partnerValidation.ts` n'accepte qu'un bloc bancaire ou mobile money
+          complet, jamais une carte — donc personne n'a jamais pu soumettre un
+          dossier par ce chemin. `partnerPayload.ts` ne lisait `cardNum` et
+          `cardName` que comme un test de présence, et n'a jamais lu `cardExp`.
+          Ne restait donc que la conséquence : un numéro de carte en clair dans
+          localStorage, à chaque frappe, pour un onglet qui ne menait nulle part.
+
+          Un versement par carte n'est de toute façon pas un moyen de versement :
+          on ne pousse pas des fonds vers un PAN. */}
       <div className="flex gap-2 mb-6">
-        {[["bank", "🏦", "Compte bancaire"], ["card", "💳", "Carte débit"], ["digital", "📱", "Mobile Money"]].map(([val, emoji, lbl]) => (
+        {[["bank", "🏦", "Compte bancaire"], ["digital", "📱", "Mobile Money"]].map(([val, emoji, lbl]) => (
           <button key={val} onClick={() => setMethod(val)}
             className={`flex-1 py-3 rounded-xl border-2 text-xs font-semibold flex flex-col items-center gap-1 transition-all ${method === val ? "border-[#002089] bg-[#002089] text-white" : "border-[#e2d5c3] text-[#7a6355] hover:border-[#6ad7fb]"}`}>
             <span className="text-xl">{emoji}</span>{lbl}
@@ -1150,13 +1337,6 @@ function StepPayout({ data, onChange }: { data: Record<string, string>; onChange
           <Field label="Code de routage / IBAN" id="routing" placeholder="HTI00001234" value={data.routing || ""} onChange={v => onChange("routing", v)} />
           <SelectField label="Pays" id="payCountry" options={["Haïti", "France", "USA", "Canada"]} value={data.payCountry || ""} onChange={v => onChange("payCountry", v)} />
           <SelectField label="Devise" id="currency" options={["USD — Dollar américain", "HTG — Gourde haïtienne"]} value={data.currency || ""} onChange={v => onChange("currency", v)} />
-        </div>
-      )}
-      {method === "card" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Numéro de carte" id="cardNum" placeholder="4242 4242 4242 4242" value={data.cardNum || ""} onChange={v => onChange("cardNum", v)} />
-          <Field label="Nom sur la carte" id="cardName" placeholder="MARIE DUPONT" value={data.cardName || ""} onChange={v => onChange("cardName", v)} />
-          <Field label="Date d'expiration" id="cardExp" placeholder="MM/AA" value={data.cardExp || ""} onChange={v => onChange("cardExp", v)} />
         </div>
       )}
       {method === "digital" && (
@@ -1511,9 +1691,25 @@ export default function PartnerOnboardingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [restored] = useState(() => readDraft() !== null);
 
+  /**
+   * Le dossier est parti : il n'y a plus de brouillon à tenir.
+   *
+   * Sans ce drapeau, `clearDraft()` ne servait à rien. Il efface la clé, puis
+   * `go(1)` change `state.step` — qui est dans les dépendances ci-dessous — donc
+   * l'enregistrement automatique se redéclenche aussitôt et réécrit le
+   * brouillon que la ligne du dessus venait de supprimer. Un dossier soumis
+   * restait donc en localStorage, et rouvrir l'assistant proposait de
+   * « reprendre » une candidature déjà envoyée, prête à être renvoyée en double.
+   *
+   * Une ref et non un état : la changer ne doit rien redessiner, et elle doit
+   * être lue par l'effet du même tour que le `setState` qui la suit.
+   */
+  const submitted = useRef(false);
+
   // Every change to the answers is written back. `step` is included on purpose:
   // coming back to the step you left is most of what "reprendre" means.
   useEffect(() => {
+    if (submitted.current) return; // le dossier est envoyé, plus rien à garder
     if (state.step === 0 && !state.partnerType) return; // nothing worth keeping yet
     const ok = writeDraft(state);
     setState(prev =>
@@ -1637,7 +1833,28 @@ export default function PartnerOnboardingWizard({
           .catch(e => console.error("Confirmation email failed:", e));
       }
       // Sent and accepted: the draft has done its job and must not reappear.
+      // Le drapeau d'abord : les deux `setState` qui suivent redéclencheraient
+      // l'enregistrement automatique, qui réécrirait la clé qu'on efface ici.
+      submitted.current = true;
       clearDraft();
+      /**
+       * Le mot de passe a fini son travail.
+       *
+       * Après `signUp` il ne sert plus à rien : `buildPayload` ne le lit pas,
+       * l'écran de succès ne l'affiche pas, et le garder en mémoire le laisse
+       * dans React DevTools et dans tout instantané du tas jusqu'à la fermeture
+       * de l'onglet.
+       *
+       * Ici et pas juste après `signUp` : si la soumission échoue entre les
+       * deux, un retour à l'étape « Compte » trouverait les champs vides et
+       * `validateStep` rebloquerait le dossier. Les trois secondes gagnées en
+       * l'effaçant plus tôt ne pèsent rien face à quinze minutes de saisie que
+       * le wizard refuse de laisser repartir.
+       */
+      setState(p => {
+        const { password: _pw, confirmPassword: _cpw, ...rest } = p.formData;
+        return { ...p, formData: rest };
+      });
 
       go(1); // success
     } catch (err) {
@@ -1727,6 +1944,10 @@ export default function PartnerOnboardingWizard({
             onDashboard={() => (onDashboard ? onDashboard(partnerType) : onClose())}
             onPreview={onClose}
             onAdd={() => {
+              // Un nouveau dossier commence : l'enregistrement automatique
+              // reprend son travail. L'état repart à l'étape 0 sans type, donc
+              // l'effet s'arrête de lui-même jusqu'au premier vrai choix.
+              submitted.current = false;
               clearDraft();
               setState({
                 step: 0, partnerType: null, formData: {}, amenities: [],
@@ -1764,8 +1985,10 @@ export default function PartnerOnboardingWizard({
           applicant is better than letting them discover it at submit. */}
       {restored && state.step > 0 && (
         <p className="mb-5 rounded-xl bg-[#D6F0FB] px-4 py-3 text-[13px] leading-relaxed text-[#00508a]">
-          Nous avons retrouvé votre brouillon et vous avons remis à l'étape où vous étiez. Les
-          photos et documents ne sont pas conservés entre deux visites : il faudra les rajouter.
+          Nous avons retrouvé votre brouillon et vous avons remis à l'étape où vous étiez. Trois
+          choses ne sont pas conservées entre deux visites, volontairement : les photos, les
+          documents, et votre numéro de compte ou de téléphone de paiement. Il faudra les saisir
+          à nouveau.
         </p>
       )}
       {renderStep()}

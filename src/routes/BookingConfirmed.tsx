@@ -66,11 +66,25 @@ export function BookingConfirmed() {
       });
   };
 
+  // Le compte demandé au paiement n'a pas pu être créé, alors que la
+  // réservation est bien partie. Checkout le dépose ici parce que c'est le
+  // dernier écran où la personne peut encore l'apprendre.
+  const [accountNotice, setAccountNotice] = useState<string | null>(null);
+
   useEffect(() => {
     if (!id) return;
     let remembered: string | null = null;
     try {
       remembered = sessionStorage.getItem(`papot.booking.${id}`);
+      // Lu une fois, puis retiré. Le message ne vaut qu'à l'arrivée : revenir
+      // sur cette page plus tard — après avoir justement créé le compte qu'il
+      // réclamait — s'entendrait dire que le compte n'a pas pu être créé.
+      // L'adresse au-dessus reste, elle : la page en a besoin à chaque visite.
+      const notice = sessionStorage.getItem(`papot.booking.${id}.notice`);
+      if (notice) {
+        setAccountNotice(notice);
+        sessionStorage.removeItem(`papot.booking.${id}.notice`);
+      }
     } catch {
       /* storage can be blocked; the form below covers it */
     }
@@ -147,6 +161,14 @@ export function BookingConfirmed() {
           récapitulatif est parti vers {booking.email}, et chaque prestataire a été prévenu.
         </p>
       </div>
+
+      {/* Le ton est délibérément calme : rien n'est perdu, et la personne n'a
+          rien à réparer tout de suite. Ce n'est pas une erreur de paiement. */}
+      {accountNotice && (
+        <section className="bg-[#FFF5F0] rounded-2xl border border-[#f5c2bd] px-5 py-4 mt-9">
+          <p className="text-[13px] leading-relaxed text-[#8a2b24]">{accountNotice}</p>
+        </section>
+      )}
 
       <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6 mt-9">
         <div className="flex flex-col gap-3">

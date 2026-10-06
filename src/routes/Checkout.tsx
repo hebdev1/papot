@@ -104,6 +104,18 @@ export function Checkout() {
     setBusy(true);
     setError(null);
 
+    /**
+     * Une variable locale, pas un état React.
+     *
+     * Elle est posée et relue dans la même exécution de `pay()`. Un
+     * `setState` ne change pas la liaison déjà capturée par cette fonction :
+     * la relecture plus bas verrait encore la valeur du rendu précédent, donc
+     * `null`, et le message ne serait jamais écrit. Rien ne l'affiche dans
+     * cette page — il voyage jusqu'à l'écran de confirmation — donc il n'a
+     * aucune raison d'être un état.
+     */
+    let accountNotice: string | null = null;
+
     // The gateway books and takes payment in one transaction. A refused
     // instrument leaves nothing behind — no booking, no payment row — so the
     // refusal path is the same code the real one will be.
@@ -146,14 +158,53 @@ export function Checkout() {
         );
         return;
       }
-      if (signUpError) {
+      /**
+       * Un mot de passe refusé reste bloquant, parce qu'il est réparable.
+       *
+       * La personne voulait un compte et a tapé quelque chose de trop court :
+       * le lui dire lui coûte deux secondes, et rien n'est encore engagé —
+       * aucune réservation, aucun paiement. Passer outre en silence serait lui
+       * refuser ce qu'elle a demandé sans le dire.
+       */
+      if (signUpError?.code === "weak_password" || /password/i.test(signUpError?.message ?? "")) {
         setBusy(false);
+        // Supabase refuse un mot de passe pour deux raisons très différentes,
+        // et les deux disaient « au moins 8 caractères » : la longueur, qu'on
+        // répare en tapant plus, et la protection contre les mots de passe
+        // divulgués, qu'un mot de passe de vingt caractères déclenche tout
+        // autant. Conseiller d'allonger dans le second cas envoie la personne
+        // dans un mur, et c'est la seule branche qui bloque encore le paiement.
         setError(
-          signUpError.message.toLowerCase().includes("password")
+          /at least|length|short|8 characters/i.test(signUpError?.message ?? "")
             ? "Le mot de passe doit faire au moins 8 caractères."
-            : "Le compte n'a pas pu être créé. Réessayez, ou décochez la case pour continuer sans compte.",
+            : "Ce mot de passe a été refusé car il est trop courant. Choisissez-en un autre.",
         );
         return;
+      }
+
+      /**
+       * Tout autre échec est non bloquant.
+       *
+       * La case « créer un compte » est cochée par défaut, donc dès que la
+       * confirmation par courriel est exigée, la livraison d'un courriel
+       * devient une dépendance dure de `signUp` — et un `return` ici annulait
+       * la réservation et le paiement. Un hoquet chez le fournisseur de
+       * courriel empêchait des gens de payer, pour une panne qu'ils ne peuvent
+       * ni voir ni réparer.
+       *
+       * Le compte est un confort ; la réservation est la vente. Elle part donc
+       * en invitée : elle porte l'adresse, et `claim_my_purchases()` la
+       * rattachera à la première connexion — ce que le commentaire au-dessus
+       * décrit déjà pour le cas « pas de session ».
+       *
+       * `PartnerOnboarding.tsx` fait ce choix depuis le début, pour la même
+       * raison : « A duplicate account must not block the application itself. »
+       */
+      if (signUpError) {
+        console.warn("Signup skipped, booking continues as guest:", signUpError.message);
+        accountNotice =
+          "Nous n'avons pas pu créer votre compte, mais votre réservation est bien partie. " +
+          "Elle s'ajoutera à votre espace dès que vous créerez un compte avec cette adresse.";
       }
     }
 
@@ -204,6 +255,11 @@ export function Checkout() {
     // with the tab, and it never travels in the URL.
     try {
       sessionStorage.setItem(`papot.booking.${reference}`, email.trim().toLowerCase());
+      // Le même canal, pour la même raison : l'écran de confirmation est le
+      // dernier endroit où l'on peut encore dire que le compte n'a pas suivi.
+      if (accountNotice) {
+        sessionStorage.setItem(`papot.booking.${reference}.notice`, accountNotice);
+      }
     } catch {
       /* private browsing, blocked storage - the page will simply ask */
     }

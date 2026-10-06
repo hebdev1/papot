@@ -15,7 +15,7 @@ import { Button, Card, CardHeader, PageHeader } from "../../console/Ui";
 import { HealthCard, MetricCard } from "../../console/Cards";
 import { ActivityFeed, type FeedEvent } from "../components/Panels";
 import { BarList, Donut, GeoMap, LineChart } from "../../console/Charts";
-import { useRpc } from "../lib/adminData";
+import { exportCsv, useRpc } from "../lib/adminData";
 import { useAdmin } from "../lib/adminAuth";
 import { change, count, dayShort, money, moneyShort } from "../../console/format";
 import type { BadgeCounts } from "../lib/nav";
@@ -478,25 +478,25 @@ export function Overview() {
               variant="secondary"
               className="w-full"
               onClick={() => {
-                const rows = (series ?? []).map(r => ({
-                  jour: r.day,
-                  volume_reserve: r.gbv,
-                  revenu_plateforme: r.revenue,
-                  remboursements: r.refunds,
-                  versements: r.payouts,
-                }));
-                if (rows.length === 0) return;
-                const csv = [
-                  Object.keys(rows[0]).join(";"),
-                  ...rows.map(r => Object.values(r).join(";")),
-                ].join("\n");
-                const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `papot-revenus-${days}j.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
+                // Passait par un CSV fabriqué à la main — `Object.values(r).join(";")`,
+                // aucun échappement d'aucune sorte — alors que cette page importe
+                // déjà `exportCsv`. Les chiffres d'un agrégat admin ne contiennent ni
+                // séparateur ni formule, donc rien n'était exploitable ; c'était le
+                // second chemin de sortie du dépôt, et un second chemin finit
+                // toujours par recevoir des données qu'il n'attendait pas.
+                //
+                // Le nom du fichier gagne la date ISO que `exportCsv` ajoute, donc
+                // deux exports à une semaine d'écart ne s'écrasent plus.
+                exportCsv(
+                  `papot-revenus-${days}j`,
+                  (series ?? []).map(r => ({
+                    jour: r.day,
+                    volume_reserve: r.gbv,
+                    revenu_plateforme: r.revenue,
+                    remboursements: r.refunds,
+                    versements: r.payouts,
+                  })),
+                );
               }}
             >
               <Download className="h-3.5 w-3.5" aria-hidden />

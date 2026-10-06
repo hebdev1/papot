@@ -25,15 +25,46 @@ export function Login() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * L'adresse qui a échoué, pas celle qui est dans le champ.
+   *
+   * Un booléen suivait le champ en direct : après l'échec, la personne qui
+   * commence à saisir une autre adresse voyait le lien « Renvoyer » pointer sur
+   * ce qu'elle était en train de taper, et le renvoi partait ailleurs que vers
+   * le compte à confirmer. On garde donc l'adresse du moment de l'échec.
+   */
+  const [notConfirmed, setNotConfirmed] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotConfirmed(null);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       setBusy(false);
-      setError("Courriel ou mot de passe incorrect.");
+      /**
+       * Une adresse non confirmée n'est pas un mauvais mot de passe.
+       *
+       * Aplatir toutes les erreurs en une seule phrase était défendable tant
+       * que la confirmation par courriel était désactivée : il n'y avait rien
+       * d'autre à dire, et ne pas distinguer « compte inconnu » de « mot de
+       * passe faux » est ce qui empêche d'énumérer les comptes. Le réglage
+       * activé, la même phrase dit à quelqu'un qui a tapé le bon mot de passe
+       * qu'il est faux, sans jamais lui indiquer sa boîte de réception. Il
+       * réessaie, puis il abandonne.
+       *
+       * Celui-ci se dit sans rien révéler : GoTrue ne rend
+       * `email_not_confirmed` que pour un compte dont le mot de passe vient
+       * d'être validé.
+       */
+      const unconfirmed = error.code === "email_not_confirmed";
+      setNotConfirmed(unconfirmed ? email.trim() : null);
+      setError(
+        unconfirmed
+          ? "Votre adresse n'est pas encore confirmée. Ouvrez le lien que nous vous avons envoyé."
+          : "Courriel ou mot de passe incorrect.",
+      );
       return;
     }
     // Each account type lands in its own dashboard. An explicit ?next still
@@ -70,6 +101,17 @@ export function Login() {
     >
       <form onSubmit={submit} className="flex flex-col gap-3.5">
         <AuthError message={error} />
+
+        {/* `/verifiez-votre-courriel` a déjà un renvoi de lien, avec son propre
+            délai d'attente. Il n'y a rien à réécrire ici, seulement à y mener. */}
+        {notConfirmed && (
+          <Link
+            to={`/verifiez-votre-courriel?email=${encodeURIComponent(notConfirmed)}`}
+            className="-mt-1 text-[13px] font-semibold text-[#002089] underline"
+          >
+            Renvoyer le lien de confirmation
+          </Link>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <span className={fieldLabel}>Courriel</span>

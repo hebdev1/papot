@@ -29,6 +29,47 @@ export type ListingRow = {
   bookings: number;
 };
 
+/**
+ * Les colonnes qu'un partenaire est en droit de dupliquer.
+ *
+ * C'est la liste que la subvention de colonnes sur `listings` accorde déjà en
+ * écriture, moins les trois que la copie fixe elle-même (`status`,
+ * `partner_id`, `name`) et les deux horodatages de cycle de vie
+ * (`submitted_at`, que la copie n'a pas encore mérité ; `updated_at`, que le
+ * déclencheur pose).
+ *
+ * Ce qui en est absent est ce qui n'appartient pas au partenaire : `rating`,
+ * `reviews`, `badge`, `position`, `reviewed_at`, `reviewed_by`, `review_note`.
+ * Ce sont le jugement d'autrui sur une annonce et la trace de sa modération ;
+ * les recopier était la faille — une fiche bien notée se clonait en une fiche
+ * jamais réservée portant la même réputation.
+ *
+ * `attrs` et `amenities` y sont, et doivent y être : `attrs` porte les chemins
+ * des photos (`attrs.photos`) ainsi que les frais de ménage et de service, et
+ * `amenities` la liste des équipements. Les omettre rendait « Dupliquer »
+ * inutile — il restait à tout re-téléverser, c'est-à-dire l'essentiel du
+ * travail que la fonction existe pour épargner.
+ */
+const DUPLICABLE = [
+  "name",
+  "type",
+  "kind",
+  "city",
+  "location",
+  "country",
+  "price",
+  "original_price",
+  "currency",
+  "img",
+  "amenities",
+  "attrs",
+  "stars",
+  "rating_scale",
+  "breakfast",
+  "free_cancellation",
+  "vendor",
+] as const;
+
 const STATUS_TABS = [
   { id: "all", label: "Toutes" },
   { id: "published", label: "Publiées" },
@@ -50,6 +91,10 @@ export function Listings() {
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState({ col: "updated_at", dir: "desc" as const });
   const [selected, setSelected] = useState<string[]>([]);
+  // L'erreur d'une action de ligne, distincte de celle de `useTable` que le
+  // DataTable affiche déjà à la place de ses lignes : une duplication qui
+  // échoue n'invalide pas la liste.
+  const [actionError, setActionError] = useState<string | null>(null);
   const debounced = useDebounced(search);
 
   const tab = params.get("status") ?? "all";
@@ -59,6 +104,9 @@ export function Listings() {
     else next.set("status", id);
     setParams(next, { replace: true });
     setPage(1);
+    // Un message d'action ne survit pas à un changement de vue : il parlait
+    // d'une ligne que l'on ne regarde plus.
+    setActionError(null);
   };
 
   const filters = useMemo<Filter[]>(() => {
@@ -128,18 +176,59 @@ export function Listings() {
       },
     });
 
+  /**
+   * Une copie de ce que le partenaire a saisi — et de cela seulement.
+   *
+   * Elle faisait `select("*")`, retirait trois clés et réinsérait le reste, ce
+   * qui emportait `rating`, `reviews`, `badge`, `reviewed_at`, `reviewed_by`,
+   * `review_note` et `position` sur une annonce neuve. Une fiche bien notée se
+   * clonait en une fiche jamais réservée portant la même réputation : un
+   * élément de menu, aucune requête forgée, aucune console. La note et le
+   * nombre d'avis sont le jugement d'autrui sur une annonce ; ils ne se
+   * recopient pas avec le reste.
+   *
+   * La liste est explicite et non une soustraction : une colonne ajoutée au
+   * schéma demain n'est pas copiée tant que personne ne l'a inscrite ici.
+   *
+   * `published` en est délibérément absent. Le déclencheur
+   * `listings_sync_published` le déduit de `status`, et la subvention de
+   * colonnes accordée à `authenticated` l'exclut déjà pour l'UPDATE : le poser
+   * à la main était redondant, et c'est la ligne qui casse dès que l'INSERT est
+   * restreint par colonnes à son tour.
+   */
   const duplicate = async (row: ListingRow) => {
-    const { data: full } = await table("listings").select("*").eq("id", row.id).maybeSingle();
-    if (!full) return;
-    const copy = { ...(full as Record<string, unknown>) };
-    delete copy.id;
-    delete copy.created_at;
-    delete copy.updated_at;
+    if (!active) return;
+    setActionError(null);
+
+    const { data: full, error: readError } = await table("listings")
+      .select(DUPLICABLE.join(", "))
+      .eq("id", row.id)
+      .maybeSingle();
+
+    if (readError || !full) {
+      // Elle avalait son erreur — `if (!error) reload()`, et rien d'autre —
+      // seule de tous les gestionnaires de cette page. Un échec de permission
+      // ou de réseau ne produisait aucun message et aucune annonce : le menu se
+      // fermait et il ne se passait rien.
+      setActionError(readError ? friendlyError(readError) : "Cette annonce n'a pas pu être lue.");
+      return;
+    }
+
+    const source = full as Record<string, unknown>;
+    const copy: Record<string, unknown> = {};
+    for (const c of DUPLICABLE) copy[c] = source[c];
     copy.name = `${row.name} (copie)`;
+    copy.partner_id = active.partner_id;
+    // Une copie n'hérite pas de la publication de son original : `draft`, comme
+    // une annonce neuve. Le déclencheur en déduira `published = false`.
     copy.status = "draft";
-    copy.published = false;
+
     const { error } = await table("listings").insert(copy);
-    if (!error) reload();
+    if (error) {
+      setActionError(friendlyError(error));
+      return;
+    }
+    reload();
   };
 
   const columns: Column<ListingRow>[] = [
@@ -225,6 +314,15 @@ export function Listings() {
         values={{}}
         onChange={() => {}}
       />
+
+      {actionError && (
+        <p
+          role="alert"
+          className="mb-3 rounded-lg bg-[#fdf3f2] px-3.5 py-2.5 text-[13px] font-medium text-[#b3261e]"
+        >
+          {actionError}
+        </p>
+      )}
 
       <DataTable
         columns={columns}
@@ -351,7 +449,14 @@ export function ListingForm() {
     // update asks for a write privilege the partner does not need, and the
     // column is revoked from `authenticated` precisely so an annonce cannot be
     // moved to another business from the browser.
-    const { partner_id: _owner, ...patch } = payload;
+    //
+    // `kind` est retiré pour la même raison, et elle est plus forte : il choisit
+    // la formule de tarification, le verrou d'inventaire et la ligne comptée par
+    // la disponibilité. Le passer à `restaurant` ferait tarifer à zéro toutes
+    // les réservations de l'annonce. Le métier d'un commerce est décidé à la
+    // création — par le dossier, puis par `build_partner_listings` — pas modifié
+    // ensuite depuis le navigateur.
+    const { partner_id: _owner, kind: _kind, ...patch } = payload;
     const { error } = isNew
       ? await table("listings").insert(payload)
       : await table("listings").update(patch).eq("id", id!);
@@ -384,11 +489,26 @@ export function ListingForm() {
             </div>
             <div>
               <label className={labelClass} htmlFor="l-kind">Service</label>
-              <select id="l-kind" value={value("kind", kindDefault)} onChange={e => set("kind", e.target.value)} className={selectClass}>
+              {/* Verrouillé après la création : le service décide de la
+                  tarification et de l'inventaire, donc il se choisit une fois.
+                  Désactivé plutôt que masqué — la valeur reste une information
+                  utile sur la fiche qu'on modifie. */}
+              <select
+                id="l-kind"
+                value={value("kind", kindDefault)}
+                onChange={e => set("kind", e.target.value)}
+                disabled={!isNew}
+                className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-60`}
+              >
                 <option value="stay">Hébergement</option>
                 <option value="car">Voiture</option>
                 <option value="restaurant">Restaurant</option>
               </select>
+              {!isNew && (
+                <p className="mt-1 text-[12px] text-admin-ink-3">
+                  Le service est fixé à la création. Pour le changer, contactez PAPOT.
+                </p>
+              )}
             </div>
             <div>
               <label className={labelClass} htmlFor="l-type">Catégorie</label>
