@@ -47,9 +47,13 @@ function shell(opts: { title: string; body: string; footnote: string }): string 
 </html>`;
 }
 
+// `escapeHtml` couvre `&`, `<`, `>`, `"` et `'` : exactement ce qu'il faut dans
+// un attribut. `searchParams` percent-encode déjà les valeurs, donc rien n'est
+// exploitable aujourd'hui — mais un `&` dans un attribut s'écrit `&amp;`, et
+// c'était la seule interpolation du fichier à ne pas passer par ici.
 const button = (href: string, label: string) =>
   `<p style="margin:0 0 20px;">
-      <a href="${href}" style="display:inline-block;background:#e76f2e;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 24px;border-radius:12px;">${label}</a>
+      <a href="${escapeHtml(href)}" style="display:inline-block;background:#e76f2e;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 24px;border-radius:12px;">${escapeHtml(label)}</a>
     </p>`;
 
 const para = (text: string) =>
@@ -63,6 +67,18 @@ const codeBlock = (token: string) =>
   `<p style="margin:0 0 20px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:28px;font-weight:700;letter-spacing:6px;color:#002089;background:#E9F9FE;border-radius:12px;padding:16px;text-align:center;">${escapeHtml(token)}</p>`;
 
 /**
+ * Les seules valeurs que `/auth/v1/verify` accepte pour `type`.
+ *
+ * Typé plutôt que `string`, et c'est tout l'intérêt : l'appelant passait
+ * `email_action_type` tel quel, alors que ce sont deux vocabulaires différents.
+ * `/verify` répond « Unsupported verification type » à tout ce qui n'est pas
+ * dans cette union, et les liens de changement d'adresse ne validaient donc
+ * rien. Désormais s'y tromper ne compile pas.
+ */
+export type VerifyType =
+  | "signup" | "invite" | "magiclink" | "recovery" | "email_change" | "email";
+
+/**
  * Les liens ne sont jamais fabriqués à la main : c'est `/auth/v1/verify` qui
  * consomme le jeton et renvoie ensuite vers `redirect_to`. Court-circuiter ce
  * chemin casserait la vérification.
@@ -70,7 +86,7 @@ const codeBlock = (token: string) =>
 export function verifyUrl(opts: {
   supabaseUrl: string;
   tokenHash: string;
-  type: string;
+  type: VerifyType;
   redirectTo: string;
 }): string {
   const u = new URL(`${opts.supabaseUrl.replace(/\/$/, "")}/auth/v1/verify`);
@@ -83,16 +99,87 @@ export function verifyUrl(opts: {
 const WHY_YOU_GOT_THIS =
   "Vous recevez ce message parce que cette adresse a été utilisée sur PAPOT. Si ce n'était pas vous, ignorez-le : sans le lien ci-dessus, rien ne se passe.";
 
+/**
+ * Les notifications.
+ *
+ * GoTrue peut annoncer un changement *déjà fait* — mot de passe modifié,
+ * identité liée, facteur MFA enrôlé. Il n'y a rien à confirmer, donc rien à
+ * vérifier : l'ancienne version leur fabriquait pourtant un bouton
+ * « Confirmer » portant un type que `/auth/v1/verify` refuse. La valeur d'un
+ * courriel de sécurité tient entièrement à ce qu'on puisse lui faire
+ * confiance ; un lien mort dessus apprend le contraire.
+ */
+const NOTICES: Record<string, { subject: string; title: string; what: string }> = {
+  password_changed_notification: {
+    subject: "Votre mot de passe a été modifié — PAPOTHT",
+    title: "Mot de passe modifié",
+    what: "Le mot de passe de votre compte PAPOT vient d'être changé.",
+  },
+  email_changed_notification: {
+    subject: "L'adresse de votre compte a changé — PAPOTHT",
+    title: "Adresse modifiée",
+    what: "L'adresse courriel de votre compte PAPOT vient d'être changée.",
+  },
+  phone_changed_notification: {
+    subject: "Votre numéro de téléphone a changé — PAPOTHT",
+    title: "Numéro modifié",
+    what: "Le numéro de téléphone de votre compte PAPOT vient d'être changé.",
+  },
+  identity_linked_notification: {
+    subject: "Un nouveau mode de connexion a été ajouté — PAPOTHT",
+    title: "Nouveau mode de connexion",
+    what: "Un nouveau mode de connexion vient d'être rattaché à votre compte PAPOT.",
+  },
+  identity_unlinked_notification: {
+    subject: "Un mode de connexion a été retiré — PAPOTHT",
+    title: "Mode de connexion retiré",
+    what: "Un mode de connexion vient d'être retiré de votre compte PAPOT.",
+  },
+  mfa_factor_enrolled_notification: {
+    subject: "Vérification en deux étapes activée — PAPOTHT",
+    title: "Deuxième facteur ajouté",
+    what: "Une vérification en deux étapes vient d'être ajoutée à votre compte PAPOT.",
+  },
+  mfa_factor_unenrolled_notification: {
+    subject: "Vérification en deux étapes retirée — PAPOTHT",
+    title: "Deuxième facteur retiré",
+    what: "Une vérification en deux étapes vient d'être retirée de votre compte PAPOT.",
+  },
+};
+
 export function render(opts: {
-  action: string;
+  /** La clé du gabarit, choisie par `planFor` — pas toujours l'action brute. */
+  template: string;
+  /** Vide pour un `code` ou un `notice` : il n'y a pas de lien à offrir. */
   link: string;
   token: string;
   email: string;
   siteUrl: string;
 }): AuthEmail {
-  const { action, link, token, email, siteUrl } = opts;
+  const { template, link, token, email, siteUrl } = opts;
 
-  switch (action) {
+  // Une notification : pas de bouton, et un chemin de reprise en main.
+  const notice = NOTICES[template];
+  if (notice) {
+    return {
+      subject: notice.subject,
+      html: shell({
+        title: notice.title,
+        body:
+          para(notice.what) +
+          quiet("Si c'est bien vous, il n'y a rien à faire.") +
+          quiet(
+            "Si ce n'était pas vous, reprenez la main tout de suite : " +
+              `<a href="${escapeHtml(siteUrl)}/reset-password" style="color:#002089;">changez votre mot de passe</a>.`,
+          ),
+        footnote:
+          `Ce message est parti à ${escapeHtml(email)} parce qu'un réglage de sécurité de ce ` +
+          "compte a changé. PAPOT ne vous demandera jamais votre mot de passe par courriel.",
+      }),
+    };
+  }
+
+  switch (template) {
     case "signup":
       return {
         subject: "Confirmez votre adresse — PAPOTHT",
@@ -118,7 +205,7 @@ export function render(opts: {
             quiet("Ce lien est valable une heure et ne sert qu'une fois.") +
             quiet(
               "Si vous connaissez encore votre mot de passe actuel, vous pouvez le changer " +
-                `directement depuis votre compte : <a href="${siteUrl}/compte/securite" style="color:#002089;">Sécurité</a>.`,
+                `directement depuis votre compte : <a href="${escapeHtml(siteUrl)}/compte/securite" style="color:#002089;">Sécurité</a>.`,
             ),
           footnote:
             "Vous recevez ce message parce qu'une réinitialisation a été demandée pour " +
@@ -155,19 +242,53 @@ export function render(opts: {
         }),
       };
 
+    /**
+     * L'adresse actuelle.
+     *
+     * C'est elle que le hook émet sous `email_change_current`, et elle n'avait
+     * aucun gabarit : le message tombait dans le `default` générique, qui
+     * disait « Confirmez cette adresse » à quelqu'un dont l'adresse ne change
+     * pas. Le titulaire actuel est pourtant la personne qu'il faut prévenir si
+     * le changement n'est pas de lui.
+     */
+    case "email_change_current":
+      return {
+        subject: "Confirmez le changement d'adresse — PAPOTHT",
+        html: shell({
+          title: "Changement d'adresse demandé",
+          body:
+            para(
+              "Une demande a été faite pour remplacer l'adresse de votre compte PAPOT. " +
+                "Confirmez-la depuis cette adresse-ci, celle que vous utilisez aujourd'hui.",
+            ) +
+            button(link, "Confirmer depuis cette adresse") +
+            quiet(
+              "La nouvelle adresse reçoit son propre lien. Tant que les deux n'ont pas " +
+                "confirmé, rien ne change et cette adresse reste la vôtre.",
+            ),
+          footnote:
+            "Vous recevez ce message parce qu'un changement d'adresse a été demandé sur le " +
+            `compte ${escapeHtml(email)}. Si ce n'était pas vous, n'ouvrez pas le lien et ` +
+            "changez votre mot de passe : sans votre confirmation, l'adresse reste la vôtre.",
+        }),
+      };
+
+    // `email_change` (une seule invocation portant les deux couples) et
+    // `email_change_new` (deux invocations séparées) écrivent tous deux à la
+    // nouvelle adresse.
     case "email_change":
     case "email_change_new":
       return {
         subject: "Confirmez votre nouvelle adresse — PAPOTHT",
         html: shell({
-          title: "Changement d'adresse",
+          title: "Votre nouvelle adresse",
           body:
             para("Confirmez cette adresse pour qu'elle devienne celle de votre compte PAPOT.") +
             button(link, "Confirmer cette adresse") +
             quiet("Tant que les deux adresses n'ont pas confirmé, rien ne change."),
           footnote:
-            "Vous recevez ce message parce qu'un changement d'adresse a été demandé sur PAPOT. " +
-            "Si ce n'était pas vous, ignorez-le et changez votre mot de passe.",
+            `Vous recevez ce message parce que ${escapeHtml(email)} a été indiquée comme ` +
+            "nouvelle adresse d'un compte PAPOT. Si cela ne vous dit rien, ignorez-le.",
         }),
       };
 
@@ -187,18 +308,34 @@ export function render(opts: {
       };
 
     default:
-      // Un type que GoTrue ajouterait plus tard. Mieux vaut un message
-      // générique mais correct qu'un courriel qui ne part pas : sans lui,
-      // le compte reste bloqué.
+      /**
+       * Un type que GoTrue ajouterait plus tard.
+       *
+       * Un courriel part quand même : sans lui, la personne attend quelque
+       * chose qui ne vient pas. Mais **sans bouton** — on ne peut pas deviner
+       * le type que `/verify` accepterait, et l'ancienne version en fabriquait
+       * un portant le type inconnu, donc un « Confirmer » qui répond
+       * « Unsupported verification type ». Un lien mort coûte plus qu'une
+       * absence de lien. Le code à six chiffres, lui, est utilisable tel quel.
+       */
       return {
-        subject: "Confirmation — PAPOTHT",
+        subject: "Action sur votre compte — PAPOTHT",
         html: shell({
-          title: "Confirmation",
+          title: "Action sur votre compte",
           body:
-            para("Une action sur votre compte PAPOT demande confirmation.") +
-            button(link, "Confirmer") +
-            quiet("Ce lien est valable une heure."),
-          footnote: WHY_YOU_GOT_THIS,
+            para("Une action sur votre compte PAPOT demande votre confirmation.") +
+            (token
+              ? codeBlock(token) + quiet("Saisissez ce code dans l'écran qui vous l'a demandé.")
+              : "") +
+            quiet(
+              "Si vous attendiez un lien et qu'il n'est pas là, relancez la demande depuis " +
+                `<a href="${escapeHtml(siteUrl)}" style="color:#002089;">papotht.com</a>.`,
+            ),
+          // Pas `WHY_YOU_GOT_THIS` : il dit « sans le lien ci-dessus, rien ne
+          // se passe », et il n'y a justement plus de lien ici.
+          footnote:
+            `Ce message est parti à ${escapeHtml(email)} parce qu'une action a été engagée ` +
+            "sur ce compte. Si vous n'avez rien demandé, ignorez-le.",
         }),
       };
   }

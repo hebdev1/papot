@@ -6,3 +6,47 @@
 # public API URL already in `.env` — and linking still asks for the database
 # password, which is not here and is not in the repository.
 project_id = "sqkbtygodsomekizhhyj"
+
+# ─── Fonctions edge ──────────────────────────────────────────────────────────
+#
+# Rien n'était écrit ici, et `verify_jwt` vaut `true` par défaut. Un
+# `supabase functions deploy` depuis ce dépôt aurait donc fermé
+# `send-auth-email` derrière la passerelle : GoTrue appelle le hook sans JWT —
+# il n'en existe pas encore quand part une confirmation d'inscription — et la
+# plateforme aurait répondu 401 avant que le code s'exécute. Plus aucun
+# courriel d'authentification, et pas une ligne dans les logs de la fonction,
+# puisqu'elle n'aurait jamais été atteinte.
+#
+# Les valeurs ci-dessous sont celles relevées sur la plateforme, pas des valeurs
+# souhaitées. Ce fichier existe pour qu'un déploiement ne change rien d'autre
+# que le code ; changer un réglage se fait dans un commit séparé, où on le voit.
+#
+# `ai-health` est ACTIVE sur le projet (verify_jwt false) et n'a pas de source
+# ici — la même dérive que `send-partner-confirmation` a connue. Volontairement
+# absente de ce fichier : un bloc sans répertoire correspondant est un piège de
+# plus, et il faut d'abord rapatrier son code.
+
+# Authentifiée par signature Standard Webhooks, pas par JWT. C'est la signature
+# qui fait foi ; sans le secret partagé, la fonction refuse de servir.
+[functions.send-auth-email]
+verify_jwt = false
+
+# §101 : un visiteur peut planifier sans compte. L'autorisation qui compte est
+# le jeton de l'appelant, sous lequel tourne chaque outil, donc RLS décide de ce
+# que le modèle voit. Un appelant anonyme voit simplement moins.
+[functions.ai-chat]
+verify_jwt = false
+
+# Appelée depuis le navigateur juste après `submit_partner_application`, y
+# compris par un candidat qui n'a pas encore de session. Elle ne prend qu'un
+# identifiant et écrit à l'adresse portée par la ligne.
+[functions.send-partner-confirmation]
+verify_jwt = false
+
+# Même forme que ci-dessus, mais la passerelle est restée fermée et les
+# courriels de commande partent quand même : `supabase.functions.invoke` met la
+# clé publiable dans l'en-tête `Authorization` et la plateforme l'accepte.
+# Épinglé tel quel — l'asymétrie avec la fonction précédente est réelle, et un
+# déploiement ne doit pas la résoudre tout seul, dans un sens ni dans l'autre.
+[functions.send-order-confirmation]
+verify_jwt = true
