@@ -34,3 +34,4 @@ logs/
 # what it serves is public/photos/, resized from these and versioned. The
 # originals stay on disk, out of the history every clone has to carry.
 image/
+papot-dist.zip
