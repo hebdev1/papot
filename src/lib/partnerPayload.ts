@@ -67,11 +67,23 @@ function payoutMethod(f: Record<string, string>): string | undefined {
   return undefined;
 }
 
+/**
+ * "Saint-Marc, Gonaïves" -> ["Saint-Marc", "Gonaïves"]
+ *
+ * The route form takes stops and departure times on one line each, because a
+ * repeating sub-form for three towns is more interface than the answer
+ * deserves. Blanks are dropped: a trailing comma must not become a gare with no
+ * name, nor a departure the server then refuses.
+ */
+const splitList = (v?: string) =>
+  (v ?? "").split(",").map(s => s.trim()).filter(Boolean);
+
 export function buildPayload(type: Exclude<PartnerType, null>, state: WizardState) {
   const f = state.formData;
   const isCar = type === "car";
   const isRestaurant = type === "restaurant";
   const isLodging = type === "hotel" || type === "guesthouse";
+  const isBus = type === "bus";
 
   return {
     type,
@@ -81,21 +93,23 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
       firstName: f.firstName,
       lastName: f.lastName,
       email: f.email,
-      phone: pick(f.phone, f.bizPhone, f.carPhone, f.restPhone),
+      phone: pick(f.phone, f.bizPhone, f.carPhone, f.restPhone, f.busPhone),
       whatsapp: pick(f.whatsapp, f.bizWhatsapp),
       locale: f.language === "Kreyòl" ? "ht" : f.language === "English" ? "en" : "fr",
     },
 
     business: {
-      name: pick(f.bizName, f.hotelName, f.ghName, f.restName, f.carCompany),
+      name: pick(f.bizName, f.hotelName, f.ghName, f.restName, f.carCompany, f.busCompany),
       legalName: f.legalName,
-      subtype: pick(f.hotelType, f.ghType, f.restType, f.bizType),
+      // For a transport company the subtype is the service it runs ("Transport
+      // interurbain"), which is what the annonce's category line shows.
+      subtype: pick(f.hotelType, f.ghType, f.restType, f.busType, f.bizType),
       yearEstablished: pick(f.yearEst, f.yearOpen, f.restYear),
-      email: pick(f.bizEmail, f.carEmail, f.email),
-      phone: pick(f.bizPhone, f.carPhone, f.restPhone),
+      email: pick(f.bizEmail, f.carEmail, f.busEmail, f.email),
+      phone: pick(f.bizPhone, f.carPhone, f.restPhone, f.busPhone),
       website: f.website,
-      shortDesc: pick(f.shortDesc, f.desc, f.ghDesc, f.carDesc, f.restDesc, f.fullDesc),
-      fullDesc: pick(f.fullDesc, f.desc, f.ghDesc, f.carDesc, f.restDesc),
+      shortDesc: pick(f.shortDesc, f.desc, f.ghDesc, f.carDesc, f.restDesc, f.busDesc, f.fullDesc),
+      fullDesc: pick(f.fullDesc, f.desc, f.ghDesc, f.carDesc, f.restDesc, f.busDesc),
     },
 
     location: {
@@ -181,6 +195,39 @@ export function buildPayload(type: Exclude<PartnerType, null>, state: WizardStat
           bodyType: v.type,
           seats: v.seats,
           transmission: v.transmission,
+        }))
+      : [],
+
+    // The towns a transport company serves. Each one becomes a gare, so the
+    // list is the company's own answer and never inferred from its routes.
+    citiesServed: isBus ? unpackList(f.busCities) : [],
+
+    coaches: isBus
+      ? state.coaches.map(c => ({
+          label: c.label,
+          seats: c.seats,
+          seatPattern: c.pattern,
+          coachType: c.coachType,
+          make: c.make,
+          model: c.model,
+          year: c.year,
+          plate: c.plate,
+        }))
+      : [],
+
+    routes: isBus
+      ? state.routes.map(r => ({
+          originCity: r.origin,
+          destinationCity: r.destination,
+          stops: splitList(r.stops),
+          // Hours and minutes are what an operator thinks in; minutes are what
+          // the schedule stores. Converted once, here, rather than in the form.
+          durationMinutes: String(
+            (Number(r.durationH) || 0) * 60 + (Number(r.durationM) || 0),
+          ),
+          fare: r.fare,
+          departures: splitList(r.departures),
+          weekdays: r.weekdays,
         }))
       : [],
 

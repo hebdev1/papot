@@ -8,6 +8,7 @@ import { DataTable, type Column } from "../../console/DataTable";
 import { FilterBar } from "../components/FilterBar";
 import { ConfirmDialog, useConfirm } from "../../console/Dialog";
 import { StatusBadge } from "../../console/StatusBadge";
+import { KIND, KINDS } from "../../lib/kinds";
 import { adminError, useAdmin } from "../lib/adminAuth";
 import { adminRpc,exportCsv, searchAcross, useDebounced, useRpc, useTable, type Filter } from "../lib/adminData";
 import { ago, count, money } from "../../console/format";
@@ -46,11 +47,15 @@ export const LISTING_STATUS_OPTIONS = [
   { value: "archived", label: "Archivée" },
 ];
 
-export const KIND_LABEL: Record<string, string> = {
-  stay: "Hébergement",
-  car: "Voiture",
-  restaurant: "Restaurant",
-};
+/**
+ * Kept as an export because several admin screens import it; the content now
+ * comes from the one dictionary in `lib/kinds.ts` so a new service appears here
+ * on its own. A blank Service column was what this copy produced for a kind it
+ * had never heard of.
+ */
+export const KIND_LABEL: Record<string, string> = Object.fromEntries(
+  KINDS.map(k => [k, KIND[k].label]),
+);
 
 /** Spec §17–§18. */
 export function Listings() {

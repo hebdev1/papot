@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  Bus,
+  CalendarClock,
   CalendarDays,
   CalendarPlus,
   Car,
@@ -168,6 +170,7 @@ export function Overview() {
               <TodayCard icon={ClipboardCheck} label="À confirmer" value={a?.pending_confirmation ?? 0} to="/partenaire/reservations?status=pending" />
             </>
           )}
+          {active?.type === "bus" && <BusToday />}
           {active?.type === "restaurant" && (
             <>
               <TodayCard icon={ClipboardCheck} label="Réservations" value={data?.reservations_today ?? 0} to="/partenaire/reservations" />
@@ -335,6 +338,49 @@ export function Overview() {
           </Card>
         </div>
       </div>
+    </>
+  );
+}
+
+/**
+ * Today, for a transport company.
+ *
+ * `partner_overview` counts arrivals, pickups and covers — nothing that means
+ * anything to a coach operator — so this reads the day's departures directly.
+ * One day of rows, so counting them here costs nothing, and every figure is the
+ * company's own rather than a zero borrowed from another metier's counter.
+ */
+function BusToday() {
+  const { active } = usePartner();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const rows = useTable<{ id: string; sold: number; free: number; seats_total: number; status: string }>({
+    from: "bus_departure_rows",
+    select: "id, sold, free, seats_total, status",
+    filters: [
+      { col: "partner_id", op: "eq", value: active?.partner_id ?? "" },
+      { col: "departs_on", op: "eq", value: today },
+    ],
+    pageSize: 100,
+    enabled: !!active,
+  });
+
+  const live = rows.rows.filter(r => r.status !== "cancelled");
+  const sold = live.reduce((s, r) => s + Number(r.sold ?? 0), 0);
+  const free = live.reduce((s, r) => s + Number(r.free ?? 0), 0);
+  const seats = live.reduce((s, r) => s + Number(r.seats_total ?? 0), 0);
+
+  return (
+    <>
+      <TodayCard icon={CalendarClock} label="Départs aujourd'hui" value={live.length} to="/partenaire/departs" />
+      <TodayCard icon={Users} label="Passagers attendus" value={sold} to="/partenaire/departs" />
+      <TodayCard icon={Bus} label="Places libres" value={free} to="/partenaire/departs" />
+      <TodayCard
+        icon={CalendarDays}
+        label="Remplissage du jour"
+        value={seats > 0 ? `${Math.round((sold / seats) * 100)} %` : "—"}
+        to="/partenaire/departs"
+      />
     </>
   );
 }

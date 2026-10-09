@@ -40,6 +40,16 @@ export const Icon = {
       <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-2 .5-3.5 2L12 10 3.8 7.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 6.3c.3.4.8.5 1.3.3l.5-.3c.4-.3.6-.7.5-1.1z"/>
     </svg>
   ),
+  Bus: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M4 17V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11" />
+      <path d="M4 11h16" />
+      <path d="M8 4v7M16 4v7" />
+      <path d="M2 17h20" />
+      <circle cx="7.5" cy="19.5" r="1.5" />
+      <circle cx="16.5" cy="19.5" r="1.5" />
+    </svg>
+  ),
   Car: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
       <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/><circle cx="9" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>

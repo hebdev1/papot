@@ -42,6 +42,21 @@ export type CartItem = {
    */
   with_driver?: boolean | null;
   pickup?: string | null;
+  /**
+   * A bus line. Same rule as the vehicle options above and the same reason:
+   * every one of these is a name, and `quote_booking_item` turns names into
+   * money. `departure_id` is what fixes the fare — two departures on the same
+   * day can have different ones, and a date alone cannot tell them apart.
+   *
+   * `passengers` is the one field that is not a pricing option: a ticket
+   * without a name on it cannot be checked in at the gare, so the server
+   * refuses a line whose passenger count does not match the seats it bought.
+   */
+  departure_id?: string | null;
+  fare_class?: string | null;
+  seat_nos?: number[] | null;
+  extra_bags?: number | null;
+  passengers?: { first: string; last: string; phone?: string }[] | null;
 };
 
 type CartValue = {
@@ -70,7 +85,18 @@ const CartContext = createContext<CartValue>({
  * not, so the second add refreshes the first instead of duplicating it.
  */
 const identity = (i: CartItem) =>
-  [i.kind, i.listing_id, i.unit_id ?? "", i.package_id ?? "", i.starts_on ?? "", i.start_time ?? ""].join("|");
+  [
+    i.kind,
+    i.listing_id,
+    i.unit_id ?? "",
+    i.package_id ?? "",
+    i.starts_on ?? "",
+    i.start_time ?? "",
+    // The departure, or the 06:00 and the 14:00 bus on the same route and the
+    // same day would be one line that overwrites itself — which is also how a
+    // return leg would have eaten the outbound one.
+    i.departure_id ?? "",
+  ].join("|");
 
 function readStored(): CartItem[] {
   try {

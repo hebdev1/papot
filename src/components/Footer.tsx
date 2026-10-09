@@ -6,6 +6,7 @@ const LINKS = [
   { to: "/search?kind=stay", label: "Hébergements" },
   { to: "/search?kind=restaurant", label: "Restaurants" },
   { to: "/search?kind=car", label: "Voitures" },
+  { to: "/bus", label: "Autocars" },
   { to: "/aide", label: "Aide" },
   { to: "/conditions", label: "Conditions" },
 ];

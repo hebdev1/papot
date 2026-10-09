@@ -17,6 +17,11 @@ import { CheckEmail } from "./routes/CheckEmail";
 import { ChooseAccount } from "./routes/ChooseAccount";
 import { Property } from "./routes/Property";
 import { Cart } from "./routes/Cart";
+import { BusSearch } from "./routes/bus/BusSearch";
+import { BusDeparture } from "./routes/bus/BusDeparture";
+import { BusTicket } from "./routes/bus/BusTicket";
+import { BusCompany } from "./routes/bus/BusCompany";
+import { BusRoutePage } from "./routes/bus/BusRoutePage";
 import { GuidePage } from "./routes/Guide";
 import { PrivacyPage, TermsPage } from "./routes/LegalPage";
 import { Checkout } from "./routes/Checkout";
@@ -172,6 +177,15 @@ function Shell() {
           <Route path="/aide" element={<GuidePage />} />
           <Route path="/conditions" element={<TermsPage />} />
           <Route path="/confidentialite" element={<PrivacyPage />} />
+          {/* Transport has its own entry point: the question is "from where,
+              to where, which day", which is not the one /search asks. */}
+          <Route path="/bus" element={<BusSearch />} />
+          <Route path="/bus/depart/:id" element={<BusDeparture />} />
+          <Route path="/bus/:from/:to" element={<BusRoutePage />} />
+          <Route path="/autocar/:slug" element={<BusCompany />} />
+          {/* A ticket's own link. The token in the path is the credential, so
+              this route is public by design. */}
+          <Route path="/billet/:token" element={<BusTicket />} />
           <Route path="/panier" element={<Cart />} />
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/booking/:id/confirmed" element={<BookingConfirmed />} />

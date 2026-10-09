@@ -1,6 +1,3 @@
-// Generated from the Supabase schema. Do not edit by hand:
-// regenerate after every migration so the client types match the database.
-
 export type Json =
   | string
   | number
@@ -683,6 +680,8 @@ export type Database = {
           amount: number
           booking_id: string
           detail: string
+          discount: number
+          discount_borne_by: string | null
           ends_on: string | null
           id: string
           kind: Database["public"]["Enums"]["listing_kind"]
@@ -702,6 +701,8 @@ export type Database = {
           amount?: number
           booking_id: string
           detail: string
+          discount?: number
+          discount_borne_by?: string | null
           ends_on?: string | null
           id?: string
           kind: Database["public"]["Enums"]["listing_kind"]
@@ -721,6 +722,8 @@ export type Database = {
           amount?: number
           booking_id?: string
           detail?: string
+          discount?: number
+          discount_borne_by?: string | null
           ends_on?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["listing_kind"]
@@ -799,12 +802,17 @@ export type Database = {
         Row: {
           created_at: string
           currency: string
+          discount: number
+          discount_code: string | null
           email: string
           first_name: string
           id: string
+          idempotency_key: string | null
           last_name: string
+          partner_discount_id: string | null
           payment_method: string
           phone: string
+          promotion_id: string | null
           reference: string
           status: Database["public"]["Enums"]["booking_status"]
           total: number
@@ -813,12 +821,17 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string
+          discount?: number
+          discount_code?: string | null
           email: string
           first_name: string
           id?: string
+          idempotency_key?: string | null
           last_name: string
+          partner_discount_id?: string | null
           payment_method: string
           phone: string
+          promotion_id?: string | null
           reference: string
           status?: Database["public"]["Enums"]["booking_status"]
           total: number
@@ -827,18 +840,840 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string
+          discount?: number
+          discount_code?: string | null
           email?: string
           first_name?: string
           id?: string
+          idempotency_key?: string | null
           last_name?: string
+          partner_discount_id?: string | null
           payment_method?: string
           phone?: string
+          promotion_id?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["booking_status"]
           total?: number
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_partner_discount_id_fkey"
+            columns: ["partner_discount_id"]
+            isOneToOne: false
+            referencedRelation: "partner_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_cancellation_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          fee_flat: number
+          hours_before: number
+          id: string
+          listing_id: string | null
+          partner_id: string
+          refund_percent: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          fee_flat?: number
+          hours_before: number
+          id?: string
+          listing_id?: string | null
+          partner_id: string
+          refund_percent: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          fee_flat?: number
+          hours_before?: number
+          id?: string
+          listing_id?: string | null
+          partner_id?: string
+          refund_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_cancellation_rules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_cancellation_rules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_cancellation_rules_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_cancellation_rules_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_coach_seats: {
+        Row: {
+          class: string | null
+          coach_id: string
+          code: string
+          disabled: boolean
+          seat_col: number | null
+          seat_no: number
+          seat_row: number | null
+        }
+        Insert: {
+          class?: string | null
+          coach_id: string
+          code: string
+          disabled?: boolean
+          seat_col?: number | null
+          seat_no: number
+          seat_row?: number | null
+        }
+        Update: {
+          class?: string | null
+          coach_id?: string
+          code?: string
+          disabled?: boolean
+          seat_col?: number | null
+          seat_no?: number
+          seat_row?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_coach_seats_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "bus_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_coaches: {
+        Row: {
+          amenities: string[]
+          coach_type: string | null
+          created_at: string
+          fleet_no: string
+          id: string
+          make: string | null
+          model: string | null
+          note: string | null
+          partner_id: string
+          photos: string[]
+          plate: string | null
+          seat_capacity: number
+          seat_pattern: Database["public"]["Enums"]["bus_seat_pattern"]
+          status: Database["public"]["Enums"]["bus_coach_status"]
+          year: number | null
+        }
+        Insert: {
+          amenities?: string[]
+          coach_type?: string | null
+          created_at?: string
+          fleet_no: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          note?: string | null
+          partner_id: string
+          photos?: string[]
+          plate?: string | null
+          seat_capacity: number
+          seat_pattern?: Database["public"]["Enums"]["bus_seat_pattern"]
+          status?: Database["public"]["Enums"]["bus_coach_status"]
+          year?: number | null
+        }
+        Update: {
+          amenities?: string[]
+          coach_type?: string | null
+          created_at?: string
+          fleet_no?: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          note?: string | null
+          partner_id?: string
+          photos?: string[]
+          plate?: string | null
+          seat_capacity?: number
+          seat_pattern?: Database["public"]["Enums"]["bus_seat_pattern"]
+          status?: Database["public"]["Enums"]["bus_coach_status"]
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_coaches_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_coaches_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_departure_seats: {
+        Row: {
+          blocked: boolean
+          blocked_reason: string | null
+          booking_item_id: string | null
+          class: string | null
+          code: string
+          departure_id: string
+          held_by: string | null
+          held_until: string | null
+          seat_no: number
+        }
+        Insert: {
+          blocked?: boolean
+          blocked_reason?: string | null
+          booking_item_id?: string | null
+          class?: string | null
+          code: string
+          departure_id: string
+          held_by?: string | null
+          held_until?: string | null
+          seat_no: number
+        }
+        Update: {
+          blocked?: boolean
+          blocked_reason?: string | null
+          booking_item_id?: string | null
+          class?: string | null
+          code?: string
+          departure_id?: string
+          held_by?: string | null
+          held_until?: string | null
+          seat_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_departure_seats_booking_item_id_fkey"
+            columns: ["booking_item_id"]
+            isOneToOne: false
+            referencedRelation: "booking_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departure_seats_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departure_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departure_seats_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_departures: {
+        Row: {
+          coach_id: string
+          created_at: string
+          delay_reason: string | null
+          delayed_to: string | null
+          departs_at: string
+          departs_on: string
+          duration_minutes: number
+          fare: number | null
+          id: string
+          listing_id: string
+          schedule_id: string | null
+          seats_total: number
+          status: Database["public"]["Enums"]["bus_departure_status"]
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          delay_reason?: string | null
+          delayed_to?: string | null
+          departs_at: string
+          departs_on: string
+          duration_minutes: number
+          fare?: number | null
+          id?: string
+          listing_id: string
+          schedule_id?: string | null
+          seats_total: number
+          status?: Database["public"]["Enums"]["bus_departure_status"]
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          delay_reason?: string | null
+          delayed_to?: string | null
+          departs_at?: string
+          departs_on?: string
+          duration_minutes?: number
+          fare?: number | null
+          id?: string
+          listing_id?: string
+          schedule_id?: string | null
+          seats_total?: number
+          status?: Database["public"]["Enums"]["bus_departure_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_departures_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "bus_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "bus_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_fares: {
+        Row: {
+          active: boolean
+          amount: number | null
+          class: string
+          created_at: string
+          id: string
+          label: string
+          listing_id: string
+          percent_of_base: number | null
+        }
+        Insert: {
+          active?: boolean
+          amount?: number | null
+          class: string
+          created_at?: string
+          id?: string
+          label: string
+          listing_id: string
+          percent_of_base?: number | null
+        }
+        Update: {
+          active?: boolean
+          amount?: number | null
+          class?: string
+          created_at?: string
+          id?: string
+          label?: string
+          listing_id?: string
+          percent_of_base?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_fares_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_fares_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_luggage_rules: {
+        Row: {
+          carry_on_kg: number | null
+          extra_price_per_bag: number | null
+          free_kg: number | null
+          listing_id: string
+          max_extra_bags: number | null
+          note: string | null
+          oversize_rule: string | null
+          updated_at: string
+        }
+        Insert: {
+          carry_on_kg?: number | null
+          extra_price_per_bag?: number | null
+          free_kg?: number | null
+          listing_id: string
+          max_extra_bags?: number | null
+          note?: string | null
+          oversize_rule?: string | null
+          updated_at?: string
+        }
+        Update: {
+          carry_on_kg?: number | null
+          extra_price_per_bag?: number | null
+          free_kg?: number | null
+          listing_id?: string
+          max_extra_bags?: number | null
+          note?: string | null
+          oversize_rule?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_luggage_rules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_luggage_rules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_route_stops: {
+        Row: {
+          alighting: boolean
+          arrive_offset_minutes: number | null
+          boarding: boolean
+          id: string
+          listing_id: string
+          note: string | null
+          position: number
+          terminal_id: string
+        }
+        Insert: {
+          alighting?: boolean
+          arrive_offset_minutes?: number | null
+          boarding?: boolean
+          id?: string
+          listing_id: string
+          note?: string | null
+          position: number
+          terminal_id: string
+        }
+        Update: {
+          alighting?: boolean
+          arrive_offset_minutes?: number | null
+          boarding?: boolean
+          id?: string
+          listing_id?: string
+          note?: string | null
+          position?: number
+          terminal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_route_stops_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_route_stops_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_route_stops_terminal_id_fkey"
+            columns: ["terminal_id"]
+            isOneToOne: false
+            referencedRelation: "bus_terminals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_schedules: {
+        Row: {
+          active: boolean
+          coach_id: string
+          created_at: string
+          departs_at: string
+          duration_minutes: number
+          ends_on: string | null
+          fare: number | null
+          id: string
+          listing_id: string
+          starts_on: string
+          weekdays: number[]
+        }
+        Insert: {
+          active?: boolean
+          coach_id: string
+          created_at?: string
+          departs_at: string
+          duration_minutes: number
+          ends_on?: string | null
+          fare?: number | null
+          id?: string
+          listing_id: string
+          starts_on: string
+          weekdays: number[]
+        }
+        Update: {
+          active?: boolean
+          coach_id?: string
+          created_at?: string
+          departs_at?: string
+          duration_minutes?: number
+          ends_on?: string | null
+          fare?: number | null
+          id?: string
+          listing_id?: string
+          starts_on?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_schedules_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "bus_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_schedules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_schedules_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_staff_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          departure_id: string
+          id: string
+          note: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          departure_id: string
+          id?: string
+          note?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          departure_id?: string
+          id?: string
+          note?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_staff_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departure_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_staff_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_terminals: {
+        Row: {
+          active: boolean
+          address: string | null
+          arrive_minutes_before: number
+          city: string
+          country: string
+          created_at: string
+          destination_id: string | null
+          hours: string | null
+          id: string
+          instructions: string | null
+          lat: number | null
+          lng: number | null
+          name: string
+          partner_id: string
+          phone: string | null
+          photo_path: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          arrive_minutes_before?: number
+          city: string
+          country?: string
+          created_at?: string
+          destination_id?: string | null
+          hours?: string | null
+          id?: string
+          instructions?: string | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          partner_id: string
+          phone?: string | null
+          photo_path?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          arrive_minutes_before?: number
+          city?: string
+          country?: string
+          created_at?: string
+          destination_id?: string | null
+          hours?: string | null
+          id?: string
+          instructions?: string | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          partner_id?: string
+          phone?: string | null
+          photo_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_terminals_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_terminals_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_terminals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_terminals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_tickets: {
+        Row: {
+          access_token: string
+          amount: number
+          booking_item_id: string
+          checked_in_at: string | null
+          checked_in_by: string | null
+          checked_in_note: string | null
+          created_at: string
+          departure_id: string
+          fare_class: string
+          id: string
+          passenger_email: string | null
+          passenger_first: string
+          passenger_last: string
+          passenger_phone: string | null
+          qr_code: string
+          seat_code: string | null
+          seat_no: number | null
+          status: string
+          ticket_no: string
+          ticket_sent_at: string | null
+        }
+        Insert: {
+          access_token: string
+          amount: number
+          booking_item_id: string
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          checked_in_note?: string | null
+          created_at?: string
+          departure_id: string
+          fare_class?: string
+          id?: string
+          passenger_email?: string | null
+          passenger_first: string
+          passenger_last: string
+          passenger_phone?: string | null
+          qr_code: string
+          seat_code?: string | null
+          seat_no?: number | null
+          status?: string
+          ticket_no: string
+          ticket_sent_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          amount?: number
+          booking_item_id?: string
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          checked_in_note?: string | null
+          created_at?: string
+          departure_id?: string
+          fare_class?: string
+          id?: string
+          passenger_email?: string | null
+          passenger_first?: string
+          passenger_last?: string
+          passenger_phone?: string | null
+          qr_code?: string
+          seat_code?: string | null
+          seat_no?: number | null
+          status?: string
+          ticket_no?: string
+          ticket_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_tickets_booking_item_id_fkey"
+            columns: ["booking_item_id"]
+            isOneToOne: false
+            referencedRelation: "booking_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_tickets_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departure_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_tickets_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_trip_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          departure_id: string
+          from_value: string | null
+          id: string
+          kind: string
+          payload: Json
+          reason: string | null
+          ticket_id: string | null
+          to_value: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          departure_id: string
+          from_value?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          reason?: string | null
+          ticket_id?: string | null
+          to_value?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          departure_id?: string
+          from_value?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          reason?: string | null
+          ticket_id?: string | null
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_trip_events_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departure_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_trip_events_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bus_departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_trip_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "bus_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       car_details: {
         Row: {
@@ -2458,6 +3293,110 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_deliveries: {
+        Row: {
+          attempts: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at: string
+          error: string | null
+          id: string
+          notification_id: string
+          provider: string | null
+          provider_ref: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_delivery_status"]
+        }
+        Insert: {
+          attempts?: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id: string
+          provider?: string | null
+          provider_ref?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_delivery_status"]
+        }
+        Update: {
+          attempts?: number
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id?: string
+          provider?: string | null
+          provider_ref?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_delivery_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          email: string | null
+          id: string
+          kind: string
+          partner_id: string | null
+          payload: Json
+          phone: string | null
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind: string
+          partner_id?: string | null
+          payload?: Json
+          phone?: string | null
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind?: string
+          partner_id?: string | null
+          payload?: Json
+          phone?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_item_customizations: {
         Row: {
           component_id: string | null
@@ -2734,6 +3673,56 @@ export type Database = {
           },
         ]
       }
+      partner_application_coaches: {
+        Row: {
+          application_id: string
+          coach_type: string | null
+          id: string
+          label: string
+          make: string | null
+          model: string | null
+          plate: string | null
+          position: number
+          seat_pattern: Database["public"]["Enums"]["bus_seat_pattern"]
+          seats: number
+          year: number | null
+        }
+        Insert: {
+          application_id: string
+          coach_type?: string | null
+          id?: string
+          label: string
+          make?: string | null
+          model?: string | null
+          plate?: string | null
+          position?: number
+          seat_pattern?: Database["public"]["Enums"]["bus_seat_pattern"]
+          seats: number
+          year?: number | null
+        }
+        Update: {
+          application_id?: string
+          coach_type?: string | null
+          id?: string
+          label?: string
+          make?: string | null
+          model?: string | null
+          plate?: string | null
+          position?: number
+          seat_pattern?: Database["public"]["Enums"]["bus_seat_pattern"]
+          seats?: number
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_application_coaches_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "partner_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_application_documents: {
         Row: {
           application_id: string
@@ -2852,6 +3841,53 @@ export type Database = {
           },
         ]
       }
+      partner_application_routes: {
+        Row: {
+          application_id: string
+          departures: string[]
+          destination_city: string
+          duration_minutes: number
+          fare: number
+          id: string
+          origin_city: string
+          position: number
+          stops: string[]
+          weekdays: number[]
+        }
+        Insert: {
+          application_id: string
+          departures?: string[]
+          destination_city: string
+          duration_minutes: number
+          fare: number
+          id?: string
+          origin_city: string
+          position?: number
+          stops?: string[]
+          weekdays?: number[]
+        }
+        Update: {
+          application_id?: string
+          departures?: string[]
+          destination_city?: string
+          duration_minutes?: number
+          fare?: number
+          id?: string
+          origin_city?: string
+          position?: number
+          stops?: string[]
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_application_routes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "partner_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_application_vehicles: {
         Row: {
           application_id: string
@@ -2907,6 +3943,7 @@ export type Database = {
           cancellation_policy:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
+          cities_served: string[]
           city: string
           commune: string | null
           confirmation_mode:
@@ -2975,6 +4012,7 @@ export type Database = {
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
+          cities_served?: string[]
           city: string
           commune?: string | null
           confirmation_mode?:
@@ -3043,6 +4081,7 @@ export type Database = {
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
+          cities_served?: string[]
           city?: string
           commune?: string | null
           confirmation_mode?:
@@ -3574,6 +4613,7 @@ export type Database = {
           owner_name: string | null
           phone: string | null
           rating: number | null
+          slug: string | null
           status: Database["public"]["Enums"]["partner_status"]
           suspended_reason: string | null
           type: Database["public"]["Enums"]["partner_type"]
@@ -3595,6 +4635,7 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           rating?: number | null
+          slug?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           suspended_reason?: string | null
           type: Database["public"]["Enums"]["partner_type"]
@@ -3616,6 +4657,7 @@ export type Database = {
           owner_name?: string | null
           phone?: string | null
           rating?: number | null
+          slug?: string | null
           status?: Database["public"]["Enums"]["partner_status"]
           suspended_reason?: string | null
           type?: Database["public"]["Enums"]["partner_type"]
@@ -3641,6 +4683,8 @@ export type Database = {
           currency: string
           customer_id: string | null
           customer_label: string | null
+          discount: number
+          discount_borne_by: string | null
           failure_reason: string | null
           id: string
           method: Database["public"]["Enums"]["payment_method"]
@@ -3662,6 +4706,8 @@ export type Database = {
           currency?: string
           customer_id?: string | null
           customer_label?: string | null
+          discount?: number
+          discount_borne_by?: string | null
           failure_reason?: string | null
           id?: string
           method: Database["public"]["Enums"]["payment_method"]
@@ -3683,6 +4729,8 @@ export type Database = {
           currency?: string
           customer_id?: string | null
           customer_label?: string | null
+          discount?: number
+          discount_borne_by?: string | null
           failure_reason?: string | null
           id?: string
           method?: Database["public"]["Enums"]["payment_method"]
@@ -3987,6 +5035,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      promotion_redemptions: {
+        Row: {
+          amount: number
+          booking_id: string
+          borne_by: string
+          code: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          partner_discount_id: string | null
+          promotion_id: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          borne_by: string
+          code: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          partner_discount_id?: string | null
+          promotion_id?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          borne_by?: string
+          code?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          partner_discount_id?: string | null
+          promotion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_redemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "admin_reservation_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_redemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_redemptions_partner_discount_id_fkey"
+            columns: ["partner_discount_id"]
+            isOneToOne: false
+            referencedRelation: "partner_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_redemptions_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       promotions: {
         Row: {
@@ -4674,6 +5787,8 @@ export type Database = {
         Row: {
           body: string | null
           booking_id: string | null
+          cleanliness: number | null
+          comfort: number | null
           created_at: string
           customer_id: string | null
           customer_label: string | null
@@ -4685,13 +5800,17 @@ export type Database = {
           moderated_by: string | null
           partner_id: string | null
           partner_reply: string | null
+          punctuality: number | null
           rating: number
+          service: number | null
           status: Database["public"]["Enums"]["review_status"]
           title: string | null
         }
         Insert: {
           body?: string | null
           booking_id?: string | null
+          cleanliness?: number | null
+          comfort?: number | null
           created_at?: string
           customer_id?: string | null
           customer_label?: string | null
@@ -4703,13 +5822,17 @@ export type Database = {
           moderated_by?: string | null
           partner_id?: string | null
           partner_reply?: string | null
+          punctuality?: number | null
           rating: number
+          service?: number | null
           status?: Database["public"]["Enums"]["review_status"]
           title?: string | null
         }
         Update: {
           body?: string | null
           booking_id?: string | null
+          cleanliness?: number | null
+          comfort?: number | null
           created_at?: string
           customer_id?: string | null
           customer_label?: string | null
@@ -4721,7 +5844,9 @@ export type Database = {
           moderated_by?: string | null
           partner_id?: string | null
           partner_reply?: string | null
+          punctuality?: number | null
           rating?: number
+          service?: number | null
           status?: Database["public"]["Enums"]["review_status"]
           title?: string | null
         }
@@ -5286,9 +6411,79 @@ export type Database = {
         }
         Relationships: []
       }
+      bus_departure_rows: {
+        Row: {
+          blocked: number | null
+          coach_id: string | null
+          delay_reason: string | null
+          delayed_to: string | null
+          departs_at: string | null
+          departs_on: string | null
+          duration_minutes: number | null
+          fare: number | null
+          fleet_no: string | null
+          free: number | null
+          held: number | null
+          id: string | null
+          listing_id: string | null
+          partner_id: string | null
+          published: boolean | null
+          route: string | null
+          schedule_id: string | null
+          seat_pattern: Database["public"]["Enums"]["bus_seat_pattern"] | null
+          seats_total: number | null
+          sold: number | null
+          status: Database["public"]["Enums"]["bus_departure_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_departures_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "bus_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "admin_listing_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_departures_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "bus_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_partner_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       destinations_public: {
         Row: {
           blurb: string | null
+          buses: number | null
           cars: number | null
           city: string | null
           country: string | null
@@ -5305,6 +6500,7 @@ export type Database = {
         }
         Insert: {
           blurb?: string | null
+          buses?: never
           cars?: never
           city?: string | null
           country?: string | null
@@ -5321,6 +6517,7 @@ export type Database = {
         }
         Update: {
           blurb?: string | null
+          buses?: never
           cars?: never
           city?: string | null
           country?: string | null
@@ -5356,6 +6553,7 @@ export type Database = {
         Returns: string
       }
       admin_booking_distribution: { Args: never; Returns: Json }
+      admin_bus_stats: { Args: { p_days?: number }; Returns: Json }
       admin_can: { Args: { perm: string }; Returns: boolean }
       admin_cancel_booking: {
         Args: { p_reason: string; p_reference: string }
@@ -5550,6 +6748,16 @@ export type Database = {
         Returns: string
       }
       ai_enabled: { Args: never; Returns: boolean }
+      assign_bus_seats: {
+        Args: {
+          p_departure: string
+          p_hold_key?: string
+          p_item: string
+          p_qty: number
+          p_seats?: number[]
+        }
+        Returns: number[]
+      }
       assign_restaurant_table: {
         Args: {
           p_date: string
@@ -5578,10 +6786,173 @@ export type Database = {
       }
       attach_items_to_trips: { Args: { p_booking: string }; Returns: undefined }
       build_partner_listings: { Args: { p_partner: string }; Returns: number }
+      bus_availability: { Args: { p_departure: string }; Returns: Json }
+      bus_cancel_departure: {
+        Args: { p_departure: string; p_reason?: string }
+        Returns: Json
+      }
+      bus_cancel_ticket: {
+        Args: { p_reason?: string; p_token: string }
+        Returns: Json
+      }
+      bus_cancel_ticket_for: {
+        Args: { p_reason?: string; p_ticket: string }
+        Returns: Json
+      }
+      bus_cancel_ticket_internal: {
+        Args: { p_reason: string; p_source: string; p_ticket: string }
+        Returns: Json
+      }
+      bus_cities_served: {
+        Args: never
+        Returns: {
+          as_destination: number
+          as_origin: number
+          city: string
+          country: string
+        }[]
+      }
+      bus_companies_public: {
+        Args: never
+        Returns: {
+          city: string
+          name: string
+          rating: number
+          routes: number
+          slug: string
+        }[]
+      }
+      bus_company_public: { Args: { p_slug: string }; Returns: Json }
+      bus_delay_departure: {
+        Args: { p_departure: string; p_new_time: string; p_reason?: string }
+        Returns: Json
+      }
+      bus_departure_detail: { Args: { p_departure: string }; Returns: Json }
+      bus_departure_instant: {
+        Args: { p_at: string; p_delayed?: string; p_on: string }
+        Returns: string
+      }
+      bus_generate_coach_seats: { Args: { p_coach: string }; Returns: number }
+      bus_hold_seats: {
+        Args: { p_departure: string; p_qty?: number; p_seats?: number[] }
+        Returns: Json
+      }
+      bus_manifest: { Args: { p_departure: string }; Returns: Json }
+      bus_materialize_departure_seats: {
+        Args: { p_departure: string }
+        Returns: number
+      }
+      bus_materialize_departures: {
+        Args: { p_from: string; p_schedule: string; p_to: string }
+        Returns: number
+      }
+      bus_publish_timetable: {
+        Args: { p_listing: string; p_until?: string }
+        Returns: Json
+      }
+      bus_refund_policy: { Args: { p_listing: string }; Returns: Json }
+      bus_refund_quote: { Args: { p_ticket: string }; Returns: Json }
+      bus_release_seats: { Args: never; Returns: number }
+      bus_review_by_token: {
+        Args: {
+          p_body?: string
+          p_cleanliness?: number
+          p_comfort?: number
+          p_punctuality?: number
+          p_rating: number
+          p_service?: number
+          p_title?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      bus_review_state: { Args: { p_token: string }; Returns: Json }
+      bus_route_pairs: {
+        Args: never
+        Returns: {
+          companies: number
+          from_city: string
+          from_price: number
+          routes: number
+          to_city: string
+        }[]
+      }
+      bus_route_reviews: {
+        Args: { p_limit?: number; p_listing: string }
+        Returns: Json
+      }
+      bus_search: {
+        Args: {
+          p_date: string
+          p_from: string
+          p_passengers?: number
+          p_to: string
+        }
+        Returns: {
+          amenities: string[]
+          arrive_minutes_before: number
+          coach_type: string
+          departs_at: string
+          departs_on: string
+          departure_id: string
+          destination_address: string
+          destination_city: string
+          destination_terminal: string
+          duration_minutes: number
+          fare: number
+          intermediate_stops: number
+          listing_id: string
+          operator: string
+          origin_address: string
+          origin_city: string
+          origin_terminal: string
+          partner_id: string
+          rating: number
+          reviews: number
+          route: string
+          seat_pattern: Database["public"]["Enums"]["bus_seat_pattern"]
+          seats_left: number
+          seats_total: number
+        }[]
+      }
+      bus_seat_map: {
+        Args: { p_departure: string }
+        Returns: {
+          class: string
+          code: string
+          seat_no: number
+          state: string
+        }[]
+      }
+      bus_set_departure_status: {
+        Args: {
+          p_departure: string
+          p_note?: string
+          p_status: Database["public"]["Enums"]["bus_departure_status"]
+        }
+        Returns: Json
+      }
+      bus_ticket_by_token: { Args: { p_token: string }; Returns: Json }
+      bus_ticket_code: {
+        Args: { p_len: number; p_readable?: boolean }
+        Returns: string
+      }
+      bus_ticket_refund_quote: { Args: { p_token: string }; Returns: Json }
+      bus_tickets_for_booking: {
+        Args: { p_email?: string; p_reference: string }
+        Returns: Json
+      }
+      bus_timetable_status: { Args: { p_listing: string }; Returns: Json }
+      bus_undo_checkin: { Args: { p_ticket_no: string }; Returns: Json }
+      bus_validate_ticket: {
+        Args: { p_code: string; p_departure?: string; p_note?: string }
+        Returns: Json
+      }
       cancel_food_order: {
         Args: { p_phone?: string; p_reason?: string; p_reference: string }
         Returns: string
       }
+      check_promo_code: { Args: { p_code: string }; Returns: Json }
       claim_my_purchases: { Args: never; Returns: Json }
       claim_partner_invitations: { Args: never; Returns: number }
       create_booking: { Args: { p_payload: Json }; Returns: Json }
@@ -5627,6 +6998,20 @@ export type Database = {
       my_trips: { Args: never; Returns: Json }
       next_booking_reference: { Args: never; Returns: string }
       next_order_reference: { Args: never; Returns: string }
+      next_refund_reference: { Args: never; Returns: string }
+      notify_event: {
+        Args: {
+          p_body?: string
+          p_email?: string
+          p_kind: string
+          p_partner?: string
+          p_payload?: Json
+          p_phone?: string
+          p_title: string
+          p_user?: string
+        }
+        Returns: string
+      }
       package_quote: {
         Args: { p_package: string; p_units?: number }
         Returns: Json
@@ -5732,6 +7117,7 @@ export type Database = {
         Args: { p_item: string; p_table: string }
         Returns: string
       }
+      resolve_discount_code: { Args: { p_code: string }; Returns: Json }
       restaurant_availability: {
         Args: { p_date: string; p_listing: string; p_party?: number }
         Returns: Json
@@ -5744,6 +7130,7 @@ export type Database = {
         Args: { p_days?: number; p_partner: string }
         Returns: Json
       }
+      slugify: { Args: { t: string }; Returns: string }
       stay_availability: {
         Args: {
           p_from: string
@@ -5764,6 +7151,21 @@ export type Database = {
         }[]
       }
       submit_partner_application: { Args: { p_payload: Json }; Returns: Json }
+      submit_review: {
+        Args: {
+          p_body?: string
+          p_cleanliness?: number
+          p_comfort?: number
+          p_email?: string
+          p_listing: string
+          p_punctuality?: number
+          p_rating: number
+          p_reference: string
+          p_service?: number
+          p_title?: string
+        }
+        Returns: Json
+      }
       track_food_order: {
         Args: { p_phone: string; p_reference: string }
         Returns: Json
@@ -5800,6 +7202,16 @@ export type Database = {
         | "maintenance"
         | "closed"
       booking_status: "pending" | "confirmed" | "cancelled"
+      bus_coach_status: "active" | "maintenance" | "out_of_service" | "archived"
+      bus_departure_status:
+        | "scheduled"
+        | "boarding"
+        | "departed"
+        | "delayed"
+        | "arrived"
+        | "cancelled"
+        | "completed"
+      bus_seat_pattern: "2+2" | "2+1" | "1+1" | "custom"
       campaign_status: "draft" | "scheduled" | "sending" | "sent" | "cancelled"
       cancellation_policy: "free_2h" | "free_24h" | "non_refundable"
       commission_scope:
@@ -5870,7 +7282,7 @@ export type Database = {
       fulfillment_mode: "dine_in" | "pickup" | "delivery"
       integration_status: "connected" | "disconnected" | "error"
       invoice_status: "draft" | "issued" | "paid" | "void" | "overdue"
-      listing_kind: "stay" | "restaurant" | "car"
+      listing_kind: "stay" | "restaurant" | "car" | "bus"
       listing_status:
         | "draft"
         | "pending_review"
@@ -5881,6 +7293,13 @@ export type Database = {
         | "suspended"
         | "archived"
       maintenance_kind: "maintenance" | "inspection" | "cleaning" | "repair"
+      notification_channel: "inapp" | "email" | "sms" | "whatsapp" | "push"
+      notification_delivery_status:
+        | "pending"
+        | "sent"
+        | "failed"
+        | "skipped"
+        | "processing"
       package_basis: "per_night" | "per_day" | "total"
       partner_document_status:
         | "uploaded"
@@ -5898,6 +7317,10 @@ export type Database = {
         | "kitchen"
         | "cashier"
         | "delivery_manager"
+        | "dispatcher"
+        | "ticket_agent"
+        | "boarding_agent"
+        | "driver"
       partner_member_status: "invited" | "active" | "inactive"
       partner_status:
         | "pending"
@@ -5905,7 +7328,7 @@ export type Database = {
         | "suspended"
         | "rejected"
         | "inactive"
-      partner_type: "guesthouse" | "restaurant" | "car" | "hotel"
+      partner_type: "guesthouse" | "restaurant" | "car" | "hotel" | "bus"
       payment_method: "card" | "mobile_money" | "bank_transfer" | "cash"
       payment_status:
         | "pending"
@@ -6128,6 +7551,17 @@ export const Constants = {
         "closed",
       ],
       booking_status: ["pending", "confirmed", "cancelled"],
+      bus_coach_status: ["active", "maintenance", "out_of_service", "archived"],
+      bus_departure_status: [
+        "scheduled",
+        "boarding",
+        "departed",
+        "delayed",
+        "arrived",
+        "cancelled",
+        "completed",
+      ],
+      bus_seat_pattern: ["2+2", "2+1", "1+1", "custom"],
       campaign_status: ["draft", "scheduled", "sending", "sent", "cancelled"],
       cancellation_policy: ["free_2h", "free_24h", "non_refundable"],
       commission_scope: [
@@ -6206,7 +7640,7 @@ export const Constants = {
       fulfillment_mode: ["dine_in", "pickup", "delivery"],
       integration_status: ["connected", "disconnected", "error"],
       invoice_status: ["draft", "issued", "paid", "void", "overdue"],
-      listing_kind: ["stay", "restaurant", "car"],
+      listing_kind: ["stay", "restaurant", "car", "bus"],
       listing_status: [
         "draft",
         "pending_review",
@@ -6218,6 +7652,14 @@ export const Constants = {
         "archived",
       ],
       maintenance_kind: ["maintenance", "inspection", "cleaning", "repair"],
+      notification_channel: ["inapp", "email", "sms", "whatsapp", "push"],
+      notification_delivery_status: [
+        "pending",
+        "sent",
+        "failed",
+        "skipped",
+        "processing",
+      ],
       package_basis: ["per_night", "per_day", "total"],
       partner_document_status: [
         "uploaded",
@@ -6236,6 +7678,10 @@ export const Constants = {
         "kitchen",
         "cashier",
         "delivery_manager",
+        "dispatcher",
+        "ticket_agent",
+        "boarding_agent",
+        "driver",
       ],
       partner_member_status: ["invited", "active", "inactive"],
       partner_status: [
@@ -6245,7 +7691,7 @@ export const Constants = {
         "rejected",
         "inactive",
       ],
-      partner_type: ["guesthouse", "restaurant", "car", "hotel"],
+      partner_type: ["guesthouse", "restaurant", "car", "hotel", "bus"],
       payment_method: ["card", "mobile_money", "bank_transfer", "cash"],
       payment_status: [
         "pending",

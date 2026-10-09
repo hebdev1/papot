@@ -73,6 +73,13 @@ export function validateStep(
         need(has(f.restType), "Type de restaurant");
         need(has(f.priceRange), "Fourchette de prix");
         need(has(f.restCapacity), "Capacité (couverts)");
+      } else if (partnerType === "bus") {
+        need(has(f.busCompany, 2), "Nom de la compagnie");
+        need(has(f.busType), "Type de service");
+        need(has(f.busPhone, 6), "Téléphone");
+        // The towns are what become gares, so a company that names none has
+        // nowhere for its coaches to leave from.
+        need(has(f.busCities), "Au moins une ville desservie");
       }
       break;
 
@@ -84,6 +91,33 @@ export function validateStep(
       if (partnerType === "car") need(s.vehicles.length > 0, "Au moins un véhicule");
       else if (partnerType === "hotel" || partnerType === "guesthouse")
         need(s.rooms.length > 0, "Au moins un type de chambre");
+      else if (partnerType === "bus") {
+        // The same two checks `submit_partner_application` makes, made here so
+        // the company finds out now rather than at the end of fifteen steps.
+        need(s.coaches.length > 0, "Au moins un autocar");
+        need(s.routes.length > 0, "Au moins un trajet");
+        need(
+          s.routes.every(r => (Number(r.durationH) || 0) * 60 + (Number(r.durationM) || 0) >= 5),
+          "Une durée pour chaque trajet",
+        );
+        need(s.routes.every(r => has(r.fare)), "Un tarif pour chaque trajet");
+        need(
+          s.routes.every(r => r.weekdays.length > 0),
+          "Au moins un jour de service par trajet",
+        );
+        // The server refuses anything that is not 24-hour time; catching it
+        // here names the offending value while the field is still on screen.
+        need(
+          s.routes.every(r =>
+            (r.departures ?? "")
+              .split(",")
+              .map(t => t.trim())
+              .filter(Boolean)
+              .every(t => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)),
+          ),
+          "Heures de départ au format 06:00",
+        );
+      }
       break;
 
     case "schedule":

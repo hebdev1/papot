@@ -38,6 +38,7 @@ export const PARTNER_TYPE_LABEL: Record<string, string> = {
   guesthouse: "Maison d'hôtes",
   car: "Location de voitures",
   restaurant: "Restaurant",
+  bus: "Transport",
 };
 
 /** Spec §13–§14. */

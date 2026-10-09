@@ -98,6 +98,19 @@ const STATUS: Record<string, Entry> = {
   suspicious: { tone: "error", label: "Suspect", Icon: ShieldAlert },
   void: { tone: "error", label: "Annulé", Icon: XCircle },
   closed_account: { tone: "error", label: "Fermé", Icon: Ban },
+
+  // Transport. `active`, `scheduled`, `maintenance`, `archived`, `cancelled`,
+  // `completed`, `issued` and `refunded` above already cover a coach, a
+  // departure and a ticket; these are the codes the vertical adds. Without a
+  // row here `out_of_service` renders as "out of service" — the fallback is
+  // readable, which is why it was easy to miss that it is not French.
+  out_of_service: { tone: "error", label: "Hors service", Icon: Ban },
+  boarding: { tone: "info", label: "Embarquement", Icon: Clock },
+  departed: { tone: "info", label: "Parti", Icon: CheckCircle2 },
+  delayed: { tone: "warning", label: "Retardé", Icon: AlertTriangle },
+  arrived: { tone: "success", label: "Arrivé", Icon: CheckCircle2 },
+  checked_in: { tone: "success", label: "Embarqué", Icon: CheckCircle2 },
+  no_show: { tone: "error", label: "Non présenté", Icon: Ban },
 };
 
 export function statusEntry(status: string | null | undefined): Entry {

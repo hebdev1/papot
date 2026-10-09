@@ -10,6 +10,9 @@ import {
   UtensilsCrossed,
   XCircle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { KIND, KINDS } from "../../lib/kinds";
+import type { Kind } from "../../lib/kinds";
 import { Badge } from "../ui/cvui-badge";
 import { parseDay } from "../../lib/panel";
 
@@ -66,15 +69,21 @@ export function StatusBadge({
   );
 }
 
-/** Service icons (spec §46) — one icon per service, used everywhere. */
+/**
+ * Service icons (spec §46) — one icon per service, used everywhere.
+ *
+ * The four services come from `lib/kinds.ts`, so this map gains a service when
+ * the enum does rather than when somebody remembers. The three extra keys are
+ * things a traveller sees in their panel that are not listings.
+ */
 export const SERVICE = {
-  stay: { label: "Hébergement", Icon: BedDouble },
-  car: { label: "Voiture", Icon: Car },
-  restaurant: { label: "Restaurant", Icon: UtensilsCrossed },
+  ...(Object.fromEntries(
+    KINDS.map(k => [k, { label: KIND[k].label, Icon: KIND[k].icon }]),
+  ) as Record<Kind, { label: string; Icon: LucideIcon }>),
   trip: { label: "Voyage", Icon: Luggage },
   payment: { label: "Paiement", Icon: CreditCard },
   review: { label: "Avis", Icon: Star },
-} as const;
+};
 
 export type ServiceKind = keyof typeof SERVICE;
 

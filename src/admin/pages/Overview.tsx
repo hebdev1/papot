@@ -15,6 +15,7 @@ import { Button, Card, CardHeader, PageHeader } from "../../console/Ui";
 import { HealthCard, MetricCard } from "../../console/Cards";
 import { ActivityFeed, type FeedEvent } from "../components/Panels";
 import { BarList, Donut, GeoMap, LineChart } from "../../console/Charts";
+import { KIND, KINDS } from "../../lib/kinds";
 import { exportCsv, useRpc } from "../lib/adminData";
 import { useAdmin } from "../lib/adminAuth";
 import { change, count, dayShort, money, moneyShort } from "../../console/format";
@@ -52,11 +53,12 @@ const RANGES = [
   { id: 365, label: "12 mois" },
 ];
 
-const SERVICE_LABEL: Record<string, string> = {
-  stay: "Hébergements",
-  car: "Voitures",
-  restaurant: "Restaurants",
-};
+const SERVICE_LABEL: Record<string, string> = Object.fromEntries(
+  KINDS.map(k => [k, KIND[k].many]),
+);
+
+/** One colour per service, in enum order. */
+const SERVICE_COLOR = ["#002089", "#e76f2e", "#00508a", "#6ad7fb"];
 
 const PARTNER_LABEL: Record<string, string> = {
   hotel: "Hôtels",
@@ -345,11 +347,13 @@ export function Overview() {
         <Card>
           <CardHeader title="Répartition des réservations" subtitle="Par service et par statut." />
           <Donut
-            slices={[
-              { label: "Hébergements", value: Number(dist?.by_service?.stay ?? 0), color: "#002089" },
-              { label: "Voitures", value: Number(dist?.by_service?.car ?? 0), color: "#e76f2e" },
-              { label: "Restaurants", value: Number(dist?.by_service?.restaurant ?? 0), color: "#00508a" },
-            ]}
+            // Driven by the enum: a service PAPOT sells but this chart never
+            // heard of used to be silently absent from the total.
+            slices={KINDS.map((k, i) => ({
+              label: KIND[k].many,
+              value: Number(dist?.by_service?.[k] ?? 0),
+              color: SERVICE_COLOR[i % SERVICE_COLOR.length],
+            }))}
           />
 
           <div className="mt-5 border-t border-admin-line pt-4">

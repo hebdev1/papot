@@ -8,7 +8,7 @@ import { validateStep } from "../lib/partnerValidation";
 import { PARTNER_DOCUMENTS_BUCKET, PARTNER_PHOTOS_BUCKET } from "../lib/supabase";
 
 /* ─── TYPES ─────────────────────────────────────────── */
-export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant" | null;
+export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant" | "bus" | null;
 export type WizardState = {
   step: number;
   partnerType: PartnerType;
@@ -17,6 +17,8 @@ export type WizardState = {
   hours: Record<string, { open: boolean; from: string; to: string }>;
   rooms: RoomItem[];
   vehicles: VehicleItem[];
+  coaches: CoachItem[];
+  routes: RouteItem[];
   /** "unsaved" is real: storage can be blocked, and then nothing is kept. */
   autosaveStatus: "saved" | "saving" | "unsaved";
   photos: File[];
@@ -107,6 +109,10 @@ const DRAFT_FIELDS = [
   // Détails — restaurant
   "restName", "restType", "priceRange", "restYear", "restCapacity", "restPhone",
   "cuisines", "restDesc",
+  // Détails — transport. `busCities` est une liste empaquetée par `packList`,
+  // comme `cuisines` : elle vit dans `formData` plutôt qu'à côté parce que
+  // l'étape se démonte à chaque retour en arrière.
+  "busCompany", "busType", "busCities", "busEmail", "busPhone", "busDesc",
 
   // Horaires & réservations — restaurant
   "minParty", "maxParty", "resDuration", "minNotice", "confirm", "cancelPolicy",
@@ -147,7 +153,7 @@ const draftFields = (f: unknown): Record<string, string> => {
   return out;
 };
 
-const PARTNER_TYPE_VALUES = ["hotel", "guesthouse", "car", "restaurant"] as const;
+const PARTNER_TYPE_VALUES = ["hotel", "guesthouse", "car", "restaurant", "bus"] as const;
 
 type DraftState = Omit<WizardState, "photos" | "documents" | "autosaveStatus">;
 type StoredDraft = DraftState & { savedAt?: number };
@@ -186,6 +192,8 @@ function readDraft(): DraftState | null {
       hours: d.hours ?? DEFAULT_HOURS,
       rooms: Array.isArray(d.rooms) ? d.rooms : [],
       vehicles: Array.isArray(d.vehicles) ? d.vehicles : [],
+      coaches: Array.isArray(d.coaches) ? d.coaches : [],
+      routes: Array.isArray(d.routes) ? d.routes : [],
     };
   } catch {
     return null;
@@ -205,6 +213,8 @@ function writeDraft(s: WizardState) {
       hours: s.hours,
       rooms: s.rooms,
       vehicles: s.vehicles,
+      coaches: s.coaches,
+      routes: s.routes,
       // Repoussé à chaque enregistrement : le délai court depuis la dernière
       // activité, pas depuis la première, ce qui est le sens de « reprendre ».
       savedAt: Date.now(),
@@ -228,6 +238,28 @@ function clearDraft() {
 
 type RoomItem = { id: number; name: string; type: string; capacity: string; beds: string; price: string; units: string };
 type VehicleItem = { id: number; make: string; model: string; year: string; type: string; seats: string; transmission: string };
+
+/**
+ * Un autocar et un trajet, tels que l'entreprise les déclare.
+ *
+ * `seats` est le seul chiffre obligatoire d'un autocar : il devient la capacité
+ * de chaque départ, et une capacité devinée vend soit une place qui n'existe
+ * pas, soit une place de moins que le véhicule.
+ *
+ * La durée se saisit en heures et minutes parce que « 6 h 00 » est ce que
+ * l'exploitant a en tête ; `buildPayload` la convertit en minutes, qui est ce
+ * que la base garde. Les arrêts et les heures de départ sont des listes
+ * séparées par des virgules : une seule ligne de saisie, et rien à apprendre.
+ */
+type CoachItem = {
+  id: number; label: string; seats: string; pattern: string;
+  coachType: string; make: string; model: string; year: string; plate: string;
+};
+type RouteItem = {
+  id: number; origin: string; destination: string; stops: string;
+  durationH: string; durationM: string; fare: string;
+  departures: string; weekdays: number[];
+};
 
 /* ─── STEP META ─────────────────────────────────────── */
 const STEP_NAMES = [
@@ -520,6 +552,7 @@ const PARTNER_TYPES = [
   { id: "guesthouse" as const, emoji: "🏡", label: "Maison d'hôtes", desc: "Partagez votre chambre d'hôtes, villa ou B&B avec des voyageurs.", time: "~12 min", btn: "Inscrire une Maison d'hôtes" },
   { id: "car" as const, emoji: "🚗", label: "Location de voiture", desc: "Ajoutez vos véhicules, tarifs, lieux de prise en charge et disponibilités.", time: "~10 min", btn: "Inscrire des Véhicules" },
   { id: "restaurant" as const, emoji: "🍽️", label: "Restaurant", desc: "Ajoutez votre restaurant, menus, tables, horaires et réservations.", time: "~15 min", btn: "Inscrire un Restaurant" },
+  { id: "bus" as const, emoji: "🚌", label: "Transport", desc: "Publiez vos trajets, vos horaires et vos tarifs, et vendez vos billets en ligne.", time: "~12 min", btn: "Inscrire une Compagnie" },
 ];
 
 /* ─── AMENITIES DATA ─────────────────────────────────── */
@@ -550,11 +583,55 @@ const AMENITIES_RESTAURANT = [
   { cat: "Services", items: [{ e: "🎵", l: "Musique live" }, { e: "🎧", l: "DJ" }, { e: "👨‍👩‍👧", l: "Famille bienvenue" }, { e: "🧒", l: "Menu enfants" }, { e: "♿", l: "Accès handicapé" }, { e: "🎉", l: "Espace privatif" }, { e: "🛵", l: "Livraison" }, { e: "🥡", l: "À emporter" }] },
 ];
 
+/**
+ * Les équipements d'un autocar.
+ *
+ * Les libellés ne sont pas libres : la base garde un équipement par son code, et
+ * les deux côtés dérivent ce code du libellé par `amenitySlug`. « Télévision »
+ * donne `television`, qui est la ligne semée dans `partner_amenities` avec
+ * `'bus'` dans `applies_to`. Un libellé réécrit ici sans migration
+ * correspondante serait refusé par le garde de type à la soumission.
+ */
+const AMENITIES_BUS = [
+  { cat: "Confort", items: [{ e: "❄️", l: "Climatisation" }, { e: "💺", l: "Sièges inclinables" }, { e: "🚻", l: "Toilettes à bord" }, { e: "📺", l: "Télévision" }] },
+  { cat: "À bord", items: [{ e: "📶", l: "Wi-Fi" }, { e: "🔌", l: "USB" }, { e: "⚡", l: "Prises électriques" }, { e: "💧", l: "Eau offerte" }, { e: "🥐", l: "Collation" }] },
+  { cat: "Bagages & accès", items: [{ e: "🧳", l: "Soute à bagages" }, { e: "♿", l: "Accès handicapé" }] },
+];
+
 const DAYS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 const DEFAULT_HOURS: Record<string, { open: boolean; from: string; to: string }> = Object.fromEntries(
   DAYS_FR.map(d => [d, { open: true, from: "08:00", to: "22:00" }])
 );
+
+/**
+ * Les villes proposées viennent de la base.
+ *
+ * `destinations` porte déjà les villes que PAPOT met en avant, et une liste
+ * écrite en dur dans ce fichier aurait divergé du jour où quelqu'un ajoute une
+ * destination depuis la console. Ce ne sont que des propositions : une
+ * compagnie dessert des bourgs qui ne seront jamais une destination
+ * touristique, donc l'étape accepte aussi une ville saisie à la main.
+ *
+ * Un échec de lecture ne bloque rien — la liste reste vide et la saisie libre
+ * suffit.
+ */
+function useKnownCities(): string[] {
+  const [cities, setCities] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    supabase
+      .from("destinations")
+      .select("city")
+      .order("position")
+      .then(({ data, error }) => {
+        if (!live || error || !data) return;
+        setCities([...new Set(data.map(d => d.city).filter(Boolean))]);
+      });
+    return () => { live = false; };
+  }, []);
+  return cities;
+}
 
 /* ─── STEP COMPONENTS ────────────────────────────────── */
 
@@ -741,6 +818,16 @@ function StepDetails({ partnerType, data, onChange }: { partnerType: PartnerType
   const cuisines = unpackList(data.cuisines);
   const CUISINE_OPTIONS = ["Haïtienne", "Caribéenne", "Créole", "Française", "Italienne", "Américaine", "Mexicaine", "Chinoise", "Japonaise", "Africaine", "Fruits de mer", "Végétalienne", "Café", "Bar & Grill", "Internationale"];
 
+  const busCities = unpackList(data.busCities);
+  const knownCities = useKnownCities();
+  const [newCity, setNewCity] = useState("");
+  const addCity = () => {
+    const v = newCity.trim();
+    if (!v || busCities.includes(v)) { setNewCity(""); return; }
+    onChange("busCities", packList([...busCities, v]));
+    setNewCity("");
+  };
+
   if (partnerType === "hotel") return (
     <div>
       <SectionTitle title="Informations sur l'hôtel" />
@@ -842,11 +929,60 @@ function StepDetails({ partnerType, data, onChange }: { partnerType: PartnerType
     </div>
   );
 
+  if (partnerType === "bus") return (
+    <div>
+      <SectionTitle title="Informations sur la compagnie de transport" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <Field label="Nom de la compagnie" id="busCompany" placeholder="Transport Nasyonal" value={data.busCompany || ""} onChange={v => onChange("busCompany", v)} required />
+        <SelectField label="Type de service" id="busType" options={["Transport interurbain", "Navette aéroport", "Transport touristique", "Transport urbain", "Service express"]} value={data.busType || ""} onChange={v => onChange("busType", v)} />
+        <Field label="Email de contact" id="busEmail" type="email" placeholder="info@transport.ht" value={data.busEmail || ""} onChange={v => onChange("busEmail", v)} />
+        <Field label="WhatsApp / Téléphone" id="busPhone" type="tel" placeholder="+509 3712 3456" value={data.busPhone || ""} onChange={v => onChange("busPhone", v)} />
+      </div>
+      <div className="mb-4">
+        <p className="text-xs font-semibold text-[#7a6355] uppercase tracking-wide mb-2">Villes desservies</p>
+        <div className="flex flex-wrap gap-2">
+          {[...new Set([...knownCities, ...busCities])].map(c => (
+            <button key={c} type="button"
+              onClick={() => onChange("busCities", packList(busCities.includes(c) ? busCities.filter(x => x !== c) : [...busCities, c]))}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors ${busCities.includes(c) ? "border-[#e76f2e] bg-[#fff5f0] text-[#e76f2e]" : "border-[#e2d5c3] text-[#7a6355] hover:border-[#6ad7fb]"}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <input
+            value={newCity}
+            onChange={e => setNewCity(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCity(); } }}
+            placeholder="Une autre ville — ex. Ouanaminthe"
+            className="flex-1 border border-[#e2d5c3] rounded-xl px-3 py-2 text-sm text-[#3E2C23] placeholder:text-[#b0a090] focus:border-[#6ad7fb] outline-none"
+          />
+          <button type="button" onClick={addCity} disabled={!newCity.trim()}
+            className="border-2 border-[#e2d5c3] px-4 py-2 rounded-xl text-sm text-[#7a6355] font-semibold disabled:opacity-40">
+            Ajouter
+          </button>
+        </div>
+        <p className="text-xs text-[#b0a090] mt-2">
+          Chaque ville cochée devient une gare dans votre tableau de bord, que vous
+          complétez ensuite avec son adresse et ses horaires. Les propositions
+          viennent des destinations déjà sur PAPOT ; ajoutez librement une ville
+          qui n'y figure pas.
+        </p>
+      </div>
+      <Field label="Description" id="busDesc" type="textarea" placeholder="Décrivez votre service — confort des autocars, ponctualité, zones desservies…" value={data.busDesc || ""} onChange={v => onChange("busDesc", v)} />
+    </div>
+  );
+
   return null;
 }
 
 function StepAmenities({ partnerType, amenities, onToggle }: { partnerType: PartnerType; amenities: string[]; onToggle: (a: string) => void }) {
-  const dataset = partnerType === "hotel" ? AMENITIES_HOTEL : partnerType === "guesthouse" ? AMENITIES_GUESTHOUSE : partnerType === "car" ? AMENITIES_CAR : AMENITIES_RESTAURANT;
+  const dataset =
+    partnerType === "hotel" ? AMENITIES_HOTEL
+    : partnerType === "guesthouse" ? AMENITIES_GUESTHOUSE
+    : partnerType === "car" ? AMENITIES_CAR
+    : partnerType === "bus" ? AMENITIES_BUS
+    : AMENITIES_RESTAURANT;
   return (
     <div>
       <SectionTitle title="Équipements & Services" subtitle="Sélectionnez tous les équipements disponibles dans votre établissement." />
@@ -867,10 +1003,12 @@ function StepAmenities({ partnerType, amenities, onToggle }: { partnerType: Part
   );
 }
 
-function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, data, onChange }: {
+function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, coaches, setCoaches, routes, setRoutes, data, onChange }: {
   partnerType: PartnerType;
   rooms: RoomItem[]; setRooms: (r: RoomItem[]) => void;
   vehicles: VehicleItem[]; setVehicles: (v: VehicleItem[]) => void;
+  coaches: CoachItem[]; setCoaches: (c: CoachItem[]) => void;
+  routes: RouteItem[]; setRoutes: (r: RouteItem[]) => void;
   data: Record<string, string>; onChange: (k: string, v: string) => void;
 }) {
   const [addingRoom, setAddingRoom] = useState(false);
@@ -881,6 +1019,12 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
   // be corrected by deleting the room and retyping all six fields.
   const [editingRoom, setEditingRoom] = useState<number | null>(null);
   const [newVehicle, setNewVehicle] = useState<Partial<VehicleItem>>({});
+  const [addingCoach, setAddingCoach] = useState(false);
+  const [editingCoach, setEditingCoach] = useState<number | null>(null);
+  const [newCoach, setNewCoach] = useState<Partial<CoachItem>>({});
+  const [addingRoute, setAddingRoute] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<number | null>(null);
+  const [newRoute, setNewRoute] = useState<Partial<RouteItem>>({});
 
   if (partnerType === "hotel" || partnerType === "guesthouse") return (
     <div>
@@ -1049,6 +1193,219 @@ function StepInventory({ partnerType, rooms, setRooms, vehicles, setVehicles, da
     </div>
   );
 
+  if (partnerType === "bus") {
+    const saveCoach = () => {
+      if (!newCoach.label || !newCoach.seats) return;
+      const row: CoachItem = {
+        id: editingCoach ?? Date.now(),
+        label: newCoach.label, seats: newCoach.seats,
+        pattern: newCoach.pattern || "2+2", coachType: newCoach.coachType || "",
+        make: newCoach.make || "", model: newCoach.model || "",
+        year: newCoach.year || "", plate: newCoach.plate || "",
+      };
+      setCoaches(editingCoach === null ? [...coaches, row] : coaches.map(x => (x.id === editingCoach ? row : x)));
+      setNewCoach({}); setEditingCoach(null); setAddingCoach(false);
+    };
+
+    const saveRoute = () => {
+      if (!newRoute.origin || !newRoute.destination || !newRoute.fare) return;
+      const row: RouteItem = {
+        id: editingRoute ?? Date.now(),
+        origin: newRoute.origin, destination: newRoute.destination,
+        stops: newRoute.stops || "",
+        durationH: newRoute.durationH || "", durationM: newRoute.durationM || "",
+        fare: newRoute.fare, departures: newRoute.departures || "",
+        weekdays: newRoute.weekdays ?? [0, 1, 2, 3, 4, 5, 6],
+      };
+      setRoutes(editingRoute === null ? [...routes, row] : routes.map(x => (x.id === editingRoute ? row : x)));
+      setNewRoute({}); setEditingRoute(null); setAddingRoute(false);
+    };
+
+    const days = newRoute.weekdays ?? [0, 1, 2, 3, 4, 5, 6];
+    const toggleDay = (d: number) =>
+      setNewRoute(p => {
+        const cur = p.weekdays ?? [0, 1, 2, 3, 4, 5, 6];
+        return { ...p, weekdays: cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d].sort() };
+      });
+
+    return (
+      <div>
+        <SectionTitle title="Flotte & Trajets"
+          subtitle="Vos autocars et les trajets que vous souhaitez vendre. Vous pourrez en ajouter d'autres depuis votre tableau de bord." />
+
+        {/* ── La flotte ──────────────────────────────────── */}
+        <p className="text-xs font-bold text-[#002089] uppercase tracking-widest mb-3">Autocars</p>
+        {coaches.length === 0 && !addingCoach && (
+          <div className="bg-[#E9F9FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-8 text-center mb-6">
+            <span className="text-4xl block mb-3">🚌</span>
+            <p className="font-display font-bold text-[#3E2C23] text-lg mb-2">Ajoutez votre premier autocar</p>
+            <p className="text-[#7a6355] text-sm mb-5">
+              Le nombre de places devient la capacité de chaque départ : c'est le seul
+              chiffre que nous ne pouvons pas deviner.
+            </p>
+            <button type="button" onClick={() => setAddingCoach(true)}
+              className="bg-[#e76f2e] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#d05e20] transition-colors inline-flex items-center gap-2">
+              <Ico.Plus /> Ajouter un autocar
+            </button>
+          </div>
+        )}
+        {coaches.map(c => (
+          <div key={c.id} className="bg-white border border-[#e2d5c3] rounded-xl p-4 mb-3 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-[#E9F9FE] flex items-center justify-center text-2xl shrink-0">🚌</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[#3E2C23] truncate">{c.label}</p>
+              <p className="text-xs text-[#7a6355]">
+                {[c.seats && `${c.seats} places`, c.pattern, c.coachType,
+                  [c.make, c.model, c.year].filter(Boolean).join(" ")].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <button type="button" title="Modifier cet autocar"
+                onClick={() => { setNewCoach(c); setEditingCoach(c.id); setAddingCoach(true); }}
+                className="p-2 rounded-lg hover:bg-[#E9F9FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
+              <button type="button" onClick={() => setCoaches(coaches.filter(x => x.id !== c.id))}
+                className="p-2 rounded-lg hover:bg-red-50 text-[#7a6355] hover:text-red-500 transition-colors"><Ico.Trash /></button>
+            </div>
+          </div>
+        ))}
+        {addingCoach && (
+          <div className="bg-white border-2 border-[#6ad7fb] rounded-xl p-5 mb-4">
+            <p className="font-display font-bold text-[#3E2C23] mb-4">
+              {editingCoach === null ? "Nouvel autocar" : "Modifier l'autocar"}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <Field label="Nom / numéro de parc" id="cLabel" placeholder="Autocar 52 places" value={newCoach.label || ""} onChange={v => setNewCoach(p => ({ ...p, label: v }))} required />
+              <Field label="Nombre de places" id="cSeats" type="number" placeholder="52" value={newCoach.seats || ""} onChange={v => setNewCoach(p => ({ ...p, seats: v }))} required />
+              <SelectField label="Disposition des sièges" id="cPattern" options={["2+2", "2+1", "1+1", "custom"]} value={newCoach.pattern || "2+2"} onChange={v => setNewCoach(p => ({ ...p, pattern: v }))} />
+              <SelectField label="Type d'autocar" id="cType" options={["Autocar climatisé", "Autocar standard", "Minibus", "Bus VIP", "Navette"]} value={newCoach.coachType || ""} onChange={v => setNewCoach(p => ({ ...p, coachType: v }))} />
+              <Field label="Marque" id="cMake" placeholder="Mercedes" value={newCoach.make || ""} onChange={v => setNewCoach(p => ({ ...p, make: v }))} />
+              <Field label="Modèle" id="cModel" placeholder="Tourismo" value={newCoach.model || ""} onChange={v => setNewCoach(p => ({ ...p, model: v }))} />
+              <Field label="Année" id="cYear" type="number" placeholder="2019" value={newCoach.year || ""} onChange={v => setNewCoach(p => ({ ...p, year: v }))} />
+              <Field label="Plaque" id="cPlate" placeholder="AA-12345" value={newCoach.plate || ""} onChange={v => setNewCoach(p => ({ ...p, plate: v }))} hint="Visible uniquement par votre équipe et PAPOT." />
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setAddingCoach(false); setNewCoach({}); setEditingCoach(null); }}
+                className="border-2 border-[#e2d5c3] px-4 py-2 rounded-xl text-sm text-[#7a6355] font-semibold">Annuler</button>
+              <button type="button" disabled={!newCoach.label || !newCoach.seats} onClick={saveCoach}
+                className="bg-[#002089] text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-40">
+                {editingCoach === null ? "Ajouter" : "Enregistrer"}
+              </button>
+            </div>
+          </div>
+        )}
+        {coaches.length > 0 && !addingCoach && (
+          <button type="button" onClick={() => setAddingCoach(true)}
+            className="border-2 border-dashed border-[#c8b9a5] hover:border-[#002089] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#002089] font-semibold transition-colors flex items-center justify-center gap-2 mb-8">
+            <Ico.Plus /> Ajouter un autocar
+          </button>
+        )}
+
+        {/* ── Les trajets ────────────────────────────────── */}
+        <p className="text-xs font-bold text-[#002089] uppercase tracking-widest mb-3 mt-8">Trajets</p>
+        {routes.length === 0 && !addingRoute && (
+          <div className="bg-[#E9F9FE] border-2 border-dashed border-[#c8b9a5] rounded-2xl p-8 text-center mb-6">
+            <span className="text-4xl block mb-3">🛣️</span>
+            <p className="font-display font-bold text-[#3E2C23] text-lg mb-2">Ajoutez votre premier trajet</p>
+            <p className="text-[#7a6355] text-sm mb-5">
+              Chaque trajet devient une annonce, avec son tarif et ses horaires.
+            </p>
+            <button type="button" onClick={() => setAddingRoute(true)}
+              className="bg-[#e76f2e] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#d05e20] transition-colors inline-flex items-center gap-2">
+              <Ico.Plus /> Ajouter un trajet
+            </button>
+          </div>
+        )}
+        {routes.map(r => (
+          <div key={r.id} className="bg-white border border-[#e2d5c3] rounded-xl p-4 mb-3 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-[#E9F9FE] flex items-center justify-center text-2xl shrink-0">🛣️</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[#3E2C23] truncate">{r.origin} → {r.destination}</p>
+              <p className="text-xs text-[#7a6355]">
+                {[
+                  // "0" is a truthy string: a six-hour trip must read "6 h",
+                  // not "6 h 0".
+                  (Number(r.durationH) > 0 || Number(r.durationM) > 0) &&
+                    `${Number(r.durationH) || 0} h${Number(r.durationM) > 0 ? ` ${r.durationM}` : ""}`,
+                  r.stops && `via ${r.stops}`,
+                  r.departures || "horaires à définir",
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="font-display font-bold text-[#3E2C23]">{r.fare} $<span className="text-xs font-normal text-[#7a6355]">/place</span></p>
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <button type="button" title="Modifier ce trajet"
+                onClick={() => { setNewRoute(r); setEditingRoute(r.id); setAddingRoute(true); }}
+                className="p-2 rounded-lg hover:bg-[#E9F9FE] text-[#7a6355] transition-colors"><Ico.Edit /></button>
+              <button type="button" onClick={() => setRoutes(routes.filter(x => x.id !== r.id))}
+                className="p-2 rounded-lg hover:bg-red-50 text-[#7a6355] hover:text-red-500 transition-colors"><Ico.Trash /></button>
+            </div>
+          </div>
+        ))}
+        {addingRoute && (
+          <div className="bg-white border-2 border-[#6ad7fb] rounded-xl p-5 mb-4">
+            <p className="font-display font-bold text-[#3E2C23] mb-4">
+              {editingRoute === null ? "Nouveau trajet" : "Modifier le trajet"}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <Field label="Ville de départ" id="rOrigin" placeholder="Port-au-Prince" value={newRoute.origin || ""} onChange={v => setNewRoute(p => ({ ...p, origin: v }))} required />
+              <Field label="Ville d'arrivée" id="rDest" placeholder="Cap-Haïtien" value={newRoute.destination || ""} onChange={v => setNewRoute(p => ({ ...p, destination: v }))} required />
+              <div className="sm:col-span-2">
+                <Field label="Arrêts intermédiaires" id="rStops" placeholder="Saint-Marc, Gonaïves" value={newRoute.stops || ""} onChange={v => setNewRoute(p => ({ ...p, stops: v }))}
+                  hint="Séparés par des virgules. Laissez vide pour un trajet direct." />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Durée — heures" id="rDurH" type="number" placeholder="6" value={newRoute.durationH || ""} onChange={v => setNewRoute(p => ({ ...p, durationH: v }))} required />
+                <Field label="Minutes" id="rDurM" type="number" placeholder="0" value={newRoute.durationM || ""} onChange={v => setNewRoute(p => ({ ...p, durationM: v }))} />
+              </div>
+              <Field label="Tarif par place ($ US)" id="rFare" type="number" placeholder="19" value={newRoute.fare || ""} onChange={v => setNewRoute(p => ({ ...p, fare: v }))} required
+                hint="Le tarif affiché aux voyageurs, en dollars. L'équivalent en gourdes suit le taux du jour." />
+              <div className="sm:col-span-2">
+                <Field label="Heures de départ" id="rDeps" placeholder="06:00, 14:00" value={newRoute.departures || ""} onChange={v => setNewRoute(p => ({ ...p, departures: v }))}
+                  hint="Format 24 h, séparées par des virgules. Vide = vous construirez l'horaire dans votre tableau de bord." />
+              </div>
+            </div>
+            <p className="text-xs font-semibold text-[#7a6355] uppercase tracking-wide mb-2">Jours de service</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {DAYS_FR.map((d, i) => (
+                <button key={d} type="button" onClick={() => toggleDay(i)}
+                  className={`w-11 h-11 rounded-xl text-xs font-bold border-2 transition-colors ${days.includes(i) ? "border-[#e76f2e] bg-[#fff5f0] text-[#e76f2e]" : "border-[#e2d5c3] text-[#7a6355] hover:border-[#6ad7fb]"}`}>
+                  {d.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setAddingRoute(false); setNewRoute({}); setEditingRoute(null); }}
+                className="border-2 border-[#e2d5c3] px-4 py-2 rounded-xl text-sm text-[#7a6355] font-semibold">Annuler</button>
+              <button type="button"
+                disabled={!newRoute.origin || !newRoute.destination || !newRoute.fare || !newRoute.durationH}
+                onClick={saveRoute}
+                className="bg-[#002089] text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-40">
+                {editingRoute === null ? "Ajouter" : "Enregistrer"}
+              </button>
+            </div>
+          </div>
+        )}
+        {routes.length > 0 && !addingRoute && (
+          <button type="button" onClick={() => setAddingRoute(true)}
+            className="border-2 border-dashed border-[#c8b9a5] hover:border-[#002089] w-full py-3 rounded-xl text-sm text-[#7a6355] hover:text-[#002089] font-semibold transition-colors flex items-center justify-center gap-2">
+            <Ico.Plus /> Ajouter un trajet
+          </button>
+        )}
+
+        <div className="mt-6">
+          <InfoBox>
+            Chaque trajet devient une annonce en brouillon, avec ses gares et son
+            horaire. Rien n'est mis en vente avant que vous ne le publiiez
+            vous-même, et les places ne s'ouvrent qu'une fois l'horaire confirmé
+            depuis votre tableau de bord.
+          </InfoBox>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -1142,6 +1499,7 @@ function StepPhotos({ partnerType, photos, onPhotos }: { partnerType: PartnerTyp
     guesthouse: ["Extérieur", "Chambres", "Salles de bain", "Cuisine", "Salon", "Jardin", "Vues"],
     car: ["Face avant", "Face arrière", "Côtés", "Intérieur", "Tableau de bord", "Coffre"],
     restaurant: ["Extérieur", "Salle à manger", "Plats", "Bar", "Terrasse", "Équipe"],
+    bus: ["Autocar extérieur", "Sièges", "Allée centrale", "Soute à bagages", "Gare de départ", "Équipe"],
   };
   const myTips = tips[partnerType || "hotel"] || [];
   return (
@@ -1242,6 +1600,13 @@ const DOCS_SPECIFIC: Record<string, { label: string; required: boolean }[]> = {
   restaurant: [
     { label: "Autorisation sanitaire", required: true },
     { label: "Licence de restauration", required: true },
+  ],
+  bus: [
+    { label: "Licence de transport public", required: true },
+    { label: "Assurance de la flotte", required: true },
+    { label: "Carte grise des autocars", required: true },
+    { label: "Contrôle technique des autocars", required: false },
+    { label: "Permis des chauffeurs", required: false },
   ],
 };
 
@@ -1660,6 +2025,7 @@ const STEP_LABEL: Record<StepKey, string> = {
 /** Maps the wizard's type onto the partner_type enum. */
 const TYPE_TO_ENUM: Record<Exclude<PartnerType, null>, string> = {
   hotel: "hotel", guesthouse: "guesthouse", car: "car", restaurant: "restaurant",
+  bus: "bus",
 };
 
 export default function PartnerOnboardingWizard({
@@ -1683,6 +2049,8 @@ export default function PartnerOnboardingWizard({
     hours: DEFAULT_HOURS,
     rooms: [],
     vehicles: [],
+    coaches: [],
+    routes: [],
           autosaveStatus: "saved",
           photos: [],
           documents: {},
@@ -1719,7 +2087,7 @@ export default function PartnerOnboardingWizard({
     );
   }, [
     state.step, state.partnerType, state.formData, state.amenities,
-    state.hours, state.rooms, state.vehicles,
+    state.hours, state.rooms, state.vehicles, state.coaches, state.routes,
   ]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -1733,8 +2101,14 @@ export default function PartnerOnboardingWizard({
   const setHours = (h: WizardState["hours"]) => setState(p => ({ ...p, hours: h }));
   const setRooms = (r: WizardState["rooms"]) => setState(p => ({ ...p, rooms: r }));
   const setVehicles = (v: WizardState["vehicles"]) => setState(p => ({ ...p, vehicles: v }));
+  const setCoaches = (c: WizardState["coaches"]) => setState(p => ({ ...p, coaches: c }));
+  const setRoutes = (r: WizardState["routes"]) => setState(p => ({ ...p, routes: r }));
 
   const { partnerType, formData } = state;
+  // A transport company has no separate schedule step: its times and service
+  // days belong to each route, and they are collected with the route itself.
+  // Luggage rules and fare classes arrive with the dashboard screens that own
+  // them — asking for them here would collect answers with nowhere to go.
   const hasSchedule = partnerType === "restaurant" || partnerType === "car";
 
   const steps: StepKey[] = [
@@ -1759,7 +2133,7 @@ export default function PartnerOnboardingWizard({
   /** Business name varies per type; pick whichever the chosen branch filled. */
   const businessName =
     formData.bizName || formData.hotelName || formData.ghName ||
-    formData.restName || formData.carCompany || "";
+    formData.restName || formData.carCompany || formData.busCompany || "";
 
   const submit = async () => {
     if (!partnerType) return;
@@ -1892,7 +2266,10 @@ export default function PartnerOnboardingWizard({
         return (
           <StepInventory
             partnerType={partnerType} rooms={state.rooms} setRooms={setRooms}
-            vehicles={state.vehicles} setVehicles={setVehicles} data={formData} onChange={updateForm}
+            vehicles={state.vehicles} setVehicles={setVehicles}
+            coaches={state.coaches} setCoaches={setCoaches}
+            routes={state.routes} setRoutes={setRoutes}
+            data={formData} onChange={updateForm}
           />
         );
       case "schedule":
@@ -1951,7 +2328,8 @@ export default function PartnerOnboardingWizard({
               clearDraft();
               setState({
                 step: 0, partnerType: null, formData: {}, amenities: [],
-                hours: DEFAULT_HOURS, rooms: [], vehicles: [], autosaveStatus: "saved", photos: [], documents: {},
+                hours: DEFAULT_HOURS, rooms: [], vehicles: [], coaches: [], routes: [],
+                autosaveStatus: "saved", photos: [], documents: {},
               });
             }}
           />

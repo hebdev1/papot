@@ -1,0 +1,16 @@
+# PAPOT — https://papotht.com
+#
+# The console and the dashboard are behind a login and hold nothing a search
+# engine should index; /billet/ and /booking/ carry a traveller's own documents
+# and must never be crawled, even though each needs its secret link to open.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /partenaire
+Disallow: /compte
+Disallow: /billet/
+Disallow: /booking/
+Disallow: /checkout
+Disallow: /panier
+
+Sitemap: https://papotht.com/sitemap.xml

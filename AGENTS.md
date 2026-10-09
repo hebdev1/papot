@@ -107,6 +107,18 @@ repository):
 npx supabase link --project-ref sqkbtygodsomekizhhyj
 ```
 
+## The bus vertical
+
+Bus companies sell seats as a fourth vertical (`listing_kind` / `partner_type`
+value `'bus'`): a route is a `listings` row, a departure is inventory, and a
+seat is a row — so overselling is impossible rather than merely prevented.
+
+It has its own guide, because it is the largest feature here and most of its
+rules live in Postgres: **`docs/BUS_MARKETPLACE.md`** covers the schema, the
+five lifecycles, the money (including who absorbs a promo code), the security
+posture, how to add a payment provider or a notification channel, and how to
+run the tests. Read it before changing anything under `bus_*`.
+
 ## Partner dashboard
 
 The business-facing dashboard lives under `src/partner/` and is mounted lazily
@@ -279,7 +291,7 @@ setting, not code.
 
 ## Email
 
-Three edge functions send mail, all through Resend, all sharing one HTML shell
+Five edge functions send mail, all through Resend, all sharing one HTML shell
 so a customer who gets several recognises the same sender. Their source lives
 in `supabase/functions/` — `send-partner-confirmation` did not, for weeks, and
 that is how it came to select a column that no longer existed and return 500
@@ -290,6 +302,8 @@ on every call without anyone noticing.
 | `send-order-confirmation` | the customer's copy of a food order | `FoodOrder.tsx`, after `place_food_order` |
 | `send-partner-confirmation` | the partner application receipt | `PartnerOnboarding.tsx`, after `submit_partner_application` |
 | `send-auth-email` | **every** Supabase Auth email | GoTrue, via the Send Email hook |
+| `send-bus-ticket` | the passenger's e-tickets, as a PDF with a QR per seat | `BookingConfirmed.tsx`, after a bus sale |
+| `dispatch-notifications` | whatever `notify_event` has queued — delays, cancellations | the screen that caused them, fire-and-forget |
 
 The first two take **an id, never an address**: they read the row with the
 service role and mail whatever address is on it, so neither can be pointed at
@@ -304,6 +318,26 @@ auth email leaves without passing through it** — a failure there blocks signup
 and password resets, so it keeps to one network call and answers a generic but
 correct email for any action type it does not recognise. To disable it: Auth →
 Hooks → Send Email hook → off; Supabase resumes its own templates immediately.
+
+The last two are newer and differ in kind. `send-bus-ticket` takes a **booking
+id** and mails the address on the booking, like the first two. Its PDF is drawn
+with `pdf-lib`, whose standard fonts are WinAnsi: every route is named
+`Origine → Destination`, and that arrow threw on **every** ticket until
+`pdfText()` was put in front of each `drawText`. Add a field to that PDF and it
+goes through `pdfText` too.
+
+`dispatch-notifications` sends nothing of its own: it drains the pending rows in
+`notification_deliveries`, which `notify_event` wrote inside the transaction
+that caused them. That separation is deliberate — a Resend outage in the middle
+of `bus_cancel_departure` must not roll back the refunds along with the email.
+It claims each row before sending, so two overlapping runs cannot mail the same
+cancellation twice.
+
+**Nothing drains the queue on a timer.** `pg_cron` and `pg_net` are available on
+the project but not installed, so the screen that causes a notice asks for it to
+go out. That covers delays and cancellations, which happen while someone is
+looking at a screen. A departure reminder — the one notice nobody triggers —
+needs the scheduler, and is not built.
 
 Secrets, all set on the project (Edge Functions → Secrets), none in the repo:
 

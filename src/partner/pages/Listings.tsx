@@ -419,7 +419,13 @@ export function ListingForm() {
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const kindDefault =
-    active?.type === "car" ? "car" : active?.type === "restaurant" ? "restaurant" : "stay";
+    active?.type === "car"
+      ? "car"
+      : active?.type === "restaurant"
+        ? "restaurant"
+        : active?.type === "bus"
+          ? "bus"
+          : "stay";
 
   const save = async (publish: boolean) => {
     if (!active) return;
@@ -503,6 +509,7 @@ export function ListingForm() {
                 <option value="stay">Hébergement</option>
                 <option value="car">Voiture</option>
                 <option value="restaurant">Restaurant</option>
+                <option value="bus">Transport</option>
               </select>
               {!isNew && (
                 <p className="mt-1 text-[12px] text-admin-ink-3">
@@ -512,7 +519,7 @@ export function ListingForm() {
             </div>
             <div>
               <label className={labelClass} htmlFor="l-type">Catégorie</label>
-              <input id="l-type" value={value("type")} onChange={e => set("type", e.target.value)} placeholder="Chambre double, SUV, Bistrot…" className={inputClass} />
+              <input id="l-type" value={value("type")} onChange={e => set("type", e.target.value)} placeholder="Chambre double, SUV, Bistrot, Autocar…" className={inputClass} />
             </div>
             <div>
               <label className={labelClass} htmlFor="l-city">Ville</label>

@@ -380,3 +380,93 @@ export function Invoices() {
 }
 
 export { Coins, FileText, Receipt, Wallet, EmptyState, count };
+
+/**
+ * Les remboursements demandés sur vos ventes.
+ *
+ * Read-only on purpose. A refund is raised by the passenger cancelling, or by
+ * the company cancelling a departure, and it is **decided by PAPOT** — the
+ * money has already been taken by the platform, so the platform is what gives
+ * it back. A company that could approve its own refunds could also decline
+ * them, which is exactly the dispute this table exists to prevent.
+ */
+export function Refunds() {
+  const { active } = usePartner();
+  const [page, setPage] = useState(1);
+
+  const { rows, total, loading, error, reload } = useTable<{
+    id: string;
+    reference: string;
+    booking_ref: string | null;
+    customer_label: string | null;
+    amount_paid: number;
+    eligible_amount: number;
+    final_amount: number | null;
+    currency: string;
+    status: string;
+    reason: string | null;
+    created_at: string;
+  }>({
+    from: "refunds",
+    filters: [{ col: "partner_id", op: "eq", value: active?.partner_id ?? "" }],
+    sort: { col: "created_at", dir: "desc" },
+    page,
+    pageSize: 25,
+    enabled: !!active,
+  });
+
+  const columns: Column<(typeof rows)[number]>[] = [
+    { id: "reference", header: "Référence", mobile: "primary", cell: r => r.reference },
+    {
+      id: "booking",
+      header: "Réservation",
+      mobile: "secondary",
+      cell: r => r.booking_ref ?? "—",
+    },
+    { id: "customer", header: "Client", cell: r => r.customer_label ?? "—" },
+    { id: "reason", header: "Motif", cell: r => r.reason ?? "—" },
+    {
+      id: "paid",
+      header: "Payé",
+      align: "right",
+      cell: r => money(r.amount_paid, r.currency),
+    },
+    {
+      id: "eligible",
+      header: "À rembourser",
+      align: "right",
+      mobile: "meta",
+      // The decided figure once there is one, otherwise the computed claim —
+      // never both at once, so the column always means one thing.
+      cell: r => money(r.final_amount ?? r.eligible_amount, r.currency),
+    },
+    { id: "created", header: "Demandé le", mobile: "meta", cell: r => day(r.created_at) },
+    { id: "status", header: "Statut", mobile: "meta", cell: r => <StatusBadge status={r.status} /> },
+  ];
+
+  return (
+    <>
+      <PageHeader
+        title="Remboursements"
+        subtitle="Les annulations ouvertes sur vos ventes. Le montant est calculé par votre politique d'annulation ; la décision appartient à PAPOT."
+      />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        total={total}
+        loading={loading}
+        error={error}
+        onRetry={reload}
+        rowKey={r => r.id}
+        page={page}
+        pageSize={25}
+        onPage={setPage}
+        storageKey="partner-refunds"
+        empty={{
+          title: "Aucun remboursement",
+          body: "Rien n'a été annulé sur vos ventes.",
+        }}
+      />
+    </>
+  );
+}

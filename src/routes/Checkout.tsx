@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { useCart } from "../lib/cart";
+import { KIND, KINDS } from "../lib/kinds";
 import { useAuth } from "../lib/auth";
 import { emailReturnUrl } from "../lib/authRedirect";
 
@@ -35,17 +36,22 @@ const DEMO_MOBILE = [
   { number: "+509 0000 0002", outcome: "Solde insuffisant", ok: false },
 ];
 
-const KIND_LABEL: Record<string, string> = {
-  stay: "Hébergement",
-  car: "Voiture",
-  restaurant: "Restaurant",
-};
+
 
 const input =
   "w-full p-3.5 rounded-xl border-2 border-[#e2d5c3] focus:border-[#6ad7fb] bg-white text-sm text-[#002089] placeholder:text-[#b0a090] outline-none transition-colors";
 const label = "text-[12.5px] font-semibold text-[#3E2C23]";
 
 /** Canvas 1e — /checkout/:id, multi-service cart with a single payment. */
+type PromoCheck = {
+  valid: boolean;
+  reason: string | null;
+  label: string | null;
+  percent: number | null;
+  amount: number | null;
+  min_spend: number | null;
+};
+
 export function Checkout() {
   const navigate = useNavigate();
   const rate = useUsdHtgRate();
@@ -58,6 +64,18 @@ export function Checkout() {
   const [phone, setPhone] = useState("");
   const [method, setMethod] = useState("card");
   const [instrument, setInstrument] = useState("");
+  /**
+   * One key for this attempt at this cart.
+   *
+   * Generated once when the page mounts rather than per click: the point is
+   * that two clicks of Pay carry the *same* key, so the second gets the first
+   * booking back instead of selling a second set of seats. `clear()` on success
+   * unmounts this page, so the next sale starts with a new one.
+   */
+  const [idemKey] = useState(() => crypto.randomUUID());
+  const [promo, setPromo] = useState("");
+  const [promoCheck, setPromoCheck] = useState<PromoCheck | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
   const [expiry, setExpiry] = useState("");
   const [cvc, setCvc] = useState("");
   const [busy, setBusy] = useState(false);
@@ -216,6 +234,11 @@ export function Checkout() {
         email: email.trim(),
         phone: phone.trim(),
         payment_method: method,
+        // A retried or double-tapped payment returns the first booking instead
+        // of buying the same seats twice. The key covers this attempt at this
+        // cart; `clear()` on success means the next sale gets a new one.
+        idempotency_key: idemKey,
+        promo_code: promo.trim() || null,
         items: items.map(i => ({
           kind: i.kind,
           listing_id: i.listing_id,
@@ -233,6 +256,14 @@ export function Checkout() {
           // suggest the browser still has a say in what things cost.
           with_driver: i.with_driver ?? null,
           pickup: i.pickup ?? null,
+          // The bus options, on the same terms: the server reads the departure
+          // and the fare class and prices them itself. `passengers` is not an
+          // option — it is who is travelling, and a ticket needs a name.
+          departure_id: i.departure_id ?? null,
+          fare_class: i.fare_class ?? null,
+          seat_nos: i.seat_nos ?? null,
+          extra_bags: i.extra_bags ?? null,
+          passengers: i.passengers ?? null,
         })),
       },
     });
@@ -270,9 +301,15 @@ export function Checkout() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 lg:px-8 py-8 lg:py-10">
-      <div className="flex items-center gap-2 text-sm mb-8">
+      {/* On a phone there is not room for three labelled steps beside the
+          title, and the row used to run 57px past the viewport — on the one
+          page where a sideways scrollbar costs a sale. The step you are ON
+          keeps its name; the ones you are not on keep only their number. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm mb-8">
         <span className="font-display font-bold text-[#002089]">Paiement sécurisé</span>
-        <span className="flex-1" />
+        {/* The spacer that pushes the steps to the right is what forces the
+            wrap on a phone, where there is nothing to push against. */}
+        <span className="hidden sm:block flex-1" />
         {STEPS.map((s, i) => (
           <span key={s} className="flex items-center gap-2">
             <span
@@ -282,7 +319,15 @@ export function Checkout() {
             >
               {i + 1}
             </span>
-            <span className={i === 0 ? "text-[#002089] font-semibold" : "text-[#7a6355]"}>{s}</span>
+            <span
+              className={
+                i === 0
+                  ? "text-[#002089] font-semibold"
+                  : "hidden sm:inline text-[#7a6355]"
+              }
+            >
+              {s}
+            </span>
           </span>
         ))}
       </div>
@@ -500,14 +545,54 @@ export function Checkout() {
           <div className="bg-white rounded-2xl border border-[#e2d5c3] p-6">
             <h2 className="font-display text-xl font-bold text-[#002089] mb-4">Récapitulatif</h2>
             <div className="flex flex-col gap-2 text-sm">
-              {(["stay", "car", "restaurant"] as const)
-                .filter(k => items.some(i => i.kind === k))
+              {KINDS.filter(k => items.some(i => i.kind === k))
                 .map(k => (
                   <div key={k} className="flex items-center justify-between">
-                    <span className="text-[#7a6355]">{KIND_LABEL[k]}</span>
+                    <span className="text-[#7a6355]">{KIND[k].label}</span>
                     <span className="text-[#3E2C23] font-medium">{formatUsd(byKind(k))}</span>
                   </div>
                 ))}
+              {/* The code is checked for existence here and priced by the
+                  server at payment. Showing an amount worked out in the
+                  browser would be showing a figure the sale can contradict. */}
+              <div className="border-t border-[#e2d5c3] pt-3 mt-1">
+                <label htmlFor="promo" className="block text-xs font-bold text-[#7a6355] mb-1.5">
+                  Code promo
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="promo"
+                    value={promo}
+                    onChange={e => { setPromo(e.target.value); setPromoCheck(null); }}
+                    placeholder="Si vous en avez un"
+                    className="flex-1 min-w-0 p-2.5 rounded-xl border-2 border-[#e2d5c3] focus:border-[#6ad7fb] bg-white text-sm text-[#002089] placeholder:text-[#b0a090] outline-none transition-colors uppercase"
+                  />
+                  <button
+                    type="button"
+                    disabled={promoBusy || !promo.trim()}
+                    onClick={async () => {
+                      setPromoBusy(true);
+                      const { data } = await supabase.rpc(
+                        "check_promo_code" as never,
+                        { p_code: promo.trim() } as never,
+                      );
+                      setPromoCheck((data as PromoCheck | null) ?? null);
+                      setPromoBusy(false);
+                    }}
+                    className="shrink-0 px-3.5 rounded-xl border-2 border-[#e2d5c3] hover:border-[#002089] text-[13px] font-bold text-[#3E2C23] disabled:opacity-40 transition-colors"
+                  >
+                    {promoBusy ? "…" : "Vérifier"}
+                  </button>
+                </div>
+                {promoCheck && (
+                  <p className={`text-xs mt-1.5 ${promoCheck.valid ? "text-[#1b7a3d]" : "text-[#b3261e]"}`}>
+                    {promoCheck.valid
+                      ? `${promoCheck.label ?? "Code accepté"} — la remise est calculée au paiement.`
+                      : (promoCheck.reason ?? "Ce code ne peut pas être utilisé.")}
+                  </p>
+                )}
+              </div>
+
               <div className="border-t border-[#e2d5c3] pt-2.5 mt-1 flex items-center justify-between">
                 <span className="font-display font-bold text-[#3E2C23]">À payer</span>
                 <span className="font-display font-bold text-xl text-[#3E2C23]">{formatUsd(total)}</span>

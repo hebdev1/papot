@@ -14,6 +14,14 @@ import { rpc } from "../../console/data";
  * uses it to decide what to show; RLS and the RPCs decide what is allowed.
  */
 
+/**
+ * The roles the database actually has.
+ *
+ * This union had drifted: `partner_member_role` gained `kitchen`, `cashier` and
+ * `delivery_manager` with the food-order work (20260914015734) and they never
+ * reached here, so a cashier's role rendered as a raw code in the team screen.
+ * The four transport roles are added with them.
+ */
 export type PartnerRole =
   | "owner"
   | "manager"
@@ -21,7 +29,14 @@ export type PartnerRole =
   | "front_desk"
   | "finance"
   | "marketing"
-  | "viewer";
+  | "viewer"
+  | "kitchen"
+  | "cashier"
+  | "delivery_manager"
+  | "dispatcher"
+  | "ticket_agent"
+  | "boarding_agent"
+  | "driver";
 
 export const ROLE_LABEL: Record<PartnerRole, string> = {
   owner: "Propriétaire",
@@ -31,15 +46,23 @@ export const ROLE_LABEL: Record<PartnerRole, string> = {
   finance: "Finance",
   marketing: "Marketing",
   viewer: "Lecture seule",
+  kitchen: "Cuisine",
+  cashier: "Caisse",
+  delivery_manager: "Responsable livraison",
+  dispatcher: "Régulateur",
+  ticket_agent: "Agent de billetterie",
+  boarding_agent: "Agent d'embarquement",
+  driver: "Chauffeur",
 };
 
-export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant";
+export type PartnerType = "hotel" | "guesthouse" | "car" | "restaurant" | "bus";
 
 export const TYPE_LABEL: Record<PartnerType, string> = {
   hotel: "Hôtel",
   guesthouse: "Maison d'hôtes",
   car: "Location de voitures",
   restaurant: "Restaurant",
+  bus: "Transport",
 };
 
 export type Membership = {

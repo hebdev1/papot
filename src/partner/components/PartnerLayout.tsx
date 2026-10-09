@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import {
   BedDouble,
   Building2,
+  Bus,
   Car,
   Check,
   ChevronDown,
@@ -202,6 +203,7 @@ const TYPE_ICON = {
   guesthouse: BedDouble,
   car: Car,
   restaurant: UtensilsCrossed,
+  bus: Bus,
 } as const;
 
 /**
@@ -347,7 +349,13 @@ export function QuickCreate() {
   if (!active || !can("manage_listings")) return null;
 
   const options: { label: string; to: string }[] =
-    active.type === "car"
+    active.type === "bus"
+      ? [
+          { label: "Nouveau trajet", to: "/partenaire/annonces/nouveau" },
+          { label: "Autocar", to: "/partenaire/autocars" },
+          { label: "Horaire", to: "/partenaire/horaires" },
+        ]
+      : active.type === "car"
       ? [
           { label: "Nouveau véhicule", to: "/partenaire/annonces/nouveau" },
           { label: "Lieu de prise en charge", to: "/partenaire/lieux" },

@@ -21,6 +21,7 @@ const TABS = [
   { id: "stay", label: "Hébergements", icon: <Icon.Hotel /> },
   { id: "car", label: "Voitures", icon: <Icon.Car /> },
   { id: "restaurant", label: "Restaurants", icon: <Icon.Breakfast /> },
+  { id: "bus", label: "Autocars", icon: <Icon.Bus /> },
   { id: "flight", label: "Vols", icon: <Icon.Plane /> },
 ];
 
@@ -156,6 +157,15 @@ export function Home({ onPartner }: { onPartner: () => void }) {
   }, [nights]);
 
   const search = () => {
+    // Transport has its own page, because a bus needs an origin as well as a
+    // destination and this form only collects one place. Sending "where" as the
+    // arrival town is the most useful thing it knows.
+    if (activeTab === "bus") {
+      const p = new URLSearchParams({ date: dates.checkin });
+      if (where.trim()) p.set("to", where.trim());
+      navigate(`/bus?${p}`);
+      return;
+    }
     const p = new URLSearchParams({ kind: activeTab, ...stayDatesQuery(dates), ...guestsQuery(guests) });
     if (where.trim()) p.set("where", where.trim());
     navigate(`/search?${p}`);

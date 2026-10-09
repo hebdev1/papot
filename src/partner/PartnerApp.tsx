@@ -18,11 +18,15 @@ import { FoodMoney } from "./pages/FoodMoney";
 import { Calendar, Availability } from "./pages/Planning";
 import { Rates, Discounts, Fees } from "./pages/Pricing";
 import { Customers, Messages, Reviews } from "./pages/Clients";
-import { Finance, Payouts, Transactions, Invoices } from "./pages/Money";
+import { Finance, Payouts, Transactions, Invoices, Refunds } from "./pages/Money";
 import { Analytics, Reports } from "./pages/Insights";
 import { BusinessProfile, Verification, Staff, Activity } from "./pages/Business";
 import { BookingSettings, Notifications, Integrations, Account, PaymentSettings, Support } from "./pages/Settings";
 import { Rooms, Fleet, PickupLocations, Menu, Tables } from "./pages/Operations";
+import { BusFleet, BusTerminals } from "./pages/BusNetwork";
+import { BusDepartures, BusRoutes, BusSchedules } from "./pages/BusTimetable";
+import { BusBoarding } from "./pages/BusBoarding";
+import { BusPolicy } from "./pages/BusPolicy";
 import { Promotions, Coupons } from "./pages/Marketing";
 import { Packages } from "./pages/Packages";
 
@@ -157,6 +161,16 @@ export function PartnerApp() {
             <Route path="options" element={<Require permission="manage_menu"><MenuOptions /></Require>} />
             <Route path="formules" element={<Require permission="manage_menu"><Meals /></Require>} />
             <Route path="tables" element={<Require permission="manage_listings"><Tables /></Require>} />
+            {/* Transport. Each screen asks for the capability that owns it: a
+                dispatcher moves departures without touching the fleet, and a
+                driver reaches none of them. */}
+            <Route path="autocars" element={<Require permission="manage_fleet"><BusFleet /></Require>} />
+            <Route path="gares" element={<Require permission="manage_network"><BusTerminals /></Require>} />
+            <Route path="itineraires" element={<Require permission="manage_network"><BusRoutes /></Require>} />
+            <Route path="horaires" element={<Require permission="manage_departures"><BusSchedules /></Require>} />
+            <Route path="departs" element={<Require permission="view_reservations"><BusDepartures /></Require>} />
+            <Route path="embarquement" element={<Require permission="board_passengers"><BusBoarding /></Require>} />
+            <Route path="annulation" element={<Require permission="manage_pricing"><BusPolicy /></Require>} />
 
             <Route path="reservations" element={<Require permission="view_reservations"><Reservations /></Require>} />
             <Route path="reservations/:reference" element={<Require permission="view_reservations"><ReservationDetail /></Require>} />
@@ -181,6 +195,7 @@ export function PartnerApp() {
             <Route path="versements" element={<Require permission="view_finance"><Payouts /></Require>} />
             <Route path="transactions" element={<Require permission="view_finance"><Transactions /></Require>} />
             <Route path="factures" element={<Require permission="view_finance"><Invoices /></Require>} />
+            <Route path="remboursements" element={<Require permission="view_finance"><Refunds /></Require>} />
 
             <Route path="paquets" element={<Require permission="manage_promotions"><Packages /></Require>} />
             <Route path="promotions" element={<Require permission="manage_promotions"><Promotions /></Require>} />

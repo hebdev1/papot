@@ -8,10 +8,15 @@ import { Celebration } from "../components/ui/ticket-receipt";
 
 type Item = { title: string; detail: string; amount: number; kind: string; status: string };
 type Booking = {
+  /** get_booking returns it; the ticket mail is addressed by id, not reference. */
+  id: string;
   reference: string;
   first_name: string;
   email: string;
   total: number;
+  discount?: number | null;
+  discount_code?: string | null;
+  subtotal?: number | null;
   status: string;
   items: Item[];
 };
@@ -70,6 +75,51 @@ export function BookingConfirmed() {
   // réservation est bien partie. Checkout le dépose ici parce que c'est le
   // dernier écran où la personne peut encore l'apprendre.
   const [accountNotice, setAccountNotice] = useState<string | null>(null);
+
+  type TicketLine = {
+    ticket_no: string;
+    access_token: string;
+    passenger: string;
+    seat: string | null;
+    route: string;
+  };
+  const [tickets, setTickets] = useState<TicketLine[]>([]);
+  const [mailState, setMailState] = useState<"idle" | "sent" | "failed">("idle");
+
+  /**
+   * The tickets this purchase produced, and the one mail that carries them.
+   *
+   * Fire-and-forget, like the two confirmations before it: the sale is already
+   * made, and a mail that fails must not suggest otherwise — which is why the
+   * sentence above reports the send rather than assuming it. The function is
+   * single-shot on its own side, so a reload does not send twice.
+   */
+  useEffect(() => {
+    const ref = booking?.reference;
+    const mail = booking?.email;
+    if (!ref || !mail) return;
+    let live = true;
+
+    void supabase
+      .rpc("bus_tickets_for_booking" as never, { p_reference: ref, p_email: mail } as never)
+      .then(({ data, error }) => {
+        if (!live || error) return;
+        const rows = (data as TicketLine[] | null) ?? [];
+        setTickets(rows);
+        if (rows.length === 0) return;
+        void supabase.functions
+          .invoke("send-bus-ticket", { body: { booking_id: booking.id } })
+          .then(({ error: fnErr }) => {
+            if (!live) return;
+            setMailState(fnErr ? "failed" : "sent");
+            if (fnErr) console.error("Ticket email failed:", fnErr);
+          });
+      });
+
+    return () => {
+      live = false;
+    };
+  }, [booking?.reference, booking?.email, booking?.id]);
 
   useEffect(() => {
     if (!id) return;
@@ -157,8 +207,23 @@ export function BookingConfirmed() {
         <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center text-4xl mb-6">✅</div>
         <h1 className="font-display text-3xl font-bold text-[#002089]">Votre voyage est confirmé</h1>
         <p className="text-[#7a6355] mt-3 max-w-lg leading-relaxed">
-          Référence <span className="font-display font-bold text-[#3E2C23]">{booking.reference}</span>. Un
-          récapitulatif est parti vers {booking.email}, et chaque prestataire a été prévenu.
+          Référence <span className="font-display font-bold text-[#3E2C23]">{booking.reference}</span>.
+          {/* This page used to promise a summary email and a notified provider,
+              and nothing sent either. Tickets really are emailed now, by
+              `send-bus-ticket`, so the sentence is only made for them — and it
+              reports what actually happened rather than what was intended. */}
+          {tickets.length > 0 ? (
+            mailState === "sent" ? (
+              <> Vos billets sont partis vers {booking.email}, en pièce jointe, prêts à imprimer.</>
+            ) : mailState === "failed" ? (
+              <> Vos billets sont ci-dessous. L'envoi par courriel n'a pas abouti — gardez
+                cette page, ou ouvrez chaque billet depuis son lien.</>
+            ) : (
+              <> Vos billets sont ci-dessous ; nous les envoyons aussi à {booking.email}.</>
+            )
+          ) : (
+            <> Gardez cette référence : elle vous retrouve cette réservation.</>
+          )}
         </p>
       </div>
 
@@ -185,7 +250,30 @@ export function BookingConfirmed() {
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#e2d5c3]">
+        {Number(booking.discount ?? 0) > 0 && (
+          /* Shown as arithmetic, not as a net figure: someone who typed a code
+             should be able to see that it was applied, and someone chasing a
+             missing discount has something to point at. */
+          <div className="flex flex-col gap-1 pt-4 mt-4 border-t border-[#e2d5c3] text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[#7a6355]">Sous-total</span>
+              <span className="text-[#3E2C23]">{formatUsd(Number(booking.subtotal ?? 0))}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[#1b7a3d]">
+                Remise{booking.discount_code ? ` (${booking.discount_code})` : ""}
+              </span>
+              <span className="text-[#1b7a3d] font-medium">
+                − {formatUsd(Number(booking.discount))}
+              </span>
+            </div>
+          </div>
+        )}
+        <div
+          className={`flex items-center justify-between ${
+            Number(booking.discount ?? 0) > 0 ? "pt-3 mt-1" : "pt-4 mt-4 border-t border-[#e2d5c3]"
+          }`}
+        >
           <span className="font-display font-bold text-[#3E2C23]">Total payé</span>
           <span className="font-display font-bold text-xl text-[#3E2C23]">{formatUsd(Number(booking.total))}</span>
         </div>
@@ -198,6 +286,40 @@ export function BookingConfirmed() {
           restaurant confirme la table sous 24 h.
         </p>
       </section>
+
+      {tickets.length > 0 && (
+        <section className="bg-white rounded-2xl border border-[#e2d5c3] p-6 mt-6">
+          <h2 className="font-display text-lg font-bold text-[#002089]">
+            Vos billets d'autocar
+          </h2>
+          <p className="text-[13px] text-[#7a6355] mt-1 mb-4">
+            Un billet par passager. Chaque lien ouvre le QR à présenter à l'embarquement —
+            gardez-le, il ne demande aucun mot de passe.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {tickets.map(t => (
+              <div
+                key={t.ticket_no}
+                className="flex flex-wrap items-center justify-between gap-3 border border-[#e2d5c3] rounded-xl px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-[#3E2C23]">{t.passenger}</p>
+                  <p className="text-[12.5px] text-[#7a6355]">
+                    {t.route} · place {t.seat ?? "—"} ·{" "}
+                    <span className="font-mono">{t.ticket_no}</span>
+                  </p>
+                </div>
+                <Link
+                  to={`/billet/${t.access_token}`}
+                  className="shrink-0 bg-[#002089] hover:bg-[#001b6e] text-white font-bold text-[13px] px-4 py-2 rounded-lg transition-colors"
+                >
+                  Voir le billet
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="flex flex-wrap gap-3 mt-7">
         {/* Menait à l'accueil, ce qui ne montrait aucune réservation. */}

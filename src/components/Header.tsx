@@ -12,6 +12,9 @@ const NAV = [
   { to: "/search?kind=stay", label: "Hébergements" },
   { to: "/search?kind=car", label: "Voitures" },
   { to: "/search?kind=restaurant", label: "Restaurants" },
+  // Transport goes to /bus, not to /search: it asks for an origin, a
+  // destination and a day, which the shared search form has nowhere to put.
+  { to: "/bus", label: "Autocars" },
   { to: "/search?kind=flight", label: "Vols" },
 ];
 

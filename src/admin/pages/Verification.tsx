@@ -169,6 +169,8 @@ type DocRow = {
 };
 
 const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+/** Service days read as a row of abbreviations; the full names are too wide. */
+const WEEKDAY_SHORT = WEEKDAYS.map(d => d.slice(0, 3));
 
 type DocType = { code: string; label_fr: string; applies_to: string[]; required: boolean; position: number };
 
@@ -212,13 +214,42 @@ export function VerificationDetail() {
     enabled: !!id,
   });
 
+  // Only the columns the wizard actually writes: an application carries no
+  // plate and no fuel type, and the per-day rate is one figure on the
+  // application itself (shown under "Tarification déclarée"), not per vehicle.
   const vehicles = useTable<{
-    id: string; make: string | null; model: string | null; year: number | null;
-    plate: string | null; category: string | null; transmission: string | null;
-    fuel: string | null; seats: number | null; daily_rate: number | null; position: number;
+    id: string; make: string; model: string; year: number;
+    body_type: string | null; transmission: string; seats: number; position: number;
   }>({
     from: "partner_application_vehicles",
-    select: "id, make, model, year, plate, category, transmission, fuel, seats, daily_rate, position",
+    select: "id, make, model, year, body_type, transmission, seats, position",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 100,
+    enabled: !!id,
+  });
+
+  const coaches = useTable<{
+    id: string; label: string; seats: number; seat_pattern: string;
+    coach_type: string | null; make: string | null; model: string | null;
+    year: number | null; plate: string | null; position: number;
+  }>({
+    from: "partner_application_coaches",
+    select: "id, label, seats, seat_pattern, coach_type, make, model, year, plate, position",
+    filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
+    sort: { col: "position", dir: "asc" },
+    pageSize: 100,
+    enabled: !!id,
+  });
+
+  const routes = useTable<{
+    id: string; origin_city: string; destination_city: string; stops: string[] | null;
+    duration_minutes: number; fare: number; departures: string[] | null;
+    weekdays: number[] | null; position: number;
+  }>({
+    from: "partner_application_routes",
+    select:
+      "id, origin_city, destination_city, stops, duration_minutes, fare, departures, weekdays, position",
     filters: [{ col: "application_id", op: "eq", value: id ?? "" }],
     sort: { col: "position", dir: "asc" },
     pageSize: 100,
@@ -650,18 +681,16 @@ export function VerificationDetail() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-admin-line bg-admin-raised">
-                      {["Véhicule", "Plaque", "Catégorie", "Boîte", "Carburant", "Places", "Tarif / jour"].map(
-                        (h, i) => (
-                          <th
-                            key={h}
-                            className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
-                              i >= 5 ? "text-right" : ""
-                            }`}
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
+                      {["Véhicule", "Type", "Boîte", "Places"].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                            i >= 3 ? "text-right" : ""
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-admin-line">
@@ -670,15 +699,115 @@ export function VerificationDetail() {
                         <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">
                           {[v.make, v.model, v.year].filter(Boolean).join(" ") || "—"}
                         </td>
-                        <td className="px-5 py-3 text-[13px]">{v.plate ?? "—"}</td>
-                        <td className="px-5 py-3 text-[13px]">{v.category ?? "—"}</td>
-                        <td className="px-5 py-3 text-[13px]">{v.transmission ?? "—"}</td>
-                        <td className="px-5 py-3 text-[13px]">{v.fuel ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{v.body_type ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{v.transmission}</td>
+                        <td className="px-5 py-3 text-right text-[13px] tabular-nums">{v.seats}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {coaches.rows.length > 0 && (
+            <Card padded={false}>
+              <div className="border-b border-admin-line px-5 py-4">
+                <h2 className="font-display text-[15px] font-semibold text-admin-ink">Flotte déclarée</h2>
+                <p className="text-[12.5px] text-admin-ink-3">
+                  {coaches.rows.length} autocar(s) ·{" "}
+                  {coaches.rows.reduce((n, c) => n + (c.seats ?? 0), 0)} places au total.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-admin-line bg-admin-raised">
+                      {["Autocar", "Type", "Véhicule", "Plaque", "Disposition", "Places"].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                            i >= 5 ? "text-right" : ""
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-admin-line">
+                    {coaches.rows.map(c => (
+                      <tr key={c.id}>
+                        <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">{c.label}</td>
+                        <td className="px-5 py-3 text-[13px]">{c.coach_type ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">
+                          {[c.make, c.model, c.year].filter(Boolean).join(" ") || "—"}
+                        </td>
+                        <td className="px-5 py-3 text-[13px]">{c.plate ?? "—"}</td>
+                        <td className="px-5 py-3 text-[13px]">{c.seat_pattern}</td>
+                        <td className="px-5 py-3 text-right text-[13px] font-semibold tabular-nums">
+                          {c.seats}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {routes.rows.length > 0 && (
+            <Card padded={false}>
+              <div className="border-b border-admin-line px-5 py-4">
+                <h2 className="font-display text-[15px] font-semibold text-admin-ink">Trajets déclarés</h2>
+                <p className="text-[12.5px] text-admin-ink-3">
+                  {routes.rows.length} trajet(s). Chacun devient une annonce en brouillon à
+                  l'acceptation.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-admin-line bg-admin-raised">
+                      {["Trajet", "Arrêts", "Jours", "Départs", "Durée", "Tarif"].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                            i >= 4 ? "text-right" : ""
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-admin-line">
+                    {routes.rows.map(r => (
+                      <tr key={r.id}>
+                        <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">
+                          {r.origin_city} → {r.destination_city}
+                        </td>
+                        <td className="px-5 py-3 text-[13px]">
+                          {r.stops?.length ? r.stops.join(", ") : "Direct"}
+                        </td>
+                        <td className="px-5 py-3 text-[13px]">
+                          {r.weekdays?.length === 7
+                            ? "Tous les jours"
+                            : (r.weekdays ?? []).map(w => WEEKDAY_SHORT[w] ?? w).join(" ") || "—"}
+                        </td>
+                        {/* An empty departures list is not a gap in the file: the
+                            form does not require times, and the company builds
+                            its timetable in the dashboard. Say so rather than
+                            showing a dash that reads as missing. */}
+                        <td className="px-5 py-3 text-[13px]">
+                          {r.departures?.length ? r.departures.join(", ") : "À définir"}
+                        </td>
                         <td className="px-5 py-3 text-right text-[13px] tabular-nums">
-                          {v.seats ?? "—"}
+                          {Math.floor(r.duration_minutes / 60)} h
+                          {r.duration_minutes % 60 ? ` ${r.duration_minutes % 60}` : ""}
                         </td>
                         <td className="px-5 py-3 text-right text-[13px] font-semibold tabular-nums">
-                          {v.daily_rate !== null ? money(v.daily_rate) : "—"}
+                          {money(r.fare)}
                         </td>
                       </tr>
                     ))}

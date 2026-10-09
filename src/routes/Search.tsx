@@ -20,7 +20,8 @@ import {
   type RestaurantOrdering,
 } from "../components/RestaurantFilters";
 
-type Kind = Enums<"listing_kind">;
+import { KIND, KINDS, isKind } from "../lib/kinds";
+import type { Kind } from "../lib/kinds";
 
 const STAY_TYPES = ["Maison d'hôtes", "Villa", "Appartement", "Petit hôtel", "B&B", "Auberge"];
 const ESSENTIALS = ["Générateur", "Inverter", "Réserve d'eau", "Gardiennage", "Parking", "Piscine", "Wi-Fi"];
@@ -31,11 +32,9 @@ const CANCELLATION = [
 ];
 
 /** [singular, plural] — French agreement on the results heading. */
-const KIND_LABEL: Record<Kind, [string, string]> = {
-  stay: ["hébergement", "hébergements"],
-  car: ["voiture", "voitures"],
-  restaurant: ["restaurant", "restaurants"],
-};
+const KIND_LABEL: Record<Kind, [string, string]> = Object.fromEntries(
+  KINDS.map(k => [k, [KIND[k].one, KIND[k].many]]),
+) as Record<Kind, [string, string]>;
 
 const checkbox = (on: boolean) =>
   `w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
@@ -53,7 +52,9 @@ export function Search() {
   const rate = useUsdHtgRate();
 
   const rawKind = params.get("kind") ?? "stay";
-  const kind = (["stay", "car", "restaurant"].includes(rawKind) ? rawKind : "stay") as Kind;
+  // The whitelist is the enum itself, so a new service cannot be silently
+  // answered as "stay" — which is what `["stay","car","restaurant"]` did.
+  const kind: Kind = isKind(rawKind) ? rawKind : "stay";
   const unsupported = rawKind === "flight";
   const where = params.get("where") ?? "";
   // The party travels in the URL, so a shared or reloaded search keeps the

@@ -6,6 +6,7 @@ import { BarList, Donut, Funnel, LineChart } from "../../console/Charts";
 import { useRpc } from "../lib/adminData";
 import { count, dayShort, money, moneyShort, percent } from "../../console/format";
 import { PARTNER_TYPE_LABEL } from "./Partners";
+import { KIND, KINDS } from "../../lib/kinds";
 
 type SeriesRow = { day: string; gbv: number; revenue: number; refunds: number; payouts: number };
 type GeoRow = { city: string; listings: number; partners: number; bookings: number; revenue: number };
@@ -27,12 +28,38 @@ type PartnerAnalytics = {
   top: { name: string; revenue: number }[];
 };
 
+type BusStats = {
+  days: number;
+  departures: number;
+  cancelled: number;
+  delayed: number;
+  seats_offered: number;
+  seats_sold: number;
+  load_factor: number | null;
+  boarded: number;
+  boarding_rate: number | null;
+  revenue: number;
+  on_time_rate: number | null;
+  refunds: number;
+  refund_amount: number;
+  refund_rate: number | null;
+  top_routes: {
+    route: string;
+    company: string;
+    departures: number;
+    seats_sold: number;
+    revenue: number;
+    load_factor: number | null;
+  }[];
+};
+
 const TABS = [
   { id: "revenue", label: "Revenus" },
   { id: "customers", label: "Clients" },
   { id: "partners", label: "Partenaires" },
   { id: "marketplace", label: "Marché" },
   { id: "geography", label: "Géographie" },
+  { id: "bus", label: "Autocars" },
 ] as const;
 
 /** Spec §42–§45. */
@@ -46,6 +73,7 @@ export function Analytics() {
   const { data: customers } = useRpc<CustomerAnalytics>("admin_customer_analytics");
   const { data: partners } = useRpc<PartnerAnalytics>("admin_partner_analytics");
   const { data: funnel } = useRpc<{ stage: string; value: number }[]>("admin_funnel");
+  const { data: bus } = useRpc<BusStats>("admin_bus_stats", { p_days: days });
 
   const labels = (series ?? []).map(s => dayShort(s.day));
 
@@ -93,11 +121,11 @@ export function Analytics() {
             <Card>
               <CardHeader title="Réservations par service" />
               <Donut
-                slices={[
-                  { label: "Hébergements", value: Number(dist?.by_service?.stay ?? 0), color: "#002089" },
-                  { label: "Voitures", value: Number(dist?.by_service?.car ?? 0), color: "#e76f2e" },
-                  { label: "Restaurants", value: Number(dist?.by_service?.restaurant ?? 0), color: "#00508a" },
-                ]}
+                slices={KINDS.map((k, i) => ({
+                  label: KIND[k].many,
+                  value: Number(dist?.by_service?.[k] ?? 0),
+                  color: ["#002089", "#e76f2e", "#00508a", "#6ad7fb"][i % 4],
+                }))}
               />
             </Card>
 
@@ -252,6 +280,89 @@ export function Analytics() {
             </table>
           </div>
         </Card>
+      )}
+
+      {tab === "bus" && (
+        <div className="flex flex-col gap-4">
+          {/* Load factor leads, because it is the number the money tables
+              cannot show: they only ever record the seats that did sell. */}
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              label="Taux de remplissage"
+              value={bus?.load_factor === null || bus?.load_factor === undefined
+                ? "—" : `${bus.load_factor} %`}
+              hint={`${count(bus?.seats_sold)} places sur ${count(bus?.seats_offered)}`}
+            />
+            <Stat label="Départs" value={count(bus?.departures)} hint={`${count(bus?.cancelled)} annulé(s)`} />
+            <Stat
+              label="Ponctualité"
+              value={bus?.on_time_rate === null || bus?.on_time_rate === undefined
+                ? "—" : `${bus.on_time_rate} %`}
+              hint={`${count(bus?.delayed)} report(s)`}
+            />
+            <Stat label="Recettes billets" value={money(bus?.revenue)} />
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Stat
+              label="Embarquement"
+              value={bus?.boarding_rate === null || bus?.boarding_rate === undefined
+                ? "—" : `${bus.boarding_rate} %`}
+              hint="des billets vendus ont été scannés"
+            />
+            <Stat label="Remboursements" value={count(bus?.refunds)} hint={money(bus?.refund_amount)} />
+            <Stat
+              label="Part remboursée"
+              value={bus?.refund_rate === null || bus?.refund_rate === undefined
+                ? "—" : `${bus.refund_rate} %`}
+            />
+          </div>
+
+          <Card padded={false}>
+            <CardHeader title="Trajets les plus vendus" subtitle={`Sur ${days} jours.`} />
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-admin-line bg-admin-raised">
+                    {["Trajet", "Compagnie", "Départs", "Places", "Remplissage", "Recettes"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-admin-ink-3 ${
+                          i >= 2 ? "text-right" : ""
+                        }`}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-admin-line">
+                  {(bus?.top_routes ?? []).map(r => (
+                    <tr key={`${r.company}-${r.route}`}>
+                      <td className="px-5 py-3 text-[13px] font-medium text-admin-ink">{r.route}</td>
+                      <td className="px-5 py-3 text-[13px]">{r.company}</td>
+                      <td className="px-5 py-3 text-right text-[13px] tabular-nums">{count(r.departures)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] tabular-nums">{count(r.seats_sold)}</td>
+                      <td className="px-5 py-3 text-right text-[13px] tabular-nums">
+                        {r.load_factor === null ? "—" : `${r.load_factor} %`}
+                      </td>
+                      <td className="px-5 py-3 text-right text-[13px] font-semibold tabular-nums">
+                        {money(r.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                  {(bus?.top_routes ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-10 text-center text-[13px] text-admin-ink-3">
+                        Aucun départ sur la période.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       )}
     </>
   );

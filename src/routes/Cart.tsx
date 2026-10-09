@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { BedDouble, Car, UtensilsCrossed } from "lucide-react";
 import { formatHtg, formatUsd, useUsdHtgRate } from "../lib/currency";
 import { useCart, type CartItem } from "../lib/cart";
+import { KIND, KINDS } from "../lib/kinds";
+import type { Kind } from "../lib/kinds";
 
 /**
  * The one page where a trip is looked at whole.
@@ -18,40 +19,34 @@ import { useCart, type CartItem } from "../lib/cart";
  * promise it cannot keep.
  */
 
-const KIND_LABEL: Record<string, string> = {
-  stay: "Hébergement",
-  car: "Voiture",
-  restaurant: "Table",
+/**
+ * Where to go to add the thing that is missing.
+ *
+ * One entry per service, keyed off the enum, so this list cannot end up one
+ * service short of what PAPOT sells — which is what happened while it was three
+ * literals. The label and the destination come from `lib/kinds.ts`; only the
+ * sentence underneath is written per service.
+ */
+const SUGGESTION_BODY: Record<Kind, string> = {
+  stay: "Hôtels, maisons d'hôtes et villas, partout en Haïti.",
+  car: "Avec ou sans chauffeur, retrait à l'aéroport ou en agence.",
+  restaurant: "Réservez le dîner de votre première soirée.",
+  bus: "Billets d'autocar entre les villes, place réservée à l'achat.",
 };
 
-/** The same three icons the account panel uses for these métiers. */
-const KIND_ICON = {
-  stay: BedDouble,
-  car: Car,
-  restaurant: UtensilsCrossed,
-} as const;
+const SUGGESTION_LABEL: Record<Kind, string> = {
+  stay: "Un hébergement",
+  car: "Une voiture",
+  restaurant: "Une table",
+  bus: "Un trajet en autocar",
+};
 
-/** Where to go to add the thing that is missing. */
-const SUGGESTIONS: { kind: string; label: string; body: string; to: string }[] = [
-  {
-    kind: "stay",
-    label: "Un hébergement",
-    body: "Hôtels, maisons d'hôtes et villas, partout en Haïti.",
-    to: "/search?kind=stay",
-  },
-  {
-    kind: "car",
-    label: "Une voiture",
-    body: "Avec ou sans chauffeur, retrait à l'aéroport ou en agence.",
-    to: "/search?kind=car",
-  },
-  {
-    kind: "restaurant",
-    label: "Une table",
-    body: "Réservez le dîner de votre première soirée.",
-    to: "/search?kind=restaurant",
-  },
-];
+const SUGGESTIONS = KINDS.map(k => ({
+  kind: k,
+  label: SUGGESTION_LABEL[k],
+  body: SUGGESTION_BODY[k],
+  to: KIND[k].search,
+}));
 
 export function Cart() {
   const { items, total, remove } = useCart();
@@ -120,7 +115,7 @@ export function Cart() {
           <dl className="mt-4 flex flex-col gap-2 text-sm">
             {items.map(item => (
               <div key={item.id} className="flex items-baseline justify-between gap-3">
-                <dt className="text-[#7a6355] truncate">{KIND_LABEL[item.kind] ?? item.kind}</dt>
+                <dt className="text-[#7a6355] truncate">{KIND[item.kind].label}</dt>
                 <dd className="font-semibold text-[#3E2C23] tabular-nums shrink-0">
                   {formatUsd(item.amount)}
                 </dd>
@@ -155,7 +150,7 @@ export function Cart() {
 }
 
 function Line({ item, onRemove }: { item: CartItem; onRemove: () => void }) {
-  const Glyph = KIND_ICON[item.kind as keyof typeof KIND_ICON] ?? BedDouble;
+  const Glyph = KIND[item.kind].icon;
 
   return (
     <article className="bg-white rounded-2xl border border-[#e2d5c3] p-4 flex items-start gap-4">
@@ -165,7 +160,7 @@ function Line({ item, onRemove }: { item: CartItem; onRemove: () => void }) {
 
       <div className="min-w-0 flex-1">
         <p className="text-[11px] uppercase tracking-wide text-[#7a6355] font-semibold">
-          {KIND_LABEL[item.kind] ?? item.kind}
+          {KIND[item.kind].label}
         </p>
         <p className="font-display font-bold text-[#3E2C23] leading-tight">{item.title}</p>
         {item.detail && (
