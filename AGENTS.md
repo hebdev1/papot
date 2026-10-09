@@ -30,7 +30,32 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 The canonical site is **https://papotht.com**, served from Hostinger. The build
 is static: `npx pnpm@10 build`, then upload everything in `dist/` to
-`public_html/`.
+
+```
+domains/papotht.com/public_html/
+```
+
+**Not `public_html/`.** papotht.com is a secondary domain on this account, so
+`public_html/` at the top level belongs to a different site: files put there
+reach nothing, silently, and the site goes on serving the old build. This
+sentence used to say `public_html/`, and the wrong path cost four upload
+rounds before anyone doubted the instruction rather than the upload.
+
+To confirm the root without trusting any document, including this one: search
+File Manager for the hashed bundle the site is currently serving (read it from
+the page source, e.g. `assets/index-XXXX.js`). **The folder that contains it is
+the root.**
+
+**Do not use File Manager's Extract.** Uploading `dist` as a zip and extracting
+it in place failed twice in a row and in the same way: the archive disappeared
+and the files never appeared. Upload the loose files, or use FTP — FileZilla
+reports how many files it actually transferred, which File Manager does not.
+
+A half-finished upload takes the site down: a new `index.html` names hashed
+assets that are not there yet, the browser refuses them on MIME type
+(`Expected a JavaScript-or-Wasm module script ... got "text/html"`), and
+`#root` stays empty. **Upload `assets/` first, `index.html` last.** To recover
+in one file, point `index.html` back at the hashed assets still on the server.
 
 **Upload the hidden files too.** `dist/.htaccess` is what makes `/admin`,
 `/partenaire` and `/p/<id>` work: without it the server looks for a directory of
