@@ -42,6 +42,9 @@ verify_jwt = false
 # identifiant et écrit à l'adresse portée par la ligne.
 # Called only from the admin console, so unlike the receipt below it can
 # require a JWT: a signed-out applicant never triggers an approval.
+[functions.send-partner-rejection]
+verify_jwt = true
+
 [functions.send-partner-approval]
 verify_jwt = true
 

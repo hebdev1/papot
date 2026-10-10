@@ -3987,6 +3987,7 @@ export type Database = {
           photos: string[]
           postal_code: string | null
           price_band: Database["public"]["Enums"]["price_band"] | null
+          rejection_sent_at: string | null
           review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -4057,6 +4058,7 @@ export type Database = {
           photos?: string[]
           postal_code?: string | null
           price_band?: Database["public"]["Enums"]["price_band"] | null
+          rejection_sent_at?: string | null
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -4127,6 +4129,7 @@ export type Database = {
           photos?: string[]
           postal_code?: string | null
           price_band?: Database["public"]["Enums"]["price_band"] | null
+          rejection_sent_at?: string | null
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null

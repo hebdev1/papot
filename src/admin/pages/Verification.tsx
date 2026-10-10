@@ -425,10 +425,22 @@ export function VerificationDetail() {
         // committed, so a mail provider having a bad minute must not make a
         // completed approval look failed. The function is single-shot on
         // `approval_sent_at`, so a retry cannot double-send.
-        if (decision === "accept") {
+        // The dialog promises the applicant both of these outcomes in
+        // writing — "vous serez notifié" on approval, "le motif est conservé
+        // et transmis au demandeur" on refusal — and until now neither was
+        // sent. `request_changes` and `escalate` stay silent: they set the
+        // dossier back to `reviewing`, which is an internal state, not a
+        // decision to announce.
+        const notice =
+          decision === "accept"
+            ? "send-partner-approval"
+            : decision === "reject"
+              ? "send-partner-rejection"
+              : null;
+        if (notice) {
           void supabase.functions
-            .invoke("send-partner-approval", { body: { id } })
-            .catch(e => console.error("Approval email failed:", e));
+            .invoke(notice, { body: { id } })
+            .catch(e => console.error(`${notice} failed:`, e));
         }
 
         reload();
