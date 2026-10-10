@@ -40,6 +40,11 @@ verify_jwt = false
 # Appelée depuis le navigateur juste après `submit_partner_application`, y
 # compris par un candidat qui n'a pas encore de session. Elle ne prend qu'un
 # identifiant et écrit à l'adresse portée par la ligne.
+# Called only from the admin console, so unlike the receipt below it can
+# require a JWT: a signed-out applicant never triggers an approval.
+[functions.send-partner-approval]
+verify_jwt = true
+
 [functions.send-partner-confirmation]
 verify_jwt = false
 

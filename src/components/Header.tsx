@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import { useAuth } from "../lib/auth";
+import { SPACE_HOME, useAccountSpace } from "../lib/accountSpace";
 import { useCart } from "../lib/cart";
 import { useFoodCart } from "../lib/foodCart";
 import { ShoppingBag, UtensilsCrossed } from "lucide-react";
@@ -20,6 +21,11 @@ const NAV = [
 
 export function Header({ onPartner }: { onPartner?: () => void }) {
   const { user } = useAuth();
+  // "Mon compte" has to mean the account this person actually has. It was
+  // hardcoded to /compte, so a partner's own header pointed at a page that
+  // redirects them straight back out.
+  const { space } = useAccountSpace();
+  const accountHome = SPACE_HOME[space] ?? "/compte";
   const { count } = useCart();
   const food = useFoodCart();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,7 +115,7 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
           )}
           {user ? (
             <Link
-              to="/compte"
+              to={accountHome}
               className="flex items-center gap-2 text-sm text-white font-semibold px-4 py-2 rounded-lg hover:bg-white/10 transition-colors"
             >
               <Icon.Users /> Mon compte
@@ -213,7 +219,7 @@ export function Header({ onPartner }: { onPartner?: () => void }) {
 
             {user ? (
               <Link
-                to="/compte"
+                to={accountHome}
                 className="min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-[15px] font-semibold text-white"
               >
                 <Icon.Users /> Mon compte

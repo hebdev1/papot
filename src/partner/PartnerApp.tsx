@@ -1,5 +1,7 @@
-import { Link, Navigate, Route, Routes } from "react-router-dom";
-import { Building2, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Building2, Clock, ShieldAlert } from "lucide-react";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { SPACE_HOME, useAccountSpace } from "../lib/accountSpace";
 import { Button, Card, PageHeader } from "../console/Ui";
@@ -64,50 +66,115 @@ function Guard({ children }: { children: React.ReactNode }) {
   // A staff account stays back-office, whatever else is attached to it.
   if (space === "admin") return <Navigate to={SPACE_HOME.admin} replace />;
 
-  if (memberships.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-admin-canvas px-4">
-        <Card className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-admin-canvas text-admin-ink-3">
-            <Building2 className="h-5 w-5" aria-hidden />
-          </div>
-          <h1 className="font-display text-lg font-semibold text-admin-ink">
-            Aucun établissement rattaché
-          </h1>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-admin-ink-2">
-            Vous êtes connecté en tant que{" "}
-            <strong className="font-semibold text-admin-ink">{user.email}</strong>, et cette
-            adresse n'est rattachée à aucune entreprise.
-          </p>
-          <p className="mt-2.5 text-[13px] leading-relaxed text-admin-ink-3">
-            Une invitation est écrite sur l'adresse exacte à laquelle elle a été envoyée :
-            connectez-vous avec celle-là. Si votre candidature est encore en cours d'examen, le
-            compte ne sera rattaché qu'après son approbation.
-          </p>
-
-          {/* The way out is another sign-in, not the traveller's space: this is
-              the partner URL, and sending someone to /compte from here is what
-              makes the dashboard feel unreachable. */}
-          <div className="mt-5 flex justify-center gap-2">
-            <Button variant="primary" onClick={() => void signOut()}>
-              Changer de compte
-            </Button>
-            <Button as="link" to="/" variant="secondary">
-              Retour au site
-            </Button>
-          </div>
-          <p className="mt-4 text-[12.5px] text-admin-ink-3">
-            Vous cherchiez vos propres voyages ?{" "}
-            <Link to="/compte" className="font-semibold text-[#002089] hover:underline">
-              Espace voyageur
-            </Link>
-          </p>
-        </Card>
-      </div>
-    );
-  }
+  if (memberships.length === 0) return <NoBusiness email={user.email ?? ""} onSignOut={signOut} />;
 
   return <>{children}</>;
+}
+
+type Dossier = {
+  business_name: string | null;
+  type: string | null;
+  status: string | null;
+  submitted_at: string | null;
+};
+
+/**
+ * What a partner sees before a business is attached to their account.
+ *
+ * Two different people land here and they need opposite things said to them:
+ *
+ *   * someone whose dossier is being read — tell them so, with the name they
+ *     filed under and the date. "Aucun établissement rattaché" is true but it
+ *     reads like a rejection to someone who applied yesterday;
+ *   * someone genuinely unattached — the invitation-address explanation.
+ *
+ * **There is deliberately no link to `/compte` here.** `my_account_space()`
+ * now answers 'partner' for anyone holding a dossier, so `RequireAuth` sends
+ * them from the traveller space back to this page: a link out would be an
+ * infinite bounce between the two.
+ */
+function NoBusiness({ email, onSignOut }: { email: string; onSignOut: () => Promise<void> | void }) {
+  const [dossier, setDossier] = useState<Dossier | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    void supabase.rpc("my_partner_application" as never).then(({ data }) => {
+      if (!live) return;
+      setDossier((data as Dossier | null) ?? null);
+      setLoading(false);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const pending = !loading && dossier && dossier.status !== "rejected";
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-admin-canvas px-4">
+      <Card className="max-w-md text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-admin-canvas text-admin-ink-3">
+          {pending ? <Clock className="h-5 w-5" aria-hidden /> : <Building2 className="h-5 w-5" aria-hidden />}
+        </div>
+
+        {pending ? (
+          <>
+            <h1 className="font-display text-lg font-semibold text-admin-ink">
+              Dossier en cours d'examen
+            </h1>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-admin-ink-2">
+              Nous avons bien reçu votre demande pour{" "}
+              <strong className="font-semibold text-admin-ink">
+                {dossier?.business_name ?? "votre entreprise"}
+              </strong>
+              {dossier?.submitted_at && (
+                <>
+                  , déposée le{" "}
+                  {new Date(dossier.submitted_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </>
+              )}
+              .
+            </p>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-admin-ink-3">
+              Votre espace s'ouvrira ici dès qu'un membre de l'équipe aura validé le dossier.
+              Vous recevrez un e-mail à ce moment-là — rien à faire d'ici là.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="font-display text-lg font-semibold text-admin-ink">
+              Aucun établissement rattaché
+            </h1>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-admin-ink-2">
+              Vous êtes connecté en tant que{" "}
+              <strong className="font-semibold text-admin-ink">{email}</strong>, et cette adresse
+              n'est rattachée à aucune entreprise.
+            </p>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-admin-ink-3">
+              Une invitation est écrite sur l'adresse exacte à laquelle elle a été envoyée :
+              connectez-vous avec celle-là.
+            </p>
+          </>
+        )}
+
+        {/* The way out is another sign-in or the public site — never /compte,
+            which would redirect straight back here. */}
+        <div className="mt-5 flex justify-center gap-2">
+          <Button variant="primary" onClick={() => void onSignOut()}>
+            Changer de compte
+          </Button>
+          <Button as="link" to="/" variant="secondary">
+            Retour au site
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
 }
 
 function Require({ permission, children }: { permission: string; children: React.ReactNode }) {

@@ -60,8 +60,25 @@ export function useAccountSpace(): { space: AccountSpace; loading: boolean } {
   return { space, loading: loading || authLoading };
 }
 
-/** Where to send this person after signing in. */
+/**
+ * Where to send this person after signing in.
+ *
+ * An owner approved before confirming their mailbox holds an `invited`
+ * membership, which `my_account_space()` does not count — so they read as a
+ * traveller until something claims it. That something used to be
+ * `PartnerProvider`, which only runs once they are already at /partenaire, so
+ * the one place it was needed was the one place it never ran. Claiming here
+ * costs one call at sign-in and is a no-op for everybody else.
+ */
 export async function resolveSpaceHome(): Promise<string> {
+  // Its own failure must never block the redirect: someone with nothing to
+  // claim is the common case, and a network blip here would otherwise strand
+  // every signing-in user.
+  try {
+    await supabase.rpc("claim_partner_invitations");
+  } catch {
+    // ignored on purpose
+  }
   const { data, error } = await supabase.rpc("my_account_space");
   const space = (error || !data ? "customer" : data) as AccountSpace;
   return SPACE_HOME[space] ?? "/compte";

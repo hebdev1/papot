@@ -35,3 +35,5 @@ logs/
 # originals stay on disk, out of the history every clone has to carry.
 image/
 papot-dist.zip
+papot-dist/
+RESTORE-index.html

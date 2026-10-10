@@ -3935,6 +3935,7 @@ export type Database = {
       partner_applications: {
         Row: {
           agree: boolean
+          approval_sent_at: string | null
           arrival_notes: string | null
           business_email: string | null
           business_name: string
@@ -4004,6 +4005,7 @@ export type Database = {
         }
         Insert: {
           agree: boolean
+          approval_sent_at?: string | null
           arrival_notes?: string | null
           business_email?: string | null
           business_name: string
@@ -4073,6 +4075,7 @@ export type Database = {
         }
         Update: {
           agree?: boolean
+          approval_sent_at?: string | null
           arrival_notes?: string | null
           business_email?: string | null
           business_name?: string
@@ -6994,6 +6997,7 @@ export type Database = {
       }
       my_account_space: { Args: never; Returns: string }
       my_bookings: { Args: never; Returns: Json }
+      my_partner_application: { Args: never; Returns: Json }
       my_partner_ids: { Args: never; Returns: string[] }
       my_trips: { Args: never; Returns: Json }
       next_booking_reference: { Args: never; Returns: string }

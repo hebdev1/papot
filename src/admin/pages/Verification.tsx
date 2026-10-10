@@ -418,6 +418,19 @@ export function VerificationDetail() {
           p_note: reason || null,
         });
         if (error) return adminError(error);
+
+        // Approving used to be silent, while the wizard promised the applicant
+        // twice that it would not be. Fire-and-forget, like the receipt: the
+        // business, the owner membership and the draft listings are already
+        // committed, so a mail provider having a bad minute must not make a
+        // completed approval look failed. The function is single-shot on
+        // `approval_sent_at`, so a retry cannot double-send.
+        if (decision === "accept") {
+          void supabase.functions
+            .invoke("send-partner-approval", { body: { id } })
+            .catch(e => console.error("Approval email failed:", e));
+        }
+
         reload();
         if (decision === "accept") navigate("/admin/partenaires");
         return null;

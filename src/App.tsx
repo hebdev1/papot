@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
 import { SPACE_HOME, useAccountSpace } from "./lib/accountSpace";
@@ -71,6 +71,7 @@ function ScrollToTop() {
 
 function Shell() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [partnerOpen, setPartnerOpen] = useState(false);
 
@@ -200,7 +201,19 @@ function Shell() {
           des surfaces de travail, et un assistant de voyage n'a rien à dire à
           quelqu'un qui valide une annonce. */}
       <AiBubble />
-      {partnerOpen && <PartnerOnboardingWizard onClose={() => setPartnerOpen(false)} />}
+      {/* `onDashboard` is optional on the wizard, and leaving it out is what
+          made "Accéder au tableau de bord →" close the modal and drop the new
+          applicant on the public home page. The dossier lives at /partenaire,
+          which now shows its status. */}
+      {partnerOpen && (
+        <PartnerOnboardingWizard
+          onClose={() => setPartnerOpen(false)}
+          onDashboard={() => {
+            setPartnerOpen(false);
+            navigate("/partenaire");
+          }}
+        />
+      )}
     </div>
   );
 }
